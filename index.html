@@ -268,7 +268,7 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
       </div>
       <div class="col-md-5">
         <div class="card p-3 h-100">
-          <div class="fw-bold mb-2" style="font-size:14px"><i class="bi bi-shield-exclamation me-1" style="color:#ea580c"></i>보증만료 임박 <span style="font-weight:400;color:#9ca3af;font-size:12px">60일 이내</span></div>
+          <div class="fw-bold mb-2" style="font-size:14px"><i class="bi bi-shield-exclamation me-1" style="color:#ea580c"></i>보증만료 임박 <span style="font-weight:400;color:#9ca3af;font-size:12px">30일 이내</span></div>
           <div id="warranty-list"></div>
         </div>
       </div>
@@ -805,7 +805,7 @@ function renderDashboard() {
   const alerts = DB.d.equipments
     .filter(e=>e.warrantyEnd)
     .map(e=>({...e, daysLeft:Math.ceil((new Date(e.warrantyEnd)-now)/(864e5))}))
-    .filter(e=>e.daysLeft<=60).sort((a,b)=>a.daysLeft-b.daysLeft).slice(0,6);
+    .filter(e=>e.daysLeft<=30).sort((a,b)=>a.daysLeft-b.daysLeft).slice(0,6);
   const wEl = document.getElementById('warranty-list');
   if(!alerts.length){ wEl.innerHTML='<div class="text-muted text-center py-3" style="font-size:13px">만료 임박 장비 없음</div>'; }
   else { wEl.innerHTML = alerts.map(w=>{
