@@ -151,7 +151,12 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
       <li><a class="nav-link" onclick="showPage('pipeline',this)"><i class="bi bi-kanban"></i>영업 파이프라인</a></li>
       <li><a class="nav-link" onclick="showPage('quotes',this)"><i class="bi bi-file-earmark-text"></i>견적서</a></li>
       <li><a class="nav-link" onclick="showPage('performance',this)"><i class="bi bi-bar-chart-line"></i>목표 vs 실적</a></li>
-      <li><a class="nav-link" onclick="showPage('consumables',this)"><i class="bi bi-capsule"></i>소모품 매출</a></li>
+    </ul>
+    <div class="nav-label mt-3">소모품</div>
+    <ul class="nav flex-column gap-0">
+      <li><a class="nav-link" onclick="showPage('consumables',this)"><i class="bi bi-capsule"></i>매출현황</a></li>
+      <li><a class="nav-link" onclick="showPage('cons-hospitals',this)"><i class="bi bi-building-check"></i>병원별 분석</a></li>
+      <li><a class="nav-link" onclick="showPage('cons-accounts',this)"><i class="bi bi-person-lines-fill"></i>거래처 현황</a></li>
     </ul>
     <div class="nav-label mt-3">관리</div>
     <ul class="nav flex-column gap-0">
@@ -464,6 +469,86 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
 
 </div>
 
+  <!-- 병원별 분석 -->
+  <div id="page-cons-hospitals" class="page">
+    <div class="page-header">
+      <h5><i class="bi bi-building-check me-2"></i>소모품 병원별 분석</h5>
+      <div class="d-flex gap-2">
+        <select id="hosp-year" class="form-select form-select-sm" style="width:auto" onchange="renderConsHospitals()">
+          <option value="total">전체 (2025+2026)</option>
+          <option value="y2025">2025년</option>
+          <option value="y2026">2026년</option>
+        </select>
+      </div>
+    </div>
+    <div class="row g-3 mb-4" id="hosp-kpi"></div>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div class="card p-3">
+          <div class="fw-bold mb-1" style="font-size:14px">병원별 매출 순위 Top 20</div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:14px">클릭하면 상세 내용을 확인할 수 있습니다</div>
+          <div id="hosp-rank-list"></div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card p-3 h-100" id="hosp-detail-card">
+          <div class="fw-bold mb-1" style="font-size:14px" id="hosp-detail-title">병원을 선택하세요</div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:14px" id="hosp-detail-sub">좌측 목록에서 병원을 클릭하면 상세 정보가 표시됩니다</div>
+          <div id="hosp-detail-body">
+            <div class="text-center py-5" style="color:#d1d5db">
+              <i class="bi bi-building" style="font-size:3rem"></i>
+              <div style="font-size:13px;margin-top:12px">병원을 선택해주세요</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 거래처 현황 -->
+  <div id="page-cons-accounts" class="page">
+    <div class="page-header">
+      <h5><i class="bi bi-person-lines-fill me-2"></i>소모품 거래처 현황</h5>
+      <div class="d-flex gap-2 align-items-center">
+        <span style="font-size:12px;color:#9ca3af" id="acct-count"></span>
+      </div>
+    </div>
+    <div class="mb-3 d-flex gap-2">
+      <input type="text" id="acct-search" class="form-control form-control-sm" placeholder="병원명 검색..." oninput="renderConsAccounts()" style="max-width:280px">
+      <select id="acct-sort" class="form-select form-select-sm" style="width:auto" onchange="renderConsAccounts()">
+        <option value="total">전체 매출순</option>
+        <option value="y2026">2026 매출순</option>
+        <option value="y2025">2025 매출순</option>
+        <option value="orders">구매건수순</option>
+      </select>
+      <select id="acct-filter" class="form-select form-select-sm" style="width:auto" onchange="renderConsAccounts()">
+        <option value="all">전체</option>
+        <option value="active26">2026 활성</option>
+        <option value="inactive26">2026 미구매</option>
+        <option value="new26">2026 신규</option>
+      </select>
+    </div>
+    <div class="card p-0">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th style="width:36px">#</th>
+            <th>병원명</th>
+            <th class="text-end">2025 매출</th>
+            <th class="text-end">2026 매출</th>
+            <th class="text-end">전체 누적</th>
+            <th>주요 제품</th>
+            <th class="text-end">구매건수</th>
+            <th class="text-end">증감</th>
+          </tr>
+        </thead>
+        <tbody id="acct-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
 <!-- 저장 토스트 -->
 <div class="saving-toast" id="saving-toast"><i class="bi bi-cloud-upload"></i><span id="saving-msg">저장 중...</span></div>
 
@@ -770,7 +855,7 @@ function showPage(name, el) {
   if(el) el.classList.add('active');
   else { const links = document.querySelectorAll('.nav-link');
     links.forEach(l=>{ if(l.textContent.trim().includes(
-      {dashboard:'대시보드',pipeline:'파이프라인',quotes:'견적서',performance:'목표',customers:'고객사',equipments:'장비',logs:'상담일지',products:'제품',consumables:'소모품'}[name]||''
+      {dashboard:'대시보드',pipeline:'파이프라인',quotes:'견적서',performance:'목표',customers:'고객사',equipments:'장비',logs:'상담일지',products:'제품',consumables:'매출현황','cons-hospitals':'병원별','cons-accounts':'거래처'}[name]||''
     )) l.classList.add('active'); }); }
   if(name==='dashboard') renderDashboard();
   else if(name==='pipeline') renderPipeline();
@@ -781,6 +866,8 @@ function showPage(name, el) {
   else if(name==='logs') renderLogs();
   else if(name==='products') renderProducts();
   else if(name==='consumables') renderConsumables();
+  else if(name==='cons-hospitals') renderConsHospitals();
+  else if(name==='cons-accounts') renderConsAccounts();
 }
 
 // ── 토스트 ──────────────────────────────────────────────────────
@@ -1015,7 +1102,8 @@ const CONS = {
   groups2026:{'Oligio Tip':5052700000,'의료기기':321614582,'A/S소모품':169802275,'BA600':155370000,'Cartridge':110400000,'BA400':69539908,'AG275':23600000,'기타':24349003},
   qtr2025:{'1분기':5380406912,'2분기':4973496434,'3분기':4678401031,'4분기':3671015838},
   qtr2026:{'1분기':3228816332,'2분기':2698559436},
-  updatedAt:'2026.06.12'
+  updatedAt:'2026.06.12',
+  hospitals:{"주식회사 르미":{"total":800000000,"y2025":500000000,"y2026":300000000,"orders":14,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":720000000,"Oligio Tip [E-0.25]":80000000}},"세니아의원":{"total":760500000,"y2025":658200000,"y2026":102300000,"orders":47,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":592500000,"Oligio Tip [E-0.25]":157500000,"A/S소모품":5300000,"의료기기":5200000}},"에이티움(구.제이앤케이프런티어컴퍼니)":{"total":743050000,"y2025":573550000,"y2026":169500000,"orders":75,"topProd":"Oligio Tip [XF-4.0]","prods":{"Oligio Tip [XF-4.0]":326000000,"Oligio Tip [F-4.0]":263750000,"Oligio Tip [XE-0.25]":80000000,"Oligio Tip [E-0.25]":61250000}},"주식회사 진이어스":{"total":605000000,"y2025":515000000,"y2026":90000000,"orders":16,"topProd":"Oligio Tip [XF-4.0]","prods":{"Oligio Tip [XF-4.0]":436000000,"Oligio Tip [F-4.0]":110000000,"Oligio Tip [XE-0.25]":44000000,"Oligio Tip [E-0.25]":15000000}},"사적인아름다움지유의원 서초점":{"total":331920000,"y2025":255420000,"y2026":76500000,"orders":34,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":295000000,"Oligio Tip [E-0.25]":30000000,"A/S소모품":4670000,"의료기기":2250000}},"샤인빔의원 강남점":{"total":308800000,"y2025":279600000,"y2026":29200000,"orders":30,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":210000000,"Oligio Tip [E-0.25]":90000000,"의료기기":8800000}},"아비쥬의원 명동점":{"total":253700000,"y2025":153700000,"y2026":100000000,"orders":16,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":205000000,"Oligio Tip [E-0.25]":45000000,"A/S소모품":2700000,"의료기기":1000000}},"오블리주의원 홍대점":{"total":252000000,"y2025":200750000,"y2026":51250000,"orders":34,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":146250000,"Oligio Tip [E-0.25]":63750000,"Oligio Tip [XF-4.0]":24000000,"Oligio Tip [XE-0.25]":16000000}},"오션의원 강남점":{"total":240000000,"y2025":200000000,"y2026":40000000,"orders":5,"topProd":"Oligio Tip [XF-4.0]","prods":{"Oligio Tip [XF-4.0]":232000000,"Oligio Tip [XE-0.25]":8000000}},"리프트성형외과 대구점":{"total":200000000,"y2025":120000000,"y2026":80000000,"orders":5,"topProd":"Oligio Tip [XF-4.0]","prods":{"Oligio Tip [XF-4.0]":176000000,"Oligio Tip [XE-0.25]":24000000}},"포레스트랩":{"total":192000000,"y2025":108000000,"y2026":84000000,"orders":15,"topProd":"BA600S2","prods":{"BA600S2":116000000,"BA600S1":76000000}},"포르테의원 강남역점":{"total":183700000,"y2025":128300000,"y2026":55400000,"orders":99,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":122500000,"Oligio Tip [E-0.25]":60000000,"의료기기":1200000}},"유앤아이의원 강남점":{"total":176400000,"y2025":176400000,"y2026":0,"orders":12,"topProd":"Oligio Tip [XF-4.0]","prods":{"Oligio Tip [XF-4.0]":144000000,"Oligio Tip [XE-0.25]":28000000,"의료기기":4400000}},"더힐피부과 흑석점":{"total":162500000,"y2025":82500000,"y2026":80000000,"orders":5,"topProd":"Oligio Tip [XF-4.0]","prods":{"Oligio Tip [XF-4.0]":160000000,"Oligio Tip [XE-0.25]":2000000}},"아비쥬의원 강남점":{"total":157000000,"y2025":105200000,"y2026":51800000,"orders":15,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":110000000,"Oligio Tip [E-0.25]":40000000,"의료기기":4600000,"A/S소모품":2400000}},"라클라쎄의원(구.비비라인플렉스의원)":{"total":150600000,"y2025":150400000,"y2026":200000,"orders":6,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":150000000,"의료기기":600000}},"블리비의원 동탄점":{"total":139500000,"y2025":85550000,"y2026":53950000,"orders":37,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":122500000,"Oligio Tip [E-0.25]":16250000,"의료기기":600000}},"블리비의원 창원점":{"total":139000000,"y2025":135500000,"y2026":3500000,"orders":15,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":123750000,"Oligio Tip [E-0.25]":13750000,"의료기기":1400000}},"유앤아이의원 대구점":{"total":137050000,"y2025":97900000,"y2026":39150000,"orders":18,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":126250000,"Oligio Tip [E-0.25]":10000000,"의료기기":800000}},"치유성형외과 신사점":{"total":130800000,"y2025":126850000,"y2026":3950000,"orders":26,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":116250000,"Oligio Tip [E-0.25]":13750000,"의료기기":800000}},"뮤즈의원 강남점":{"total":130200000,"y2025":130200000,"y2026":0,"orders":12,"topProd":"Oligio Tip [XF-4.0]","prods":{"Oligio Tip [XF-4.0]":44000000,"Oligio Tip [XE-0.25]":36000000,"Oligio Tip [F-4.0]":35000000,"Oligio Tip [E-0.25]":15000000}},"올라인클리닉 홍대점":{"total":130000000,"y2025":130000000,"y2026":0,"orders":14,"topProd":"Oligio Tip [XF-4.0]","prods":{"Oligio Tip [XF-4.0]":108000000,"Oligio Tip [XE-0.25]":22000000}},"(주)베스트메디칼":{"total":129600000,"y2025":83950000,"y2026":45650000,"orders":32,"topProd":"BA400RS1","prods":{"BA400RS1":61600000,"BA600S1":50700000,"BA600RS1":10200000,"BA400R":4900000}},"밴스피부과 동탄점":{"total":128250000,"y2025":100600000,"y2026":27650000,"orders":11,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":122500000,"A/S소모품":2650000,"Oligio Tip [E-0.25]":2500000}},"뷰티라운지의원 홍대글로벌점(민성홍원장)":{"total":121000000,"y2025":103300000,"y2026":17700000,"orders":20,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":92500000,"Oligio Tip [E-0.25]":27500000,"의료기기":1000000}},"샤인빔의원 홍대점":{"total":120000000,"y2025":120000000,"y2026":0,"orders":2,"topProd":"Oligio Tip [XF-4.0]","prods":{"Oligio Tip [XF-4.0]":120000000}},"오앤의원 강남점":{"total":118600000,"y2025":73200000,"y2026":45400000,"orders":33,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":100000000,"Cartridge":15200000,"의료기기":3400000}},"베러미의원 강남점":{"total":117700000,"y2025":66450000,"y2026":51250000,"orders":48,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":93750000,"Oligio Tip [E-0.25]":23750000,"의료기기":200000}},"리베리의원 명동점":{"total":114350000,"y2025":23950000,"y2026":90400000,"orders":32,"topProd":"Oligio Tip [E-0.25]","prods":{"Oligio Tip [E-0.25]":77500000,"Oligio Tip [F-4.0]":36250000,"의료기기":600000}},"스토리피부과 강남점":{"total":114000000,"y2025":84000000,"y2026":30000000,"orders":12,"topProd":"Oligio Tip [XF-4.0]","prods":{"Oligio Tip [XF-4.0]":114000000}},"리엔장피부과 목동점":{"total":112500000,"y2025":77500000,"y2026":35000000,"orders":46,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":112500000}},"(주)원메디코":{"total":104720000,"y2025":88200000,"y2026":16520000,"orders":41,"topProd":"Cartridge","prods":{"Cartridge":76700000,"의료기기":28020000}},"블리비의원 목동점":{"total":104150000,"y2025":103750000,"y2026":400000,"orders":10,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":97500000,"A/S소모품":3550000,"Oligio Tip [E-0.25]":2500000}},"아비쥬의원 인천구월점(강우철)":{"total":101825000,"y2025":101250000,"y2026":575000,"orders":12,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":95000000,"Oligio Tip [E-0.25]":5000000,"A/S소모품":1025000}},"나인피부과 연신내점(최현석)":{"total":100800000,"y2025":75600000,"y2026":25200000,"orders":8,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":100000000,"의료기기":800000}},"쁨클리닉 하남미사점":{"total":100800000,"y2025":75600000,"y2026":25200000,"orders":10,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":90000000,"Oligio Tip [E-0.25]":10000000,"의료기기":800000}},"나인피부과 강남점":{"total":100600000,"y2025":75600000,"y2026":25000000,"orders":10,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":70000000,"Oligio Tip [E-0.25]":30000000,"의료기기":600000}},"바로그의원 부산하단점(오현)":{"total":100600000,"y2025":72900000,"y2026":27700000,"orders":24,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":91250000,"Oligio Tip [E-0.25]":8750000,"의료기기":600000}},"논현엘여성의원":{"total":100400001,"y2025":100400001,"y2026":0,"orders":6,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":100000001,"의료기기":400000}},"닥터쁘띠의원 강남점":{"total":100000000,"y2025":90000000,"y2026":10000000,"orders":7,"topProd":"Oligio Tip [XF-4.0]","prods":{"Oligio Tip [XF-4.0]":100000000}},"로바에의원 홍대점":{"total":97700000,"y2025":44800000,"y2026":52900000,"orders":40,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":81250000,"Oligio Tip [E-0.25]":15750000,"의료기기":700000}},"반니성형외과 강남역점":{"total":97450000,"y2025":47450000,"y2026":50000000,"orders":17,"topProd":"Oligio Tip [XF-4.0]","prods":{"Oligio Tip [XF-4.0]":72000000,"Oligio Tip [F-4.0]":20000000,"Oligio Tip [XE-0.25]":4000000}},"리버스의원 강남점":{"total":95200000,"y2025":45000000,"y2026":50200000,"orders":20,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":57500000,"Oligio Tip [E-0.25]":37500000,"의료기기":200000}},"프리아의원 서초점":{"total":99450000,"y2025":93500000,"y2026":5950000,"orders":16,"topProd":"Oligio Tip [F-4.0]","prods":{"Oligio Tip [F-4.0]":65000000,"Oligio Tip [E-0.25]":30000000,"의료기기":3200000,"A/S소모품":1250000}}}
 };
 let consMonthlyChart=null, consDonutChart=null;
 const CONS_PW = 'wontech2026'; // ← 비밀번호 변경 시 이 값을 수정하세요
@@ -1127,6 +1215,28 @@ function consParseExcel(input) {
       const maxDate = allDates.length ? new Date(Math.max(...allDates)) : new Date();
       const updatedAt = `${maxDate.getFullYear()}.${String(maxDate.getMonth()+1).padStart(2,'0')}.${String(maxDate.getDate()).padStart(2,'0')}`;
 
+      // 병원별 집계
+      setMsg('병원별 데이터 집계 중...');
+      const allRows = [...r25.map(r=>({...r,_yr:2025})), ...r26.map(r=>({...r,_yr:2026}))];
+      const hospMap = {};
+      allRows.forEach(r => {
+        const nm = r['거래처명']; if(!nm) return;
+        const amt2 = Number(r[' 금액 ']||r['금액']||0); if(!amt2) return;
+        const prod = r['구분#4']||'';
+        if(!hospMap[nm]) hospMap[nm]={total:0,y2025:0,y2026:0,orders:0,prods:{}};
+        hospMap[nm].total += amt2;
+        if(r._yr===2025) hospMap[nm].y2025 += amt2;
+        else hospMap[nm].y2026 += amt2;
+        hospMap[nm].orders++;
+        if(prod) hospMap[nm].prods[prod] = (hospMap[nm].prods[prod]||0)+amt2;
+      });
+      // 상위 4개 제품만 유지, topProd 추가
+      Object.values(hospMap).forEach(h => {
+        const sorted = Object.entries(h.prods).sort((a,b)=>b[1]-a[1]);
+        h.topProd = sorted[0]?.[0]||'';
+        h.prods = Object.fromEntries(sorted.slice(0,4));
+      });
+
       // CONS 업데이트
       CONS.monthly2025 = a25.monthly;
       CONS.monthly2026 = a26.monthly;
@@ -1135,6 +1245,7 @@ function consParseExcel(input) {
       CONS.groups2026 = groups26final;
       CONS.qtr2025 = a25.qtr;
       CONS.qtr2026 = a26.qtr;
+      CONS.hospitals = hospMap;
       CONS.updatedAt = updatedAt;
 
       renderConsumables();
@@ -1244,6 +1355,147 @@ function renderConsumables() {
     <td class="text-end" style="color:${totalChg>=0?'#16a34a':'#dc2626'}">${fmtChg(totalChg)}</td>
   </tr>`);
   document.getElementById('cons-qtr').innerHTML = rows.join('');
+}
+
+// ── 소모품 병원별 분석 ────────────────────────────────────────────────
+function renderConsHospitals() {
+  const fmtW = v => v>=1e8?(v/1e8).toFixed(1)+'억원':v>=1e4?Math.round(v/1e4).toLocaleString()+'만원':v.toLocaleString()+'원';
+  const fmtChg = p => (p>=0?'+':'')+p.toFixed(1)+'%';
+  const yr = document.getElementById('hosp-year').value;
+  const key = yr==='y2025'?'y2025':yr==='y2026'?'y2026':'total';
+
+  const hlist = Object.entries(CONS.hospitals)
+    .filter(([,h]) => h[key] > 0)
+    .sort((a,b) => b[1][key] - a[1][key]);
+
+  const total = hlist.reduce((s,[,h])=>s+h[key],0);
+  const active26 = Object.values(CONS.hospitals).filter(h=>h.y2026>0).length;
+  const new26 = Object.values(CONS.hospitals).filter(h=>h.y2026>0&&h.y2025<=0).length;
+
+  // KPI
+  document.getElementById('hosp-kpi').innerHTML = [
+    {icon:'bi-building',color:'#2563eb',label:'거래 병원 수',value:hlist.length+'개',sub:`2026 활성 ${active26}개`},
+    {icon:'bi-trophy',color:'#f59e0b',label:'Top 1 병원',value:hlist[0]?hlist[0][0].substring(0,10):'없음',sub:hlist[0]?fmtW(hlist[0][1][key]):''},
+    {icon:'bi-star',color:'#16a34a',label:'2026 신규 거래처',value:new26+'개',sub:'2025 거래 없던 신규'},
+    {icon:'bi-cash-stack',color:'#7c3aed',label:'병원 평균 매출',value:hlist.length?fmtW(Math.round(total/hlist.length)):'0',sub:'거래 병원 기준'}
+  ].map(k=>`<div class="col-6 col-lg-3"><div class="card p-3" style="border-top:3px solid ${k.color}">
+    <div style="font-size:12px;font-weight:600;color:#6b7280;margin-bottom:8px"><i class="bi ${k.icon} me-1" style="color:${k.color}"></i>${k.label}</div>
+    <div style="font-size:1.4rem;font-weight:800;line-height:1.1;margin-bottom:4px">${k.value}</div>
+    <div style="font-size:11px;color:#9ca3af">${k.sub}</div>
+  </div></div>`).join('');
+
+  // 순위 리스트
+  const maxV = hlist[0]?.[1]?.[key] || 1;
+  document.getElementById('hosp-rank-list').innerHTML = hlist.slice(0,20).map(([name,h],i)=>{
+    const v = h[key];
+    const chg = h.y2025>0 ? (h.y2026/h.y2025-1)*100 : null;
+    const isNew = h.y2025<=0 && h.y2026>0;
+    const rankClr = ['#f59e0b','#9ca3af','#cd7f32'];
+    return`<div class="d-flex align-items-center gap-2 py-2 px-2 rounded-2 hosp-rank-item" style="cursor:pointer;border-bottom:1px solid #f3f4f6;transition:background .12s" onclick="showHospDetail('${name.replace(/'/g,"\\'")}')">
+      <div style="width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;background:${i<3?rankClr[i]+'22':'#f3f4f6'};color:${i<3?rankClr[i]:'#9ca3af'}">${i+1}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}${isNew?'<span style="font-size:9px;background:#dcfce7;color:#16a34a;border-radius:4px;padding:1px 5px;margin-left:5px;font-weight:700">NEW</span>':''}</div>
+        <div style="background:#f3f4f6;border-radius:3px;height:5px;margin-top:4px"><div style="width:${(v/maxV*100).toFixed(1)}%;height:100%;border-radius:3px;background:${i<3?'#ff4500':'#2563eb'}"></div></div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:12px;font-weight:700">${fmtW(v)}</div>
+        ${yr==='total'&&chg!==null?`<div style="font-size:10px;font-weight:700;color:${chg>=0?'#16a34a':'#dc2626'}">${fmtChg(chg)}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showHospDetail(name) {
+  const h = CONS.hospitals[name];
+  if(!h) return;
+  const fmtW = v => v>=1e8?(v/1e8).toFixed(1)+'억원':v>=1e4?Math.round(v/1e4).toLocaleString()+'만원':v.toLocaleString()+'원';
+  const fmtChg = p => (p>=0?'+':'')+p.toFixed(1)+'%';
+  const chg = h.y2025>0 ? (h.y2026/h.y2025-1)*100 : null;
+  const maxProd = Math.max(...Object.values(h.prods));
+  const PCOL = ['#ff4500','#2563eb','#16a34a','#f59e0b','#7c3aed'];
+
+  document.getElementById('hosp-detail-title').textContent = name;
+  document.getElementById('hosp-detail-sub').textContent = `누적 ${fmtW(h.total)} · 총 ${h.orders}건 구매`;
+  document.getElementById('hosp-detail-body').innerHTML = `
+    <div class="row g-2 mb-3">
+      <div class="col-4"><div style="background:#eff6ff;border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:10px;color:#6b7280;margin-bottom:4px">2025년</div>
+        <div style="font-size:1.1rem;font-weight:800;color:#2563eb">${h.y2025>0?fmtW(h.y2025):'없음'}</div>
+      </div></div>
+      <div class="col-4"><div style="background:#fff7ed;border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:10px;color:#6b7280;margin-bottom:4px">2026년</div>
+        <div style="font-size:1.1rem;font-weight:800;color:#ff4500">${h.y2026>0?fmtW(h.y2026):'없음'}</div>
+      </div></div>
+      <div class="col-4"><div style="background:${chg===null?'#f9fafb':chg>=0?'#f0fdf4':'#fef2f2'};border-radius:10px;padding:12px;text-align:center">
+        <div style="font-size:10px;color:#6b7280;margin-bottom:4px">전년 대비</div>
+        <div style="font-size:1.1rem;font-weight:800;color:${chg===null?'#9ca3af':chg>=0?'#16a34a':'#dc2626'}">${chg!==null?fmtChg(chg):'-'}</div>
+      </div></div>
+    </div>
+    <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:10px">구매 제품 내역</div>
+    ${Object.entries(h.prods).map(([prod,amt],i)=>`
+      <div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+          <span style="font-weight:600;color:${PCOL[i]||'#6b7280'}">${prod}</span>
+          <span style="font-weight:700">${fmtW(amt)}</span>
+        </div>
+        <div style="background:#f3f4f6;border-radius:4px;height:7px"><div style="width:${(amt/maxProd*100).toFixed(1)}%;height:100%;border-radius:4px;background:${PCOL[i]||'#6b7280'}"></div></div>
+      </div>`).join('')}
+    <div style="margin-top:16px;padding-top:12px;border-top:1px solid #f3f4f6">
+      <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:6px">주력 제품</div>
+      <span style="background:#fff7ed;color:#ff4500;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600">${h.topProd}</span>
+    </div>`;
+}
+
+// ── 소모품 거래처 현황 ────────────────────────────────────────────────
+function renderConsAccounts() {
+  const fmtW = v => {
+    if(!v||v<=0) return '<span style="color:#d1d5db">-</span>';
+    return v>=1e8?(v/1e8).toFixed(1)+'억':v>=1e4?Math.round(v/1e4).toLocaleString()+'만':''+v.toLocaleString();
+  };
+  const fmtChg = p => {
+    const cls = p>=0?'color:#16a34a':'color:#dc2626';
+    return `<span style="font-size:11px;font-weight:700;${cls}">${p>=0?'+':''}${p.toFixed(0)}%</span>`;
+  };
+
+  const q = (document.getElementById('acct-search')?.value||'').trim().toLowerCase();
+  const sortKey = document.getElementById('acct-sort')?.value||'total';
+  const filter = document.getElementById('acct-filter')?.value||'all';
+
+  let list = Object.entries(CONS.hospitals);
+
+  // 필터
+  if(filter==='active26') list = list.filter(([,h])=>h.y2026>0);
+  else if(filter==='inactive26') list = list.filter(([,h])=>h.y2026<=0);
+  else if(filter==='new26') list = list.filter(([,h])=>h.y2026>0&&h.y2025<=0);
+
+  // 검색
+  if(q) list = list.filter(([name])=>name.toLowerCase().includes(q));
+
+  // 정렬
+  list.sort((a,b) => b[1][sortKey] - a[1][sortKey]);
+
+  document.getElementById('acct-count').textContent = `총 ${list.length}개 거래처`;
+
+  const tbody = document.getElementById('acct-table');
+  if(!list.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">검색 결과가 없습니다</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = list.map(([name,h],i)=>{
+    const chg = h.y2025>0 && h.y2026>0 ? (h.y2026/h.y2025-1)*100 : null;
+    const isNew = h.y2025<=0 && h.y2026>0;
+    return`<tr style="cursor:pointer" onclick="showPage('cons-hospitals');setTimeout(()=>{document.getElementById('hosp-year').value='total';renderConsHospitals();showHospDetail('${name.replace(/'/g,"\\'").replace(/\n/g,'')}')},100)">
+      <td style="font-size:12px;color:#9ca3af">${i+1}</td>
+      <td style="font-size:13px;font-weight:600">${name}${isNew?'<span style="font-size:9px;background:#dcfce7;color:#16a34a;border-radius:4px;padding:1px 5px;margin-left:5px">NEW</span>':''}</td>
+      <td class="text-end" style="font-size:12px">${fmtW(h.y2025)}</td>
+      <td class="text-end" style="font-size:12px;font-weight:${h.y2026>0?'700':'400'};color:${h.y2026>0?'#ff4500':'inherit'}">${fmtW(h.y2026)}</td>
+      <td class="text-end" style="font-size:12px;font-weight:700">${fmtW(h.total)}</td>
+      <td style="font-size:11px;color:#6b7280;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h.topProd}</td>
+      <td class="text-end" style="font-size:12px">${h.orders}</td>
+      <td class="text-end">${chg!==null?fmtChg(chg):isNew?'<span style="font-size:10px;color:#16a34a;font-weight:700">신규</span>':'<span style="color:#d1d5db;font-size:11px">-</span>'}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ── 병원명 자동완성 ──────────────────────────────────────────────────
