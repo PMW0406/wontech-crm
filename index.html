@@ -372,14 +372,43 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
     <div class="page-header">
       <h5><i class="bi bi-capsule me-2"></i>국내 소모품 매출현황</h5>
       <div class="d-flex gap-2 align-items-center">
-        <select id="cons-year" class="form-select form-select-sm" style="width:auto" onchange="renderConsumables()">
-          <option value="both">2025 + 2026</option>
-          <option value="2025">2025년</option>
-          <option value="2026">2026년</option>
-        </select>
         <small class="text-muted" id="cons-updated"></small>
+        <button class="btn btn-outline-secondary btn-sm" id="cons-lock-btn" onclick="consUnlock()" title="데이터 업로드">
+          <i class="bi bi-lock-fill me-1"></i>업로드
+        </button>
+        <div id="cons-upload-area" style="display:none">
+          <label class="btn btn-primary btn-sm mb-0" style="cursor:pointer">
+            <i class="bi bi-file-earmark-excel me-1"></i>엑셀 업로드
+            <input type="file" id="cons-file-input" accept=".xlsx,.xls" style="display:none" onchange="consParseExcel(this)">
+          </label>
+        </div>
       </div>
     </div>
+    <!-- 업로드 비밀번호 모달 -->
+    <div class="modal fade" id="consPasswordModal" tabindex="-1"><div class="modal-dialog modal-sm"><div class="modal-content">
+      <div class="modal-header border-0 pb-0"><h6 class="modal-title"><i class="bi bi-shield-lock me-2 text-primary"></i>업로드 권한 확인</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <p style="font-size:13px;color:#6b7280;margin-bottom:12px">재무 데이터 업로드는 담당자만 가능합니다.</p>
+        <input type="password" id="cons-pw-input" class="form-control form-control-sm" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')consCheckPw()">
+        <div id="cons-pw-error" style="font-size:12px;color:#dc2626;margin-top:6px;display:none">비밀번호가 틀렸습니다.</div>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">취소</button>
+        <button class="btn btn-primary btn-sm" onclick="consCheckPw()">확인</button>
+      </div>
+    </div></div></div>
+    <!-- 업로드 진행 모달 -->
+    <div class="modal fade" id="consUploadModal" tabindex="-1" data-bs-backdrop="static"><div class="modal-dialog modal-sm"><div class="modal-content">
+      <div class="modal-body text-center py-4">
+        <div id="cons-upload-spinner" class="mb-3"><div class="spinner-border text-primary" style="width:2rem;height:2rem"></div></div>
+        <div id="cons-upload-icon" style="display:none;font-size:2.5rem;margin-bottom:8px">✅</div>
+        <div id="cons-upload-msg" style="font-size:14px;font-weight:600">엑셀 파싱 중...</div>
+        <div id="cons-upload-sub" style="font-size:12px;color:#6b7280;margin-top:4px"></div>
+      </div>
+      <div class="modal-footer border-0 pt-0 justify-content-center" id="cons-upload-footer" style="display:none">
+        <button class="btn btn-primary btn-sm" data-bs-dismiss="modal">확인</button>
+      </div>
+    </div></div></div>
 
     <!-- KPI -->
     <div class="row g-3 mb-4" id="cons-kpi"></div>
@@ -989,6 +1018,137 @@ const CONS = {
   updatedAt:'2026.06.12'
 };
 let consMonthlyChart=null, consDonutChart=null;
+const CONS_PW = 'wontech2026'; // ← 비밀번호 변경 시 이 값을 수정하세요
+
+function consUnlock() {
+  const already = sessionStorage.getItem('cons_unlocked');
+  if (already === '1') {
+    document.getElementById('cons-upload-area').style.display = 'flex';
+    document.getElementById('cons-lock-btn').style.display = 'none';
+    return;
+  }
+  document.getElementById('cons-pw-input').value = '';
+  document.getElementById('cons-pw-error').style.display = 'none';
+  new bootstrap.Modal(document.getElementById('consPasswordModal')).show();
+  setTimeout(() => document.getElementById('cons-pw-input').focus(), 400);
+}
+
+function consCheckPw() {
+  const val = document.getElementById('cons-pw-input').value;
+  if (val === CONS_PW) {
+    sessionStorage.setItem('cons_unlocked', '1');
+    bootstrap.Modal.getInstance(document.getElementById('consPasswordModal')).hide();
+    document.getElementById('cons-upload-area').style.display = 'flex';
+    document.getElementById('cons-lock-btn').style.display = 'none';
+  } else {
+    document.getElementById('cons-pw-error').style.display = 'block';
+    document.getElementById('cons-pw-input').select();
+  }
+}
+
+function consParseExcel(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+
+  const uploadModal = new bootstrap.Modal(document.getElementById('consUploadModal'));
+  const setMsg = (msg, sub='') => {
+    document.getElementById('cons-upload-msg').textContent = msg;
+    document.getElementById('cons-upload-sub').textContent = sub;
+  };
+  const setDone = (msg, sub='') => {
+    document.getElementById('cons-upload-spinner').style.display = 'none';
+    document.getElementById('cons-upload-icon').style.display = 'block';
+    document.getElementById('cons-upload-msg').textContent = msg;
+    document.getElementById('cons-upload-sub').textContent = sub;
+    document.getElementById('cons-upload-footer').style.display = 'flex';
+  };
+  // 모달 초기화
+  document.getElementById('cons-upload-spinner').style.display = 'block';
+  document.getElementById('cons-upload-icon').style.display = 'none';
+  document.getElementById('cons-upload-footer').style.display = 'none';
+  uploadModal.show();
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      setMsg('엑셀 파싱 중...', '잠시만 기다려 주세요');
+      const wb = XLSX.read(e.target.result, {type:'array', cellDates:true});
+
+      const sheet25name = wb.SheetNames.find(n => n.includes('2025'));
+      const sheet26name = wb.SheetNames.find(n => n.includes('2026'));
+      if (!sheet25name || !sheet26name) throw new Error('2025년/2026년 시트를 찾을 수 없습니다.');
+
+      setMsg('데이터 집계 중...', '소모품 국내 필터링');
+
+      function parseSheet(sheetName) {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {defval:null});
+        return rows.filter(r => r['구분#2'] === '소모품' && r['국내외'] === '국내');
+      }
+
+      const r25 = parseSheet(sheet25name);
+      const r26 = parseSheet(sheet26name);
+
+      function monthNum(val) {
+        if (!val) return null;
+        const s = String(val);
+        const m = s.match(/(\d+)/);
+        return m ? parseInt(m[1]) : null;
+      }
+
+      function aggregate(rows) {
+        const monthly = {}, products = {}, groups = {}, qtr = {};
+        rows.forEach(r => {
+          const amt = Number(r[' 금액 '] || r['금액'] || 0);
+          if (!amt) return;
+          const mo = monthNum(r['월']);
+          if (mo) monthly[mo] = (monthly[mo]||0) + amt;
+          const prod = r['구분#4']; if (prod) products[prod] = (products[prod]||0) + amt;
+          const grp  = r['구분#1']; if (grp)  groups[grp]   = (groups[grp]||0)   + amt;
+          const q    = r['분기'];   if (q)    qtr[q]        = (qtr[q]||0)        + amt;
+        });
+        return {monthly, products, groups, qtr};
+      }
+
+      const a25 = aggregate(r25);
+      const a26 = aggregate(r26);
+
+      // Top10 제품
+      const top = (obj) => Object.fromEntries(Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,10));
+
+      // 기타 묶기
+      const grp26entries = Object.entries(a26.groups).sort((a,b)=>b[1]-a[1]);
+      const grp26top = grp26entries.slice(0,7);
+      const grp26etc = grp26entries.slice(7).reduce((s,[,v])=>s+v, 0);
+      const groups26final = Object.fromEntries([...grp26top, ...(grp26etc>0?[['기타',grp26etc]]:[])]);
+
+      // 최신 날짜 구하기
+      const allDates = r26.map(r=>r['날짜']).filter(Boolean).map(d=>new Date(d)).filter(d=>!isNaN(d));
+      const maxDate = allDates.length ? new Date(Math.max(...allDates)) : new Date();
+      const updatedAt = `${maxDate.getFullYear()}.${String(maxDate.getMonth()+1).padStart(2,'0')}.${String(maxDate.getDate()).padStart(2,'0')}`;
+
+      // CONS 업데이트
+      CONS.monthly2025 = a25.monthly;
+      CONS.monthly2026 = a26.monthly;
+      CONS.products2025 = top(a25.products);
+      CONS.products2026 = top(a26.products);
+      CONS.groups2026 = groups26final;
+      CONS.qtr2025 = a25.qtr;
+      CONS.qtr2026 = a26.qtr;
+      CONS.updatedAt = updatedAt;
+
+      renderConsumables();
+      setDone('업로드 완료!', `2025년 ${r25.length}건 · 2026년 ${r26.length}건 반영`);
+    } catch(err) {
+      document.getElementById('cons-upload-icon').textContent = '❌';
+      document.getElementById('cons-upload-icon').style.display = 'block';
+      document.getElementById('cons-upload-spinner').style.display = 'none';
+      document.getElementById('cons-upload-footer').style.display = 'flex';
+      setMsg('오류 발생', err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
 
 function renderConsumables() {
   document.getElementById('cons-updated').textContent = `기준일 ${CONS.updatedAt} · 국내 소모품`;
