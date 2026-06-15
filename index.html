@@ -81,6 +81,13 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
 .deal-card.dragging{opacity:.4;transform:rotate(2deg)}
 /* 견적서 템플릿 */
 .tmpl-bar{display:flex;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid #e5e7eb;margin-bottom:12px;flex-wrap:wrap}
+/* 병원명 자동완성 */
+.ac-wrap{position:relative}
+.ac-dropdown{position:absolute;top:calc(100% + 2px);left:0;right:0;background:#fff;border:1px solid #d1d5db;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:3000;max-height:220px;overflow-y:auto;display:none}
+.ac-dropdown.open{display:block}
+.ac-item{padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #f3f4f6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ac-item:last-child{border-bottom:none}
+.ac-item:hover,.ac-item.active{background:#eff6ff;color:#2563eb}
 @media(max-width:768px){.sidebar{width:100%;min-height:auto;position:relative}.main{margin-left:0;padding:16px}}
 </style>
 </head>
@@ -335,7 +342,7 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
   <div class="modal-header"><h5 class="modal-title">딜 정보</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
   <div class="modal-body"><input type="hidden" id="p-id">
     <div class="row g-2">
-      <div class="col-12"><label class="form-label">병원명 *</label><input type="text" id="p-cust" class="form-control form-control-sm"></div>
+      <div class="col-12"><label class="form-label">병원명 *</label><div class="ac-wrap"><input type="text" id="p-cust" class="form-control form-control-sm" oninput="acInput(this,'p-cust')" onkeydown="acKey(event,'p-cust')" autocomplete="off"><div class="ac-dropdown" id="ac-p-cust"></div></div></div>
       <div class="col-12"><label class="form-label">제품/모델 *</label><input type="text" id="p-model" class="form-control form-control-sm"></div>
       <div class="col-6"><label class="form-label">예상금액 (원)</label><input type="number" id="p-amount" class="form-control form-control-sm"></div>
       <div class="col-6"><label class="form-label">단계</label><select id="p-stage" class="form-select form-select-sm"><option>리드</option><option>상담중</option><option>견적발송</option><option>협의중</option><option>계약완료</option></select></div>
@@ -357,7 +364,7 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
   <div class="modal-header"><h5 class="modal-title">견적서 작성</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
   <div class="modal-body">
     <div class="row g-2 mb-3">
-      <div class="col-md-4"><label class="form-label">병원명 *</label><input type="text" id="q-cust" class="form-control form-control-sm"></div>
+      <div class="col-md-4"><label class="form-label">병원명 *</label><div class="ac-wrap"><input type="text" id="q-cust" class="form-control form-control-sm" oninput="acInput(this,'q-cust')" onkeydown="acKey(event,'q-cust')" autocomplete="off"><div class="ac-dropdown" id="ac-q-cust"></div></div></div>
       <div class="col-md-2"><label class="form-label">견적일</label><input type="date" id="q-date" class="form-control form-control-sm"></div>
       <div class="col-md-2"><label class="form-label">유효기간</label><input type="date" id="q-valid" class="form-control form-control-sm"></div>
       <div class="col-md-2"><label class="form-label">담당영업사원</label><input type="text" id="q-sales" class="form-control form-control-sm"></div>
@@ -437,7 +444,7 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
 <div class="modal fade" id="equipModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
   <div class="modal-header"><h5 class="modal-title" id="equip-modal-title">장비 추가</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
   <div class="modal-body"><input type="hidden" id="e-orig-serial"><div class="row g-2">
-    <div class="col-6"><label class="form-label">병원명 *</label><input type="text" id="e-custName" class="form-control form-control-sm"></div>
+    <div class="col-6"><label class="form-label">병원명 *</label><div class="ac-wrap"><input type="text" id="e-custName" class="form-control form-control-sm" oninput="acInput(this,'e-custName')" onkeydown="acKey(event,'e-custName')" autocomplete="off"><div class="ac-dropdown" id="ac-e-custName"></div></div></div>
     <div class="col-6"><label class="form-label">모델명 *</label><input type="text" id="e-model" class="form-control form-control-sm"></div>
     <div class="col-6"><label class="form-label">시리얼번호</label><input type="text" id="e-serial" class="form-control form-control-sm"></div>
     <div class="col-6"><label class="form-label">납품일</label><input type="date" id="e-deliv" class="form-control form-control-sm"></div>
@@ -459,7 +466,7 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
   <div class="modal-header"><h5 class="modal-title">상담일지</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
   <div class="modal-body"><input type="hidden" id="l-id"><div class="row g-2">
     <div class="col-4"><label class="form-label">상담일 *</label><input type="date" id="l-date" class="form-control form-control-sm"></div>
-    <div class="col-4"><label class="form-label">병원명 *</label><input type="text" id="l-custName" class="form-control form-control-sm"></div>
+    <div class="col-4"><label class="form-label">병원명 *</label><div class="ac-wrap"><input type="text" id="l-custName" class="form-control form-control-sm" oninput="acInput(this,'l-custName')" onkeydown="acKey(event,'l-custName')" autocomplete="off"><div class="ac-dropdown" id="ac-l-custName"></div></div></div>
     <div class="col-4"><label class="form-label">상담유형</label><select id="l-type" class="form-select form-select-sm"><option>방문</option><option>전화</option><option>이메일</option><option>화상</option></select></div>
     <div class="col-4"><label class="form-label">관심제품</label><input type="text" id="l-product" class="form-control form-control-sm"></div>
     <div class="col-4"><label class="form-label">담당영업사원</label><input type="text" id="l-sales" class="form-control form-control-sm"></div>
@@ -753,6 +760,49 @@ function renderActionBoard() {
         </div>`).join('')}
     </div>`).join('');
 }
+
+// ── 병원명 자동완성 ──────────────────────────────────────────────────
+const _acIdx = {};
+function acGetNames() {
+  const fromCust = DB.d.customers.map(c => c.name).filter(Boolean);
+  const fromEquip = DB.d.equipments.map(e => e.custName).filter(Boolean);
+  const fromPipe  = DB.d.pipeline.map(d => d.custName).filter(Boolean);
+  const fromLog   = DB.d.logs.map(l => l.custName).filter(Boolean);
+  return [...new Set([...fromCust, ...fromEquip, ...fromPipe, ...fromLog])].sort((a,b)=>a.localeCompare(b,'ko'));
+}
+function acInput(inp, id) {
+  const q = inp.value.trim();
+  const dd = document.getElementById('ac-' + id);
+  if (!q) { dd.classList.remove('open'); return; }
+  const matches = acGetNames().filter(n => n.includes(q)).slice(0, 10);
+  if (!matches.length) { dd.classList.remove('open'); return; }
+  _acIdx[id] = -1;
+  dd.innerHTML = matches.map((n,i) =>
+    `<div class="ac-item" onmousedown="acPick(event,'${id}','${n.replace(/'/g,"\\'")}')">
+      ${n.replace(q, `<strong>${q}</strong>`)}
+    </div>`).join('');
+  dd.classList.add('open');
+}
+function acPick(e, id, name) {
+  e.preventDefault();
+  document.getElementById(id).value = name;
+  document.getElementById('ac-' + id).classList.remove('open');
+}
+function acKey(e, id) {
+  const dd = document.getElementById('ac-' + id);
+  const items = dd.querySelectorAll('.ac-item');
+  if (!dd.classList.contains('open') || !items.length) return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); _acIdx[id] = Math.min((_acIdx[id]||0)+1, items.length-1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); _acIdx[id] = Math.max((_acIdx[id]||0)-1, 0); }
+  else if (e.key === 'Enter' && _acIdx[id] >= 0) { e.preventDefault(); items[_acIdx[id]].dispatchEvent(new MouseEvent('mousedown')); return; }
+  else if (e.key === 'Escape') { dd.classList.remove('open'); return; }
+  items.forEach((el,i) => el.classList.toggle('active', i===(_acIdx[id]||0)));
+}
+document.addEventListener('click', e => {
+  document.querySelectorAll('.ac-dropdown.open').forEach(dd => {
+    if (!dd.parentElement.contains(e.target)) dd.classList.remove('open');
+  });
+});
 
 // ── 드래그앤드롭 ─────────────────────────────────────────────────────
 let _dragId = null;
