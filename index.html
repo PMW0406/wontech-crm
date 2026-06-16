@@ -1524,27 +1524,31 @@ function renderConsumables() {
   const total2025ytd = YTD.reduce((s,m)=>s+(CONS.monthly2025[m]||0),0);
   const yoy = total2025ytd>0?(total2026ytd/total2025ytd-1)*100:0;
 
-  const OLIG = [
-    {key:'Oligio Tip [F-4.0]',  label:'F-4.0',  grp:'Oligio',      col:'#2563eb'},
-    {key:'Oligio Tip [E-0.25]', label:'E-0.25',  grp:'Oligio',      col:'#60a5fa'},
-    {key:'Oligio Tip [XF-4.0]', label:'XF-4.0', grp:'Oligio X/XM', col:'#7c3aed'},
-    {key:'Oligio Tip [XE-0.25]',label:'XE-0.25', grp:'Oligio X/XM', col:'#a78bfa'},
-  ];
-  const oligTotal26 = OLIG.reduce((s,p)=>s+(CONS.products2026[p.key]||0),0);
-  const cartV26 = CONS.groups2026['Cartridge']||0;
-  const cartV25 = Object.entries(CONS.products2025).filter(([k])=>k.toLowerCase().startsWith('cartridge')).reduce((s,[,v])=>s+v,0);
+  // 2026에 데이터가 있는 월만 YTD 기준으로 사용 (동기 비교 일관성 확보)
+  const ytdMs = Object.keys(CONS.monthly2026||{}).map(Number).filter(m=>m>=1&&m<=12).sort((a,b)=>a-b);
+  const ytdLabel = ytdMs.length ? `1–${ytdMs[ytdMs.length-1]}월 기준` : 'YTD';
+  const oMo25 = CONS.oligioMo2025||{}, oMo26 = CONS.oligioMo2026||{};
 
-  const oligYtd26=YTD.reduce((s,m)=>s+(CONS.monthly2026[m]||0),0);
-  const oligYtd25=YTD.reduce((s,m)=>s+(CONS.monthly2025[m]||0),0);
-  const oligF26=(CONS.products2026['Oligio Tip [F-4.0]']||0)+(CONS.products2026['Oligio Tip [E-0.25]']||0);
-  const oligF25=(CONS.products2025['Oligio Tip [F-4.0]']||0)+(CONS.products2025['Oligio Tip [E-0.25]']||0);
-  const oligX26=(CONS.products2026['Oligio Tip [XF-4.0]']||0)+(CONS.products2026['Oligio Tip [XE-0.25]']||0);
-  const oligX25=(CONS.products2025['Oligio Tip [XF-4.0]']||0)+(CONS.products2025['Oligio Tip [XE-0.25]']||0);
+  // oligioMo 그룹별 YTD 합계 (동기)
+  const oligFe26 = ytdMs.reduce((s,m)=>s+((oMo26['Oligio']||{})[m]||0),0);
+  const oligFe25 = ytdMs.reduce((s,m)=>s+((oMo25['Oligio']||{})[m]||0),0);
+  const oligXm26 = ytdMs.reduce((s,m)=>s+((oMo26['Oligio X/XM']||{})[m]||0),0);
+  const oligXm25 = ytdMs.reduce((s,m)=>s+((oMo25['Oligio X/XM']||{})[m]||0),0);
+  const oligTotal26 = oligFe26 + oligXm26;
+  const oligTotal25 = oligFe25 + oligXm25;
+
+  // Cartridge — monthly 데이터 없으므로 products 기준 비율로 추정
+  const cartV26 = CONS.groups2026['Cartridge']||0;
+  const cartV25full = Object.entries(CONS.products2025).filter(([k])=>k.toLowerCase().startsWith('cartridge')).reduce((s,[,v])=>s+v,0);
+  const totFull25 = Object.values(CONS.monthly2025||{}).reduce((s,v)=>s+v,0);
+  const totYtd25  = ytdMs.reduce((s,m)=>s+(CONS.monthly2025[m]||0),0);
+  const cartV25   = totFull25>0 ? Math.round(cartV25full * totYtd25 / totFull25) : 0;
+
   const kpiData = [
-    {color:'#ff4500',icon:'bi-star-fill',      label:'Oligio Tip 전체',      value:fmtB(oligTotal26), sub:`전년 동기 ${fmtB(OLIG.reduce((s,p)=>s+(CONS.products2025[p.key]||0),0))}`, chg:OLIG.reduce((s,p)=>s+(CONS.products2025[p.key]||0),0)>0?(oligTotal26/OLIG.reduce((s,p)=>s+(CONS.products2025[p.key]||0),0)-1)*100:null},
-    {color:'#2563eb',icon:'bi-graph-up-arrow', label:'Oligio (F·E) YTD',    value:fmtB(oligF26),   sub:`vs 전년 동기 ${fmtB(oligF25)}`,     chg:oligF25>0?(oligF26/oligF25-1)*100:null},
-    {color:'#7c3aed',icon:'bi-bar-chart',      label:'Oligio X/XM (XF·XE)', value:fmtB(oligX26),   sub:`vs 전년 동기 ${fmtB(oligX25)}`,     chg:oligX25>0?(oligX26/oligX25-1)*100:null},
-    {color:'#0891b2',icon:'bi-cpu',            label:'Cartridge YTD',        value:fmtB(cartV26),   sub:`vs 전년 동기 ${fmtB(cartV25)}`,    chg:cartV25>0?(cartV26/cartV25-1)*100:null},
+    {color:'#ff4500',icon:'bi-star-fill',      label:`Oligio Tip 전체 (${ytdLabel})`, value:fmtB(oligTotal26), sub:`전년 동기 ${fmtB(oligTotal25)}`, chg:oligTotal25>0?(oligTotal26/oligTotal25-1)*100:null},
+    {color:'#2563eb',icon:'bi-graph-up-arrow', label:`Oligio F·E (${ytdLabel})`,      value:fmtB(oligFe26),    sub:`전년 동기 ${fmtB(oligFe25)}`,    chg:oligFe25>0?(oligFe26/oligFe25-1)*100:null},
+    {color:'#7c3aed',icon:'bi-bar-chart',      label:`Oligio X/XM (${ytdLabel})`,     value:fmtB(oligXm26),    sub:`전년 동기 ${fmtB(oligXm25)}`,    chg:oligXm25>0?(oligXm26/oligXm25-1)*100:null},
+    {color:'#0891b2',icon:'bi-cpu',            label:`Cartridge (${ytdLabel})`,        value:fmtB(cartV26),     sub:`전년 동기 추정 ${fmtB(cartV25)}`, chg:cartV25>0?(cartV26/cartV25-1)*100:null},
   ];
   document.getElementById('cons-kpi').innerHTML = kpiData.map(k=>`
     <div class="col-6 col-lg-3">
