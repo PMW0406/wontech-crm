@@ -1528,6 +1528,12 @@ function renderConsumables() {
   const ytdMs = Object.keys(CONS.monthly2026||{}).map(Number).filter(m=>m>=1&&m<=12).sort((a,b)=>a-b);
   const ytdLabel = ytdMs.length ? `1–${ytdMs[ytdMs.length-1]}월 기준` : 'YTD';
   const oMo25 = CONS.oligioMo2025||{}, oMo26 = CONS.oligioMo2026||{};
+  const OLIG = [
+    {key:'Oligio Tip [F-4.0]',  label:'F-4.0',  grp:'Oligio',      col:'#2563eb'},
+    {key:'Oligio Tip [E-0.25]', label:'E-0.25',  grp:'Oligio',      col:'#60a5fa'},
+    {key:'Oligio Tip [XF-4.0]', label:'XF-4.0', grp:'Oligio X/XM', col:'#7c3aed'},
+    {key:'Oligio Tip [XE-0.25]',label:'XE-0.25', grp:'Oligio X/XM', col:'#a78bfa'},
+  ];
 
   // oligioMo 그룹별 YTD 합계 (동기)
   const oligFe26 = ytdMs.reduce((s,m)=>s+((oMo26['Oligio']||{})[m]||0),0);
