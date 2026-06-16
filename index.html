@@ -598,22 +598,21 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
     <!-- 등급별 추이 패널 -->
     <div id="hosp-panel-grade" style="display:none">
       <div class="row g-3 mb-3" id="grade-kpi-row"></div>
-      <div class="row g-3">
-        <div class="col-12">
-          <div class="card p-3">
-            <div class="fw-bold mb-3" style="font-size:13px"><i class="bi bi-bar-chart-steps me-1" style="color:#9333ea"></i>등급별 월별 매출 추이 (2025 vs 2026)</div>
-            <canvas id="chart-grade-trend" height="100"></canvas>
-          </div>
-        </div>
-        <div class="col-12">
-          <div class="card p-0">
-            <div class="p-3 border-bottom fw-bold" style="font-size:13px"><i class="bi bi-table me-1"></i>등급별 상세 현황</div>
-            <div style="overflow-x:auto">
-              <table class="table table-sm mb-0">
-                <thead class="table-light"><tr><th>등급</th><th>기준</th><th class="text-end">병원 수</th><th class="text-end">2025 YTD</th><th class="text-end">2026 YTD</th><th class="text-end">YoY</th><th class="text-end">평균 구매액</th><th>대표 병원</th></tr></thead>
-                <tbody id="grade-detail-table"></tbody>
-              </table>
-            </div>
+      <!-- 등급별 4개 차트 -->
+      <div class="row g-3 mb-3" id="grade-charts-row">
+        <div class="col-md-6"><div class="card p-3"><div class="fw-bold mb-2" style="font-size:12px;color:#9333ea"><span style="background:#f3e8ff;border-radius:4px;padding:1px 7px;margin-right:6px">S</span>S등급 월별 추이</div><canvas id="chart-grade-S" height="140"></canvas></div></div>
+        <div class="col-md-6"><div class="card p-3"><div class="fw-bold mb-2" style="font-size:12px;color:#dc2626"><span style="background:#fee2e2;border-radius:4px;padding:1px 7px;margin-right:6px">A</span>A등급 월별 추이</div><canvas id="chart-grade-A" height="140"></canvas></div></div>
+        <div class="col-md-6"><div class="card p-3"><div class="fw-bold mb-2" style="font-size:12px;color:#d97706"><span style="background:#fef3c7;border-radius:4px;padding:1px 7px;margin-right:6px">B</span>B등급 월별 추이</div><canvas id="chart-grade-B" height="140"></canvas></div></div>
+        <div class="col-md-6"><div class="card p-3"><div class="fw-bold mb-2" style="font-size:12px;color:#2563eb"><span style="background:#eff6ff;border-radius:4px;padding:1px 7px;margin-right:6px">C</span>C등급 월별 추이</div><canvas id="chart-grade-C" height="140"></canvas></div></div>
+      </div>
+      <div class="col-12">
+        <div class="card p-0">
+          <div class="p-3 border-bottom fw-bold" style="font-size:13px"><i class="bi bi-table me-1"></i>등급별 상세 현황</div>
+          <div style="overflow-x:auto">
+            <table class="table table-sm mb-0">
+              <thead class="table-light"><tr><th>등급</th><th>기준</th><th class="text-end">병원 수</th><th class="text-end">2025 YTD</th><th class="text-end">2026 YTD</th><th class="text-end">YoY</th><th class="text-end">평균 구매액</th><th>대표 병원</th></tr></thead>
+              <tbody id="grade-detail-table"></tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -1684,70 +1683,81 @@ function setHospTab(tab, el) {
   if(tab==='grade') renderGradeTrend();
 }
 
-let _gradeTrendChart=null;
+const _gradeCharts={};
 function renderGradeTrend() {
   const GRADES=[
-    {g:'S',label:'S등급',c:'#9333ea',bg:'#f3e8ff',desc:'5천만 이상',min:5e7,max:Infinity},
-    {g:'A',label:'A등급',c:'#dc2626',bg:'#fee2e2',desc:'1천만~5천만',min:1e7,max:5e7},
-    {g:'B',label:'B등급',c:'#d97706',bg:'#fef3c7',desc:'300만~1천만',min:3e6,max:1e7},
-    {g:'C',label:'C등급',c:'#2563eb',bg:'#eff6ff',desc:'50만~300만',min:5e5,max:3e6},
+    {g:'S',c:'#9333ea',bg:'#f3e8ff',desc:'3천만 이상',min:3e7,max:Infinity},
+    {g:'A',c:'#dc2626',bg:'#fee2e2',desc:'1천만~3천만',min:1e7,max:3e7},
+    {g:'B',c:'#d97706',bg:'#fef3c7',desc:'300만~1천만',min:3e6,max:1e7},
+    {g:'C',c:'#2563eb',bg:'#eff6ff',desc:'50만~300만',min:5e5,max:3e6},
   ];
   const hosps=Object.entries(CONS.hospitals||{});
-  const ytdMonths=Object.keys(CONS.monthly2026||{}).map(Number).filter(m=>m>=1&&m<=12);
+  const ytdMonths=Object.keys(CONS.monthly2026||{}).map(Number).filter(m=>m>=1&&m<=12).sort((a,b)=>a-b);
   const ytd25=h=>ytdMonths.reduce((s,m)=>s+(h.m2025?.[m]||0),0);
+  const fmtA=v=>!v||v<=0?'0':v>=1e8?(v/1e8).toFixed(1)+'억':v>=1e4?Math.round(v/1e4).toLocaleString()+'만':v.toLocaleString();
+  const labels=ytdMonths.map(m=>m+'월');
 
-  // KPI 카드 (등급별 병원수·매출·YoY)
+  // KPI 카드
   document.getElementById('grade-kpi-row').innerHTML=GRADES.map(gr=>{
     const list=hosps.filter(([,h])=>h.y2026>=gr.min&&h.y2026<gr.max);
     const tot26=list.reduce((s,[,h])=>s+h.y2026,0);
     const tot25=list.reduce((s,[,h])=>s+ytd25(h),0);
     const yoy=tot25>0?((tot26/tot25-1)*100).toFixed(1):null;
-    const fmtA=v=>v>=1e8?(v/1e8).toFixed(1)+'억':v>=1e4?Math.round(v/1e4).toLocaleString()+'만':v.toLocaleString();
-    return`<div class="col-6 col-md-3">
-      <div class="card p-3" style="border-top:3px solid ${gr.c}">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-          <span style="font-size:13px;font-weight:800;color:${gr.c};background:${gr.bg};border-radius:4px;padding:1px 8px">${gr.g}</span>
-          <span style="font-size:11px;color:#6b7280">${gr.desc}</span>
-        </div>
-        <div style="font-size:11px;color:#6b7280">병원 수</div>
-        <div style="font-size:1.4rem;font-weight:800;color:${gr.c}">${list.length}<span style="font-size:11px;font-weight:400;color:#9ca3af">개</span></div>
-        <div style="font-size:12px;font-weight:700;color:#374151;margin-top:4px">${fmtA(tot26)}</div>
-        ${yoy!==null?`<div style="font-size:11px;font-weight:700;color:${Number(yoy)>=0?'#16a34a':'#dc2626'};margin-top:2px">${Number(yoy)>=0?'▲':'▼'}${Math.abs(Number(yoy))}% YoY</div>`:`<div style="font-size:11px;color:#9ca3af">전년 데이터 없음</div>`}
+    return`<div class="col-6 col-md-3"><div class="card p-3" style="border-top:3px solid ${gr.c}">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <span style="font-size:13px;font-weight:800;color:${gr.c};background:${gr.bg};border-radius:4px;padding:1px 8px">${gr.g}</span>
+        <span style="font-size:11px;color:#6b7280">${gr.desc}</span>
       </div>
-    </div>`;
+      <div style="font-size:11px;color:#6b7280">병원 수</div>
+      <div style="font-size:1.4rem;font-weight:800;color:${gr.c}">${list.length}<span style="font-size:11px;font-weight:400;color:#9ca3af">개</span></div>
+      <div style="font-size:12px;font-weight:700;color:#374151;margin-top:4px">${fmtA(tot26)}</div>
+      ${yoy!==null?`<div style="font-size:11px;font-weight:700;color:${Number(yoy)>=0?'#16a34a':'#dc2626'};margin-top:2px">${Number(yoy)>=0?'▲':'▼'}${Math.abs(Number(yoy))}% YoY</div>`:''}
+    </div></div>`;
   }).join('');
 
-  // 월별 추이 차트 — 등급별 2026 월별 합계
-  const months=ytdMonths.sort((a,b)=>a-b);
-  const datasets=GRADES.map(gr=>{
+  // 등급별 개별 차트 — 각자 Y축 스케일
+  GRADES.forEach(gr=>{
     const list=hosps.filter(([,h])=>h.y2026>=gr.min&&h.y2026<gr.max);
-    return {
-      label:gr.g+'등급',
-      data:months.map(m=>list.reduce((s,[,h])=>s+(h.m2026?.[m]||0),0)/1e4),
-      borderColor:gr.c, backgroundColor:gr.c+'22',
-      borderWidth:2, pointRadius:4, tension:0.3, fill:false
-    };
-  });
-  const ctx=document.getElementById('chart-grade-trend');
-  if(_gradeTrendChart) _gradeTrendChart.destroy();
-  _gradeTrendChart=new Chart(ctx,{
-    type:'line',
-    data:{labels:months.map(m=>m+'월'),datasets},
-    options:{responsive:true,interaction:{mode:'index',intersect:false},
-      plugins:{legend:{position:'top'}},
-      scales:{y:{ticks:{callback:v=>v+'만'},title:{display:true,text:'매출(만원)'}}}
-    }
+    const data26=ytdMonths.map(m=>Math.round(list.reduce((s,[,h])=>s+(h.m2026?.[m]||0),0)/1e4));
+    const data25=ytdMonths.map(m=>Math.round(list.reduce((s,[,h])=>s+(h.m2025?.[m]||0),0)/1e4));
+    const ctx=document.getElementById('chart-grade-'+gr.g);
+    if(!ctx) return;
+    if(_gradeCharts[gr.g]) _gradeCharts[gr.g].destroy();
+    _gradeCharts[gr.g]=new Chart(ctx,{
+      type:'line',
+      data:{
+        labels,
+        datasets:[
+          {label:'2026',data:data26,borderColor:gr.c,backgroundColor:gr.c+'33',borderWidth:2.5,pointRadius:4,pointBackgroundColor:gr.c,tension:0.3,fill:true},
+          {label:'2025',data:data25,borderColor:'#9ca3af',backgroundColor:'transparent',borderWidth:1.5,borderDash:[4,3],pointRadius:3,pointBackgroundColor:'#9ca3af',tension:0.3,fill:false},
+        ]
+      },
+      options:{
+        responsive:true,
+        interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{position:'top',labels:{font:{size:11},boxWidth:16}},
+          tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}만`}}
+        },
+        scales:{
+          y:{
+            ticks:{callback:v=>v>=10000?(v/10000).toFixed(1)+'억':v+'만',font:{size:10}},
+            grid:{color:'#f3f4f6'}
+          },
+          x:{ticks:{font:{size:10}},grid:{display:false}}
+        }
+      }
+    });
   });
 
   // 등급별 상세 테이블
-  const fmtA=v=>!v||v<=0?'-':v>=1e8?(v/1e8).toFixed(1)+'억':v>=1e4?Math.round(v/1e4).toLocaleString()+'만':v.toLocaleString();
   document.getElementById('grade-detail-table').innerHTML=GRADES.map(gr=>{
     const list=hosps.filter(([,h])=>h.y2026>=gr.min&&h.y2026<gr.max);
     const tot26=list.reduce((s,[,h])=>s+h.y2026,0);
     const tot25=list.reduce((s,[,h])=>s+ytd25(h),0);
     const yoy=tot25>0?((tot26/tot25-1)*100).toFixed(1):null;
     const avg=list.length?Math.round(tot26/list.length):0;
-    const top=list.sort((a,b)=>b[1].y2026-a[1].y2026).slice(0,2).map(([n])=>n).join(', ');
+    const top=[...list].sort((a,b)=>b[1].y2026-a[1].y2026).slice(0,2).map(([n])=>n).join(', ');
     const yoyC=yoy===null?'#9ca3af':Number(yoy)>=0?'#16a34a':'#dc2626';
     return`<tr>
       <td><span style="font-size:12px;font-weight:800;color:${gr.c};background:${gr.bg};border-radius:4px;padding:1px 8px">${gr.g}</span></td>
@@ -1755,7 +1765,7 @@ function renderGradeTrend() {
       <td class="text-end fw-bold">${list.length}개</td>
       <td class="text-end">${fmtA(tot25)}</td>
       <td class="text-end fw-bold">${fmtA(tot26)}</td>
-      <td class="text-end" style="color:${yoyC};font-weight:700">${yoy===null?'-':(Number(yoy)>=0?'▲':'▼')+Math.abs(Number(yoy))+'%'}</td>
+      <td class="text-end fw-bold" style="color:${yoyC}">${yoy===null?'-':(Number(yoy)>=0?'▲':'▼')+Math.abs(Number(yoy))+'%'}</td>
       <td class="text-end">${fmtA(avg)}</td>
       <td style="font-size:11px;color:#374151;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${top||'-'}</td>
     </tr>`;
