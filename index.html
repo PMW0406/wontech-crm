@@ -1763,7 +1763,7 @@ function renderConsHospitals() {
   };
   const GRADE = h => {
     const v=h.y2026||0;
-    if(v>=5e7) return {g:'S',c:'#9333ea',bg:'#f3e8ff'};
+    if(v>=3e7) return {g:'S',c:'#9333ea',bg:'#f3e8ff'};
     if(v>=1e7) return {g:'A',c:'#dc2626',bg:'#fee2e2'};
     if(v>=3e6) return {g:'B',c:'#d97706',bg:'#fef3c7'};
     if(v>=5e5) return {g:'C',c:'#2563eb',bg:'#eff6ff'};
