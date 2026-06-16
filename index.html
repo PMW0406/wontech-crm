@@ -165,7 +165,7 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
       <li><a class="nav-link active" onclick="showPage('dashboard',this)"><i class="bi bi-grid-1x2"></i>대시보드</a></li>
       <li><a class="nav-link" onclick="showPage('pipeline',this)"><i class="bi bi-kanban"></i>영업 파이프라인</a></li>
       <li><a class="nav-link" onclick="showPage('quotes',this)"><i class="bi bi-file-earmark-text"></i>견적서</a></li>
-      <li><a class="nav-link" onclick="showPage('performance',this)"><i class="bi bi-bar-chart-line"></i>목표 vs 실적</a></li>
+      <li><a class="nav-link" onclick="showPage('performance',this)"><i class="bi bi-bar-chart-line"></i>영업 실적</a></li>
     </ul>
     <div class="nav-label mt-3">소모품</div>
     <ul class="nav flex-column gap-0">
@@ -236,10 +236,10 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
       </div>
       <div class="col-6 col-lg-3">
         <div class="kpi-card">
-          <div class="kpi-label"><i class="bi bi-bullseye me-1" style="color:#2563eb"></i>목표 달성률</div>
+          <div class="kpi-label"><i class="bi bi-journal-check me-1" style="color:#2563eb"></i>이달 활동</div>
           <div class="kpi-value" id="kpi-achieve">-</div>
           <div class="kpi-sub" id="kpi-achieve-sub"></div>
-          <div class="kpi-progress-wrap">
+          <div class="kpi-progress-wrap" id="kpi-won-bar-wrap2">
             <div class="kpi-progress-track"><div class="kpi-progress-fill" id="kpi-achieve-bar" style="background:linear-gradient(90deg,#2563eb,#60a5fa)"></div></div>
           </div>
         </div>
@@ -306,7 +306,7 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
     <div class="row g-3">
       <div class="col-12">
         <div class="card p-0">
-          <div class="p-3 border-bottom fw-bold" style="font-size:14px"><i class="bi bi-trophy-fill me-2" style="color:#f59e0b"></i>영업사원 누적 실적</div>
+          <div class="p-3 border-bottom d-flex justify-content-between align-items-center"><span class="fw-bold" style="font-size:14px"><i class="bi bi-trophy-fill me-2" style="color:#f59e0b"></i>영업사원 실적 리더보드</span><span id="leaderboard-period" style="font-size:11px;color:#9ca3af"></span></div>
           <div id="leaderboard" class="p-3"></div>
         </div>
       </div>
@@ -317,7 +317,8 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
   <div id="page-pipeline" class="page">
     <div class="page-header"><h5><i class="bi bi-kanban me-2"></i>영업 파이프라인</h5><button class="btn btn-primary btn-sm" onclick="openModal('pipeline')"><i class="bi bi-plus-lg me-1"></i>딜 추가</button></div>
     <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
-      <input type="text" id="pipe-search" class="form-control form-control-sm" style="max-width:220px" placeholder="병원명, 제품, 담당자..." oninput="renderPipeline()">
+      <input type="text" id="pipe-search" class="form-control form-control-sm" style="max-width:180px" placeholder="병원명, 제품, 담당자..." oninput="renderPipeline()">
+      <select id="pipe-sales-filter" class="form-select form-select-sm" style="max-width:120px" onchange="renderPipeline()"><option value="">전체 담당자</option></select>
       <div class="d-flex gap-1 flex-wrap" id="pipe-stage-chips">
         <span class="pipe-chip on" onclick="setPipeChip('all',this)">전체</span>
         <span class="pipe-chip" onclick="setPipeChip('리드',this)">리드</span>
@@ -327,7 +328,7 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
         <span class="pipe-chip" onclick="setPipeChip('계약완료',this)">계약완료</span>
       </div>
     </div>
-    <div class="row g-2 mb-3" id="pipe-summary"></div>
+    <div id="pipe-summary" class="mb-3"></div>
     <div class="pipeline-board" id="kanban-board"></div>
   </div>
 
@@ -340,17 +341,50 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
     </table></div></div>
   </div>
 
-  <!-- 목표 vs 실적 -->
+  <!-- 영업 실적 -->
   <div id="page-performance" class="page">
-    <div class="page-header"><h5><i class="bi bi-graph-up-arrow me-2"></i>목표 vs 실적</h5><button class="btn btn-outline-primary btn-sm" onclick="openModal('target')"><i class="bi bi-plus-lg me-1"></i>목표 등록</button></div>
-    <div class="row g-3 mb-3"><div class="col-12"><div class="card p-3"><div class="fw-bold mb-3" style="font-size:14px">월별 목표 vs 실적 (최근 12개월)</div><canvas id="chart-perf" height="90"></canvas></div></div></div>
-    <div class="row g-3 mb-3">
-      <div class="col-md-6"><div class="card p-3"><div class="fw-bold mb-3" style="font-size:14px">영업사원별 달성률</div><div id="sales-perf-table"></div></div></div>
-      <div class="col-md-6"><div class="card p-3"><div class="fw-bold mb-3" style="font-size:14px">병원별 계약실적 Top 10</div><canvas id="chart-cust-perf" height="220"></canvas></div></div>
+    <div class="page-header">
+      <h5><i class="bi bi-bar-chart-line me-2"></i>영업 실적 현황</h5>
+      <div class="d-flex gap-1">
+        <button class="dash-period-btn on" id="pp-month"   onclick="setPerfPeriod('month',this)">이번달</button>
+        <button class="dash-period-btn"    id="pp-quarter" onclick="setPerfPeriod('quarter',this)">이번분기</button>
+        <button class="dash-period-btn"    id="pp-year"    onclick="setPerfPeriod('year',this)">올해</button>
+      </div>
     </div>
-    <!-- Win Rate 퍼널 -->
+    <!-- KPI 요약 -->
+    <div class="row g-3 mb-3" id="perf-kpi"></div>
+    <!-- 월별 실적 차트 -->
+    <div class="row g-3 mb-3">
+      <div class="col-md-7">
+        <div class="card p-3 h-100">
+          <div class="fw-bold mb-2" style="font-size:14px">월별 계약 실적 (최근 12개월)</div>
+          <canvas id="chart-perf" height="130"></canvas>
+        </div>
+      </div>
+      <div class="col-md-5">
+        <div class="card p-3 h-100">
+          <div class="fw-bold mb-2" style="font-size:14px"><i class="bi bi-funnel-fill me-1" style="color:#7c3aed"></i>Win Rate 퍼널</div>
+          <div id="winrate-funnel"></div>
+        </div>
+      </div>
+    </div>
+    <!-- 영업사원별 실적 카드 -->
+    <div class="row g-3 mb-3">
+      <div class="col-12">
+        <div class="card p-3">
+          <div class="fw-bold mb-3" style="font-size:14px"><i class="bi bi-people-fill me-2" style="color:#2563eb"></i>영업사원별 실적</div>
+          <div id="sales-perf-table"></div>
+        </div>
+      </div>
+    </div>
+    <!-- 병원별 Top 10 -->
     <div class="row g-3">
-      <div class="col-12"><div class="card p-3"><div class="fw-bold mb-3" style="font-size:14px"><i class="bi bi-funnel-fill me-2" style="color:#7c3aed"></i>파이프라인 Win Rate 퍼널</div><div id="winrate-funnel"></div></div></div>
+      <div class="col-12">
+        <div class="card p-3">
+          <div class="fw-bold mb-2" style="font-size:14px">병원별 계약실적 Top 10</div>
+          <canvas id="chart-cust-perf" height="160"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -968,143 +1002,172 @@ function _dashPeriodYMs() {
 
 function renderDashboard() {
   const now = new Date();
-  const { yms, label, targetYMs } = _dashPeriodYMs();
+  const { yms, label } = _dashPeriodYMs();
   const hour = now.getHours();
-  const greet = hour < 12 ? '좋은 아침이에요 ☀️' : hour < 18 ? '안녕하세요 👋' : '수고하셨어요 🌙';
+  const greet = hour<12?'좋은 아침이에요 ☀️':hour<18?'안녕하세요 👋':'수고하셨어요 🌙';
   document.getElementById('dash-greeting').textContent = greet;
   document.getElementById('dash-date').textContent = now.toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
 
-  // 퀵 배지 (우측 상단)
-  const activePipe = DB.d.pipeline.filter(d => d.stage !== '계약완료');
-  const overdueActs = DB.d.logs.filter(l => {
+  const activePipe = DB.d.pipeline.filter(d=>d.stage!=='계약완료');
+  const overdueActs = DB.d.logs.filter(l=>{
     if(!l.nextDate||!l.nextAction) return false;
-    const d = new Date(l.nextDate); d.setHours(0,0,0,0);
-    const t = new Date(); t.setHours(0,0,0,0);
-    return d < t;
+    const d=new Date(l.nextDate); d.setHours(0,0,0,0);
+    const t=new Date(); t.setHours(0,0,0,0);
+    return d<t;
   });
-  document.getElementById('dash-quick-badges').innerHTML = `
+  document.getElementById('dash-quick-badges').innerHTML=`
     <div class="dash-badge"><i class="bi bi-kanban" style="color:#2563eb"></i>딜 ${activePipe.length}건 진행중</div>
-    ${overdueActs.length ? `<div class="dash-badge" style="border-color:#fecaca;color:#dc2626"><i class="bi bi-exclamation-circle-fill" style="color:#dc2626"></i>지연 액션 ${overdueActs.length}건</div>` : ''}
+    ${overdueActs.length?`<div class="dash-badge" style="border-color:#fecaca;color:#dc2626"><i class="bi bi-exclamation-circle-fill" style="color:#dc2626"></i>지연 ${overdueActs.length}건</div>`:''}
   `;
 
   // KPI 1: 기간별 계약금액
-  const wonPeriod = DB.d.pipeline.filter(d => d.stage === '계약완료' && yms.some(ym => (d.stageUpdatedAt||'').startsWith(ym)));
-  const wonAmt = wonPeriod.reduce((s,d) => s + Number(d.amount||0), 0);
-  document.getElementById('kpi-won-amt').textContent = fmtAmt(wonAmt);
-  document.getElementById('kpi-won-sub').textContent = `${label} 계약완료 ${wonPeriod.length}건`;
+  const wonPeriod=DB.d.pipeline.filter(d=>d.stage==='계약완료'&&yms.some(ym=>(d.stageUpdatedAt||'').startsWith(ym)));
+  const wonAmt=wonPeriod.reduce((s,d)=>s+Number(d.amount||0),0);
+  document.getElementById('kpi-won-amt').textContent=fmtAmt(wonAmt);
+  document.getElementById('kpi-won-sub').textContent=`${label} 계약완료 ${wonPeriod.length}건`;
 
-  // KPI 2: 목표 달성률
-  const targetAmt = targetYMs.reduce((s,ym) => s + DB.d.targets.filter(t=>t.ym===ym).reduce((a,t)=>a+Number(t.target||0),0), 0);
-  const achievePct = targetAmt > 0 ? Math.round(wonAmt / targetAmt * 100) : null;
-  document.getElementById('kpi-achieve').textContent = achievePct !== null ? `${achievePct}%` : '-';
-  document.getElementById('kpi-achieve-sub').textContent = targetAmt > 0 ? `목표 ${fmtAmt(targetAmt)}` : '목표 미설정';
-  const achieveBar = document.getElementById('kpi-achieve-bar');
-  achieveBar.style.width = (achievePct !== null ? Math.min(achievePct, 100) : 0) + '%';
-  achieveBar.style.background = achievePct >= 100 ? 'linear-gradient(90deg,#16a34a,#4ade80)' : achievePct >= 70 ? 'linear-gradient(90deg,#2563eb,#60a5fa)' : 'linear-gradient(90deg,#ea580c,#fb923c)';
+  // KPI 2: 이달 활동 (상담일지)
+  const thisYm=now.toISOString().substring(0,7);
+  const monthLogs=DB.d.logs.filter(l=>(l.date||'').startsWith(thisYm));
+  const monthPipes=DB.d.pipeline.filter(d=>(d.stageUpdatedAt||'').startsWith(thisYm));
+  document.getElementById('kpi-achieve').textContent=monthLogs.length+'건';
+  document.getElementById('kpi-achieve-sub').textContent=`이달 상담일지 · 파이프라인 ${monthPipes.length}건 업데이트`;
+  const achieveBar=document.getElementById('kpi-achieve-bar');
+  const maxLog=Math.max(...[...new Set(DB.d.logs.map(l=>(l.date||'').substring(0,7)))].map(ym=>DB.d.logs.filter(l=>(l.date||'').startsWith(ym)).length),1);
+  achieveBar.style.width=Math.min(monthLogs.length/maxLog*100,100)+'%';
 
   // KPI 3: 파이프라인 가중금액
-  const weighted = activePipe.reduce((s,d) => s + Number(d.amount||0)*Number(d.prob||0)/100, 0);
-  document.getElementById('kpi-pipe').textContent = fmtAmt(Math.round(weighted));
-  document.getElementById('kpi-pipe-sub').textContent = `진행중 딜 ${activePipe.length}건`;
+  const weighted=activePipe.reduce((s,d)=>s+Number(d.amount||0)*Number(d.prob||0)/100,0);
+  document.getElementById('kpi-pipe').textContent=fmtAmt(Math.round(weighted));
+  document.getElementById('kpi-pipe-sub').textContent=`진행중 딜 ${activePipe.length}건`;
 
   // KPI 4: 이번주 할 일
-  const todayD = new Date(); todayD.setHours(0,0,0,0);
-  const weekEndD = new Date(todayD); weekEndD.setDate(weekEndD.getDate()+7);
-  const weekActions = DB.d.logs.filter(l => {
+  const todayD=new Date(); todayD.setHours(0,0,0,0);
+  const weekEndD=new Date(todayD); weekEndD.setDate(weekEndD.getDate()+7);
+  const weekActions=DB.d.logs.filter(l=>{
     if(!l.nextDate||!l.nextAction) return false;
-    const d = new Date(l.nextDate); d.setHours(0,0,0,0);
-    return d <= weekEndD;
+    const d=new Date(l.nextDate); d.setHours(0,0,0,0);
+    return d<=weekEndD;
   });
-  const todayActs = weekActions.filter(l => { const d=new Date(l.nextDate); d.setHours(0,0,0,0); return d.getTime()===todayD.getTime(); });
-  document.getElementById('kpi-actions').textContent = weekActions.length;
-  document.getElementById('kpi-actions-sub').textContent = `오늘 ${todayActs.length}건 · 지연 ${overdueActs.length}건`;
-  document.getElementById('kpi-action-card').style.borderColor = overdueActs.length ? '#fecaca' : '';
+  const todayActs=weekActions.filter(l=>{const d=new Date(l.nextDate);d.setHours(0,0,0,0);return d.getTime()===todayD.getTime();});
+  document.getElementById('kpi-actions').textContent=weekActions.length;
+  document.getElementById('kpi-actions-sub').textContent=`오늘 ${todayActs.length}건 · 지연 ${overdueActs.length}건`;
+  document.getElementById('kpi-action-card').style.borderColor=overdueActs.length?'#fecaca':'';
 
-  // 월별 계약 실적 차트 (최근 6개월)
-  const months = [];
-  for(let i=5; i>=0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
-    months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
-  }
-  const wonByMonth = months.map(ym => DB.d.pipeline.filter(d => d.stage==='계약완료' && (d.stageUpdatedAt||'').startsWith(ym)).reduce((s,d)=>s+Number(d.amount||0),0));
-  const targetByMonth = months.map(ym => DB.d.targets.filter(t=>t.ym===ym).reduce((s,t)=>s+Number(t.target||0),0));
-  const monthLabels = months.map(ym => { const [y,m]=ym.split('-'); return `${m}월`; });
-
+  // 월별 계약 실적 차트 (목표 없음)
+  const months=[];
+  for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);}
+  const wonByMonth=months.map(ym=>DB.d.pipeline.filter(d=>d.stage==='계약완료'&&(d.stageUpdatedAt||'').startsWith(ym)).reduce((s,d)=>s+Number(d.amount||0),0));
+  const logsByMonth=months.map(ym=>DB.d.logs.filter(l=>(l.date||'').startsWith(ym)).length);
+  const monthLabels=months.map(ym=>ym.split('-')[1]+'월');
   if(monthlyChart) monthlyChart.destroy();
-  const ctx = document.getElementById('chart-monthly').getContext('2d');
-  monthlyChart = new Chart(ctx, {
+  const ctx=document.getElementById('chart-monthly').getContext('2d');
+  monthlyChart=new Chart(ctx,{
     type:'bar',
     data:{
-      labels: monthLabels,
+      labels:monthLabels,
       datasets:[
-        {label:'계약금액', data:wonByMonth, backgroundColor:'rgba(37,99,235,0.15)', borderColor:'#2563eb', borderWidth:2, borderRadius:6, borderSkipped:false},
-        {label:'목표', data:targetByMonth, type:'line', borderColor:'#f59e0b', borderWidth:2, borderDash:[5,3], pointRadius:4, pointBackgroundColor:'#f59e0b', fill:false, tension:0.3}
+        {label:'계약금액',data:wonByMonth,backgroundColor:'rgba(37,99,235,0.15)',borderColor:'#2563eb',borderWidth:2,borderRadius:6,borderSkipped:false,yAxisID:'y'},
+        {label:'상담건수',data:logsByMonth,type:'line',borderColor:'#f59e0b',borderWidth:2,pointRadius:4,pointBackgroundColor:'#f59e0b',fill:false,tension:0.3,yAxisID:'y2'}
       ]
     },
     options:{
       plugins:{legend:{position:'top',labels:{font:{size:11},boxWidth:12}}},
       scales:{
-        y:{ticks:{callback:v=>fmtAmt(v)},grid:{color:'#f3f4f6'}},
-        x:{grid:{display:false}}
+        y:{ticks:{callback:v=>fmtAmt(v)},grid:{color:'#f3f4f6'},position:'left'},
+        y2:{ticks:{callback:v=>v+'건'},grid:{display:false},position:'right'}
       }
     }
   });
 
   // 파이프라인 퍼널
-  const funnelEl = document.getElementById('dash-funnel');
-  const stageAmts = STAGES.map(s => ({
-    stage:s,
-    amt: DB.d.pipeline.filter(d=>d.stage===s).reduce((t,d)=>t+Number(d.amount||0),0),
-    cnt: DB.d.pipeline.filter(d=>d.stage===s).length
-  }));
-  const maxAmt2 = Math.max(...stageAmts.map(s=>s.amt), 1);
-  funnelEl.innerHTML = stageAmts.map(s => `
+  const funnelEl=document.getElementById('dash-funnel');
+  const stageAmts=STAGES.map(s=>({stage:s,amt:DB.d.pipeline.filter(d=>d.stage===s).reduce((t,d)=>t+Number(d.amount||0),0),cnt:DB.d.pipeline.filter(d=>d.stage===s).length}));
+  const maxAmt2=Math.max(...stageAmts.map(s=>s.amt),1);
+  funnelEl.innerHTML=stageAmts.map(s=>`
     <div class="funnel-row">
       <div class="funnel-label" style="font-size:11px">${s.stage}</div>
       <div class="funnel-bar-wrap">
-        <div class="funnel-bar" style="width:${Math.max(s.amt/maxAmt2*100,s.cnt?2:0)}%;background:${SC[s.stage]||'#adb5bd'}">
-          ${s.cnt ? s.cnt+'건' : ''}
-        </div>
+        <div class="funnel-bar" style="width:${Math.max(s.amt/maxAmt2*100,s.cnt?2:0)}%;background:${SC[s.stage]||'#adb5bd'}">${s.cnt?s.cnt+'건':''}</div>
       </div>
-      <div class="funnel-amt">${s.amt>0?fmtAmt(s.amt):''}</div>
+      <div class="funnel-amt" style="font-size:11px">${fmtAmt(s.amt)}</div>
     </div>`).join('');
 
-  // 보증만료
-  const alerts = DB.d.equipments
-    .filter(e=>e.warrantyEnd)
-    .map(e=>({...e, daysLeft:Math.ceil((new Date(e.warrantyEnd)-now)/(864e5))}))
-    .filter(e=>e.daysLeft>0 && e.daysLeft<=30).sort((a,b)=>a.daysLeft-b.daysLeft).slice(0,6);
-  const wEl = document.getElementById('warranty-list');
-  if(!alerts.length){ wEl.innerHTML='<div class="text-muted text-center py-3" style="font-size:13px">만료 임박 장비 없음</div>'; }
-  else { wEl.innerHTML = alerts.map(w=>{
-    const label = w.daysLeft+'일 후';
-    const urgentColor = w.daysLeft<=7 ? '#dc2626' : '#ea580c';
-    const delivStr = w.delivDate ? fmtDate(w.delivDate) : '-';
-    const warrantyStr = w.warrantyMonths ? w.warrantyMonths+'개월' : (w.warranty ? w.warranty+'개월' : '-');
-    return`<div style="border-bottom:1px solid #f3f4f6;padding:10px 0">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div style="width:8px;height:8px;border-radius:50%;background:${urgentColor};flex-shrink:0;margin-top:3px"></div>
-          <div>
-            <div style="font-size:13px;font-weight:600">${w.custName||''}</div>
-            <div style="font-size:11px;color:#6b7280">${w.model||''}</div>
-          </div>
-        </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:12px;font-weight:700;color:${urgentColor}">${label}</div>
-          <button class="btn btn-sm" style="font-size:10px;padding:1px 8px;background:${urgentColor};color:#fff;border:none;border-radius:5px;margin-top:3px" onclick="openDealFromWarranty('${(w.custName||'').replace(/'/g,"\\'")}','${(w.model||'').replace(/'/g,"\\'")}')">딜 등록</button>
-        </div>
-      </div>
-      <div style="display:flex;gap:12px;margin-top:5px;margin-left:16px">
-        <span style="font-size:11px;color:#9ca3af"><i class="bi bi-calendar3 me-1"></i>납품 ${delivStr}</span>
-        <span style="font-size:11px;color:#9ca3af"><i class="bi bi-shield-check me-1"></i>보증 ${warrantyStr}</span>
-        <span style="font-size:11px;color:#9ca3af"><i class="bi bi-calendar-x me-1"></i>만료 ${fmtDate(w.warrantyEnd)}</span>
+  // 다음 액션
+  const todayStr=now.toISOString().split('T')[0];
+  const actionItems=DB.d.logs.filter(l=>l.nextDate&&l.nextAction).sort((a,b)=>a.nextDate.localeCompare(b.nextDate));
+  const overdueItems=actionItems.filter(l=>l.nextDate<todayStr);
+  const todayItems=actionItems.filter(l=>l.nextDate===todayStr);
+  const weekItems=actionItems.filter(l=>l.nextDate>todayStr&&l.nextDate<=new Date(todayD.getTime()+7*864e5).toISOString().split('T')[0]);
+  document.getElementById('action-overdue-cnt').textContent=overdueItems.length?`지연 ${overdueItems.length}건`:'';
+  document.getElementById('action-today-cnt').textContent=todayItems.length?`오늘 ${todayItems.length}건`:'';
+  document.getElementById('action-week-cnt').textContent=weekItems.length?`이번주 ${weekItems.length}건`:'';
+  const allActions=[...overdueItems,...todayItems,...weekItems].slice(0,20);
+  document.getElementById('action-board').innerHTML=allActions.length?allActions.map(l=>{
+    const isOverdue=l.nextDate<todayStr,isToday=l.nextDate===todayStr;
+    const dotC=isOverdue?'#dc2626':isToday?'#ea580c':'#2563eb';
+    return`<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 16px;border-bottom:1px solid #f3f4f6">
+      <div style="width:8px;height:8px;border-radius:50%;background:${dotC};margin-top:5px;flex-shrink:0"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600">${l.custName||''} <span style="font-weight:400;color:#6b7280">${l.sales||''}</span></div>
+        <div style="font-size:12px;color:#374151;margin-top:2px">${l.nextAction}</div>
+        <div style="font-size:11px;color:${dotC};margin-top:2px;font-weight:600">${l.nextDate}${isOverdue?' (지연)':isToday?' (오늘)':''}</div>
       </div>
     </div>`;
-  }).join(''); }
+  }).join(''):'<div class="text-muted text-center py-4" style="font-size:13px">예정된 액션 없음</div>';
 
-  renderLeaderboard();
-  renderActionBoard();
+  // 보증만료 임박
+  const warningDays=60;
+  const expiring=DB.d.equipments.filter(e=>e.warrantyEnd&&Math.ceil((new Date(e.warrantyEnd)-now)/864e5)<=warningDays).sort((a,b)=>new Date(a.warrantyEnd)-new Date(b.warrantyEnd));
+  document.getElementById('warranty-list').innerHTML=expiring.length?expiring.slice(0,8).map(e=>{
+    const days=Math.ceil((new Date(e.warrantyEnd)-now)/864e5);
+    const c=days<=0?'#dc2626':days<=30?'#ea580c':'#f59e0b';
+    return`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f3f4f6;font-size:12px">
+      <div><div style="font-weight:600">${e.custName||''}</div><div style="color:#6b7280;font-size:11px">${e.model||''} · ${e.serial||''}</div></div>
+      <span style="color:${c};font-weight:700;font-size:11px;white-space:nowrap">${days<=0?'만료':days+'일 후'}</span>
+    </div>`;
+  }).join(''):'<div class="text-muted text-center py-3" style="font-size:13px">만료 임박 장비 없음</div>';
+
+  // 리더보드 — 영업사원별 계약/상담/파이프라인
+  const salesSet=new Set([...DB.d.pipeline.map(d=>d.sales||'미배정'),...DB.d.logs.map(l=>l.sales||'미배정')].filter(Boolean));
+  const salesList=[...salesSet].map(s=>{
+    const won=DB.d.pipeline.filter(d=>d.stage==='계약완료'&&(d.sales||'미배정')===s).reduce((a,d)=>a+Number(d.amount||0),0);
+    const wonCnt=DB.d.pipeline.filter(d=>d.stage==='계약완료'&&(d.sales||'미배정')===s).length;
+    const pipe=DB.d.pipeline.filter(d=>d.stage!=='계약완료'&&(d.sales||'미배정')===s).reduce((a,d)=>a+Number(d.amount||0)*Number(d.prob||0)/100,0);
+    const logCnt=DB.d.logs.filter(l=>(l.sales||'미배정')===s).length;
+    const lastLog=DB.d.logs.filter(l=>(l.sales||'미배정')===s).sort((a,b)=>b.date.localeCompare(a.date))[0];
+    return {s,won,wonCnt,pipe:Math.round(pipe),logCnt,lastLog};
+  }).sort((a,b)=>b.won-a.won);
+  const maxWon=Math.max(...salesList.map(x=>x.won),1);
+  const MEDALS=['🥇','🥈','🥉'];
+  document.getElementById('leaderboard-period').textContent='전체 누적 기준';
+  document.getElementById('leaderboard').innerHTML=salesList.length?`
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">
+      ${salesList.map((x,i)=>`
+        <div style="background:${i===0?'linear-gradient(135deg,#fef9c3,#fefce8)':i===1?'linear-gradient(135deg,#f1f5f9,#f8fafc)':i===2?'linear-gradient(135deg,#fef3e2,#fff7ed)':'#f9fafb'};border-radius:12px;padding:14px 16px;border:1px solid ${i===0?'#fde68a':i===1?'#e2e8f0':i===2?'#fed7aa':'#f3f4f6'}">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:18px">${MEDALS[i]||'  '}</span>
+            <span style="font-size:14px;font-weight:700">${x.s}</span>
+            <span style="margin-left:auto;font-size:10px;color:#9ca3af">${x.lastLog?x.lastLog.date+' 활동':''}</span>
+          </div>
+          <div style="font-size:20px;font-weight:800;color:#1e40af;margin-bottom:6px">${fmtAmt(x.won)}</div>
+          <div style="height:5px;background:#e5e7eb;border-radius:3px;margin-bottom:8px"><div style="height:5px;width:${(x.won/maxWon*100).toFixed(0)}%;background:${i===0?'#f59e0b':i===1?'#6b7280':i===2?'#cd7f32':'#2563eb'};border-radius:3px"></div></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center">
+            <div style="background:rgba(255,255,255,.7);border-radius:8px;padding:6px 4px">
+              <div style="font-size:15px;font-weight:700;color:#2563eb">${x.wonCnt}</div>
+              <div style="font-size:10px;color:#6b7280">계약건</div>
+            </div>
+            <div style="background:rgba(255,255,255,.7);border-radius:8px;padding:6px 4px">
+              <div style="font-size:15px;font-weight:700;color:#7c3aed">${x.logCnt}</div>
+              <div style="font-size:10px;color:#6b7280">상담일지</div>
+            </div>
+            <div style="background:rgba(255,255,255,.7);border-radius:8px;padding:6px 4px">
+              <div style="font-size:12px;font-weight:700;color:#16a34a">${x.pipe>=1e8?(x.pipe/1e8).toFixed(1)+'억':x.pipe>=1e4?Math.round(x.pipe/1e4)+'만':x.pipe}</div>
+              <div style="font-size:10px;color:#6b7280">파이프(가중)</div>
+            </div>
+          </div>
+        </div>`).join('')}
+    </div>`:'<div class="text-muted text-center py-4" style="font-size:13px">데이터 없음</div>';
 }
 
 function renderLeaderboard() {
@@ -1764,6 +1827,13 @@ function renderHospRank() {
 }
 
 function showHospDetail() {}
+let _perfPeriod='month';
+function setPerfPeriod(p,el){
+  _perfPeriod=p;
+  document.querySelectorAll('#page-performance .dash-period-btn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  renderPerformance();
+}
 function openLogFromHosp(name){
   ['l-id','l-content','l-product','l-next','l-sales'].forEach(id=>setV(id,''));
   setV('l-date',new Date().toISOString().split('T')[0]);
@@ -2011,22 +2081,39 @@ function setPipeChip(stage, el) {
 }
 
 function renderPipeline() {
-  const q = (document.getElementById('pipe-search')?.value||'').toLowerCase().trim();
-  let allDeals = DB.d.pipeline;
-  if(q) allDeals = allDeals.filter(d =>
-    (d.custName||'').toLowerCase().includes(q) ||
-    (d.model||'').toLowerCase().includes(q) ||
-    (d.sales||'').toLowerCase().includes(q)
-  );
-  if(_pipeStage !== 'all') allDeals = allDeals.filter(d => d.stage === _pipeStage);
+  const q=(document.getElementById('pipe-search')?.value||'').toLowerCase().trim();
+  const salesF=document.getElementById('pipe-sales-filter')?.value||'';
 
+  // 담당자 목록 채우기
+  const salesSel=document.getElementById('pipe-sales-filter');
+  if(salesSel&&salesSel.options.length<=1){
+    const sl=[...new Set(DB.d.pipeline.map(d=>d.sales).filter(Boolean))].sort();
+    sl.forEach(s=>{const o=document.createElement('option');o.value=o.textContent=s;salesSel.appendChild(o);});
+  }
+
+  let allDeals=DB.d.pipeline;
+  if(q) allDeals=allDeals.filter(d=>(d.custName||'').toLowerCase().includes(q)||(d.model||'').toLowerCase().includes(q)||(d.sales||'').toLowerCase().includes(q));
+  if(salesF) allDeals=allDeals.filter(d=>(d.sales||'')=== salesF);
+  if(_pipeStage!=='all') allDeals=allDeals.filter(d=>d.stage===_pipeStage);
+
+  const active=allDeals.filter(d=>d.stage!=='계약완료');
   const total=allDeals.reduce((s,d)=>s+Number(d.amount||0),0);
-  const weighted=allDeals.reduce((s,d)=>s+Number(d.amount||0)*Number(d.prob||0)/100,0);
+  const weighted=active.reduce((s,d)=>s+Number(d.amount||0)*Number(d.prob||0)/100,0);
+  const thisYm=new Date().toISOString().substring(0,7);
+  const closingThis=active.filter(d=>d.expectedDate&&d.expectedDate.startsWith(thisYm));
+  const won=allDeals.filter(d=>d.stage==='계약완료').reduce((s,d)=>s+Number(d.amount||0),0);
+
   document.getElementById('pipe-summary').innerHTML=`
-    <div class="col-4"><div class="card p-3 text-center"><div style="font-size:11px;color:#888">필터된 딜</div><div style="font-size:1.5rem;font-weight:700">${allDeals.length}건</div></div></div>
-    <div class="col-4"><div class="card p-3 text-center"><div style="font-size:11px;color:#888">총 파이프라인</div><div style="font-size:1.5rem;font-weight:700;color:#4f8ef7">${fmtAmt(total)}</div></div></div>
-    <div class="col-4"><div class="card p-3 text-center"><div style="font-size:11px;color:#888">가중 예상매출</div><div style="font-size:1.5rem;font-weight:700;color:#6f42c1">${fmtAmt(Math.round(weighted))}</div></div></div>`;
-  const stagesToShow = _pipeStage !== 'all' ? [_pipeStage] : STAGES;
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px">
+      <div class="card p-3 text-center"><div style="font-size:10px;color:#6b7280;margin-bottom:4px">진행중 딜</div><div style="font-size:1.4rem;font-weight:800;color:#2563eb">${active.length}<span style="font-size:12px;font-weight:400;color:#6b7280">건</span></div></div>
+      <div class="card p-3 text-center"><div style="font-size:10px;color:#6b7280;margin-bottom:4px">총 파이프라인</div><div style="font-size:1.1rem;font-weight:800;color:#374151">${fmtAmt(total)}</div></div>
+      <div class="card p-3 text-center"><div style="font-size:10px;color:#6b7280;margin-bottom:4px">가중 예상매출</div><div style="font-size:1.1rem;font-weight:800;color:#7c3aed">${fmtAmt(Math.round(weighted))}</div></div>
+      <div class="card p-3 text-center" style="border-top:2px solid #f59e0b"><div style="font-size:10px;color:#d97706;font-weight:600;margin-bottom:4px">이달 마감 예정</div><div style="font-size:1.4rem;font-weight:800;color:#d97706">${closingThis.length}<span style="font-size:12px;font-weight:400;color:#6b7280">건</span></div></div>
+      <div class="card p-3 text-center" style="border-top:2px solid #16a34a"><div style="font-size:10px;color:#16a34a;font-weight:600;margin-bottom:4px">계약완료</div><div style="font-size:1.1rem;font-weight:800;color:#16a34a">${fmtAmt(won)}</div></div>
+    </div>`;
+
+  const today=new Date().toISOString().split('T')[0];
+  const stagesToShow=_pipeStage!=='all'?[_pipeStage]:STAGES;
   document.getElementById('kanban-board').innerHTML=stagesToShow.map(stage=>{
     const deals=allDeals.filter(d=>d.stage===stage);
     const stotal=deals.reduce((s,d)=>s+Number(d.amount||0),0);
@@ -2034,22 +2121,24 @@ function renderPipeline() {
     <div class="pipeline-col-header"><span style="color:${SC[stage]}">${stage}</span><span style="background:#e0e4ef;color:#555;border-radius:10px;padding:1px 7px;font-size:11px">${deals.length}</span></div>
     <div style="font-size:11px;color:#888;margin-bottom:8px">${fmtAmt(stotal)}</div>
     ${deals.map(d=>{
-      const daysInStage = d.stageUpdatedAt ? Math.floor((Date.now()-new Date(d.stageUpdatedAt))/(864e5)) : null;
-      const staleWarn = daysInStage!==null && daysInStage>=14;
-      const staleDanger = daysInStage!==null && daysInStage>=30;
-      const daysBadge = daysInStage!==null ? `<span style="background:${staleDanger?'#dc2626':staleWarn?'#f59e0b':'#e5e7eb'};color:${staleDanger||staleWarn?'#fff':'#6b7280'};border-radius:6px;padding:1px 6px;font-size:10px;font-weight:700">${daysInStage}일째</span>` : '';
-      return`<div class="deal-card" draggable="true" ondragstart="dragStart(event,'${d.id}')" onclick='editPipeline("${d.id}")' style="border-left:3px solid ${SC[d.stage]||'#4f8ef7'}">
+      const daysInStage=d.stageUpdatedAt?Math.floor((Date.now()-new Date(d.stageUpdatedAt))/864e5):null;
+      const staleWarn=daysInStage!==null&&daysInStage>=14;
+      const staleDanger=daysInStage!==null&&daysInStage>=30;
+      const daysBadge=daysInStage!==null?`<span style="background:${staleDanger?'#dc2626':staleWarn?'#f59e0b':'#e5e7eb'};color:${staleDanger||staleWarn?'#fff':'#6b7280'};border-radius:6px;padding:1px 6px;font-size:10px;font-weight:700">${daysInStage}일째</span>`:'';
+      const isClosingThis=d.expectedDate&&d.expectedDate.startsWith(thisYm)&&d.stage!=='계약완료';
+      const isOverdue=d.expectedDate&&d.expectedDate<today&&d.stage!=='계약완료';
+      return`<div class="deal-card" draggable="true" ondragstart="dragStart(event,'${d.id}')" onclick='editPipeline("${d.id}")' style="border-left:3px solid ${SC[d.stage]||'#4f8ef7'}${isClosingThis?';box-shadow:0 0 0 1px #f59e0b':isOverdue?';box-shadow:0 0 0 1px #dc2626':''}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div style="font-size:13px;font-weight:600;flex:1">${d.custName||''}</div>
           ${daysBadge}
         </div>
         <div style="font-size:11px;color:#888;margin-top:1px">${d.model||''}</div>
-        <div style="font-size:13px;font-weight:700;color:#2563eb;margin-top:6px">${fmtAmt(Number(d.amount||0))}</div>
+        <div style="font-size:14px;font-weight:700;color:#2563eb;margin-top:5px">${fmtAmt(Number(d.amount||0))}</div>
         <div style="display:flex;justify-content:space-between;margin-top:5px;font-size:11px;color:#9ca3af;align-items:center">
-          <span>${d.sales||''}</span>
+          <span style="font-weight:600;color:#374151">${d.sales||''}</span>
           <span style="background:${probColor(d.prob)};color:#fff;border-radius:6px;padding:1px 7px;font-size:10px;font-weight:700">${d.prob||0}%</span>
         </div>
-        ${d.expectedDate?`<div style="font-size:10px;color:#9ca3af;margin-top:3px"><i class="bi bi-calendar3 me-1"></i>마감 ${fmtDate(d.expectedDate)}</div>`:''}
+        ${d.expectedDate?`<div style="font-size:10px;color:${isOverdue?'#dc2626':isClosingThis?'#d97706':'#9ca3af'};margin-top:3px;font-weight:${isOverdue||isClosingThis?'700':'400'}"><i class="bi bi-calendar3 me-1"></i>마감 ${fmtDate(d.expectedDate)}${isOverdue?' ⚠️ 기한초과':isClosingThis?' 이달마감':''}</div>`:''}
       </div>`;
     }).join('')}</div>`;
   }).join('');
@@ -2227,61 +2316,160 @@ function copyQuoteLink(id){
 
 // ── 목표 vs 실적 ──────────────────────────────────────────────────────
 function renderPerformance(){
-  const months=[];
   const now=new Date();
-  for(let i=11;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push(d.toISOString().substring(0,7));}
-  const monthlyT={},monthlyA={},salesT={},salesA={},custA={};
-  DB.d.targets.forEach(t=>{monthlyT[t.ym]=(monthlyT[t.ym]||0)+Number(t.target||0);salesT[t.sales]=(salesT[t.sales]||0)+Number(t.target||0);});
-  DB.d.pipeline.filter(d=>d.stage==='계약완료').forEach(r=>{
-    const ym=(r.expectedDate||'').substring(0,7);
-    if(ym){monthlyA[ym]=(monthlyA[ym]||0)+Number(r.amount||0);}
-    salesA[r.sales||'미배정']=(salesA[r.sales||'미배정']||0)+Number(r.amount||0);
-    custA[r.custName||'미분류']=(custA[r.custName||'미분류']||0)+Number(r.amount||0);
-  });
-  const ctx=document.getElementById('chart-perf').getContext('2d');
-  if(perfChart)perfChart.destroy();
-  perfChart=new Chart(ctx,{type:'bar',data:{labels:months.map(m=>m.substring(2)),datasets:[{label:'목표',data:months.map(m=>monthlyT[m]||0),backgroundColor:'rgba(79,142,247,.4)',borderColor:'#4f8ef7',borderWidth:2,borderRadius:4},{label:'실적',data:months.map(m=>monthlyA[m]||0),backgroundColor:'rgba(40,167,69,.7)',borderColor:'#28a745',borderWidth:2,borderRadius:4}]},options:{plugins:{legend:{position:'top'}},scales:{y:{ticks:{callback:v=>fmtAmt(v)}},x:{grid:{display:false}}}}});
-  const allS=new Set([...Object.keys(salesT),...Object.keys(salesA)]);
-  document.getElementById('sales-perf-table').innerHTML=[...allS].map(s=>{
-    const t=salesT[s]||0,a=salesA[s]||0,rate=t>0?Math.round(a/t*100):a>0?100:0;
-    const col=rate>=100?'#28a745':rate>=70?'#fd7e14':'#dc3545';
-    return`<div class="mb-3"><div class="d-flex justify-content-between mb-1"><span style="font-size:13px;font-weight:600">${s}</span><span style="font-size:12px;color:#666">${fmtAmt(a)} / ${fmtAmt(t)}</span></div><div class="progress" style="height:12px"><div class="progress-bar" style="width:${Math.min(rate,100)}%;background:${col}"></div></div><div style="font-size:11px;color:${col};font-weight:700;margin-top:2px">${rate}% 달성</div></div>`;
-  }).join('')||'<div class="text-muted text-center py-3" style="font-size:13px">목표를 먼저 등록하세요</div>';
-  const ctx2=document.getElementById('chart-cust-perf').getContext('2d');
-  if(custPerfChart)custPerfChart.destroy();
-  const cl=Object.keys(custA).sort((a,b)=>custA[b]-custA[a]).slice(0,10);
-  if(cl.length)custPerfChart=new Chart(ctx2,{type:'bar',data:{labels:cl,datasets:[{data:cl.map(c=>custA[c]),backgroundColor:'rgba(111,66,193,.7)',borderColor:'#6f42c1',borderWidth:2,borderRadius:4}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmtAmt(v)}}}}});
-  else document.getElementById('chart-cust-perf').parentNode.innerHTML='<div class="text-muted text-center py-4" style="font-size:13px">계약완료 실적 없음</div>';
+  const period=window._perfPeriod||'month';
+  const yms=[];
+  if(period==='month'){
+    yms.push(now.toISOString().substring(0,7));
+  } else if(period==='quarter'){
+    const q=Math.floor(now.getMonth()/3);
+    for(let m=q*3;m<=q*3+2;m++) yms.push(`${now.getFullYear()}-${String(m+1).padStart(2,'0')}`);
+  } else {
+    for(let m=0;m<12;m++) yms.push(`${now.getFullYear()}-${String(m+1).padStart(2,'0')}`);
+  }
+  const periodLabel=period==='month'?'이번달':period==='quarter'?'이번분기':'올해';
 
-  // Win Rate 퍼널
-  const total = DB.d.pipeline.length;
-  const funnel = STAGES.map(s=>({stage:s, count:DB.d.pipeline.filter(d=>d.stage===s).length, amt:DB.d.pipeline.filter(d=>d.stage===s).reduce((a,d)=>a+Number(d.amount||0),0)}));
-  const maxCount = Math.max(...funnel.map(f=>f.count),1);
-  document.getElementById('winrate-funnel').innerHTML = total===0
-    ? '<div class="text-muted text-center py-3" style="font-size:13px">딜 데이터 없음</div>'
-    : `<div style="display:flex;flex-direction:column;gap:8px">
-      ${funnel.map((f,i)=>{
-        const prev = i>0?funnel[i-1].count:f.count;
-        const conv = prev>0?Math.round(f.count/prev*100):0;
-        const barW = Math.round(f.count/maxCount*100);
-        return`<div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-            <span style="font-size:13px;font-weight:600;color:${SC[f.stage]}">${f.stage}</span>
-            <div style="display:flex;gap:10px;font-size:12px;color:#6b7280">
-              ${i>0?`<span style="color:${conv>=70?'#16a34a':conv>=40?'#ea580c':'#dc2626'};font-weight:700">↓ ${conv}%</span>`:'<span style="font-size:11px">시작</span>'}
-              <span>${f.count}건</span>
-              <span style="font-weight:600">${fmtAmt(f.amt)}</span>
-            </div>
+  // 월별 실적 (최근 12개월)
+  const months=[];
+  for(let i=11;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);}
+  const monthlyA={};
+  const monthlyL={};
+  DB.d.pipeline.filter(d=>d.stage==='계약완료').forEach(d=>{
+    const ym=(d.stageUpdatedAt||'').substring(0,7);
+    if(ym) monthlyA[ym]=(monthlyA[ym]||0)+Number(d.amount||0);
+  });
+  DB.d.logs.forEach(l=>{
+    const ym=(l.date||'').substring(0,7);
+    if(ym) monthlyL[ym]=(monthlyL[ym]||0)+1;
+  });
+
+  const ctx=document.getElementById('chart-perf').getContext('2d');
+  if(perfChart) perfChart.destroy();
+  perfChart=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:months.map(m=>m.split('-')[1]+'월'),
+      datasets:[
+        {label:'계약금액',data:months.map(m=>monthlyA[m]||0),backgroundColor:months.map(m=>yms.includes(m)?'rgba(37,99,235,0.7)':'rgba(37,99,235,0.15)'),borderColor:'#2563eb',borderWidth:1.5,borderRadius:5,yAxisID:'y'},
+        {label:'상담건수',data:months.map(m=>monthlyL[m]||0),type:'line',borderColor:'#f59e0b',borderWidth:2,pointRadius:3,fill:false,tension:0.3,yAxisID:'y2'}
+      ]
+    },
+    options:{
+      plugins:{legend:{position:'top',labels:{font:{size:11},boxWidth:10}}},
+      scales:{
+        y:{ticks:{callback:v=>fmtAmt(v)},grid:{color:'#f3f4f6'}},
+        y2:{ticks:{callback:v=>v+'건'},grid:{display:false},position:'right'}
+      }
+    }
+  });
+
+  // 영업사원별 실적 집계
+  const salesSet=new Set([...DB.d.pipeline.map(d=>d.sales||'미배정'),...DB.d.logs.map(l=>l.sales||'미배정')].filter(s=>s!=='미배정'));
+  const salesData=[...salesSet].map(s=>{
+    const wonDeals=DB.d.pipeline.filter(d=>d.stage==='계약완료'&&(d.sales||'')=== s&&yms.some(ym=>(d.stageUpdatedAt||'').startsWith(ym)));
+    const wonAmt=wonDeals.reduce((a,d)=>a+Number(d.amount||0),0);
+    const pipeDeals=DB.d.pipeline.filter(d=>d.stage!=='계약완료'&&(d.sales||'')===s);
+    const pipeW=Math.round(pipeDeals.reduce((a,d)=>a+Number(d.amount||0)*Number(d.prob||0)/100,0));
+    const logs=DB.d.logs.filter(l=>(l.sales||'')=== s&&yms.some(ym=>(l.date||'').startsWith(ym)));
+    const allLogs=DB.d.logs.filter(l=>(l.sales||'')===s);
+    const lastLog=allLogs.sort((a,b)=>b.date.localeCompare(a.date))[0];
+    const daysSince=lastLog?Math.floor((Date.now()-new Date(lastLog.date))/864e5):null;
+    return{s,wonAmt,wonCnt:wonDeals.length,pipeW,pipeCnt:pipeDeals.length,logCnt:logs.length,allLogCnt:allLogs.length,daysSince};
+  }).sort((a,b)=>b.wonAmt-a.wonAmt);
+  const maxWon=Math.max(...salesData.map(x=>x.wonAmt),1);
+
+  // KPI 요약
+  const totalWon=salesData.reduce((s,x)=>s+x.wonAmt,0);
+  const totalLog=salesData.reduce((s,x)=>s+x.logCnt,0);
+  const totalPipe=salesData.reduce((s,x)=>s+x.pipeW,0);
+  document.getElementById('perf-kpi').innerHTML=[
+    {icon:'bi-trophy-fill',c:'#f59e0b',label:periodLabel+' 계약',value:fmtAmt(totalWon),sub:salesData.reduce((s,x)=>s+x.wonCnt,0)+'건 계약완료'},
+    {icon:'bi-journal-check',c:'#2563eb',label:periodLabel+' 상담',value:totalLog+'건',sub:'영업팀 전체 상담일지'},
+    {icon:'bi-kanban',c:'#7c3aed',label:'파이프라인(가중)',value:fmtAmt(totalPipe),sub:'진행중 딜 전체'},
+    {icon:'bi-people-fill',c:'#16a34a',label:'활동 영업사원',value:salesData.filter(x=>x.logCnt>0||x.wonCnt>0).length+'명',sub:`총 ${salesData.length}명 등록`},
+  ].map(k=>`<div class="col-6 col-lg-3"><div class="card p-3" style="border-top:3px solid ${k.c}">
+    <div style="font-size:11px;color:#6b7280;margin-bottom:4px"><i class="bi ${k.icon} me-1" style="color:${k.c}"></i>${k.label}</div>
+    <div style="font-size:1.4rem;font-weight:800">${k.value}</div>
+    <div style="font-size:11px;color:#9ca3af">${k.sub}</div>
+  </div></div>`).join('');
+
+  // 영업사원별 카드
+  document.getElementById('sales-perf-table').innerHTML=salesData.length?`
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">
+      ${salesData.map((x,i)=>{
+        const barW=(x.wonAmt/maxWon*100).toFixed(0);
+        const actC=x.daysSince===null?'#d1d5db':x.daysSince<=7?'#16a34a':x.daysSince<=30?'#f59e0b':'#dc2626';
+        const MEDALS=['🥇','🥈','🥉'];
+        return`<div style="background:#f9fafb;border-radius:12px;padding:14px 16px;border:1px solid #e5e7eb">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="font-size:15px">${MEDALS[i]||''}</span>
+            <span style="font-size:14px;font-weight:700">${x.s}</span>
+            <span style="margin-left:auto;font-size:10px;font-weight:600;color:${actC}">${x.daysSince!==null?x.daysSince+'일전 활동':'활동없음'}</span>
           </div>
-          <div style="background:#f3f4f6;border-radius:6px;height:28px;position:relative;overflow:hidden">
-            <div style="background:${SC[f.stage]};width:${barW}%;height:100%;border-radius:6px;opacity:.85;transition:width .4s"></div>
-            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:700;color:#fff;mix-blend-mode:difference">${f.count}건</span>
+          <div style="font-size:20px;font-weight:800;color:#1e40af;margin-bottom:4px">${fmtAmt(x.wonAmt)}</div>
+          <div style="height:6px;background:#e5e7eb;border-radius:4px;margin-bottom:10px"><div style="height:6px;width:${barW}%;background:#2563eb;border-radius:4px"></div></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;text-align:center">
+            <div style="background:#fff;border-radius:8px;padding:7px 4px;border:1px solid #e5e7eb">
+              <div style="font-size:16px;font-weight:700;color:#2563eb">${x.wonCnt}</div>
+              <div style="font-size:9px;color:#6b7280">계약건</div>
+            </div>
+            <div style="background:#fff;border-radius:8px;padding:7px 4px;border:1px solid #e5e7eb">
+              <div style="font-size:16px;font-weight:700;color:#f59e0b">${x.logCnt}</div>
+              <div style="font-size:9px;color:#6b7280">상담(기간)</div>
+            </div>
+            <div style="background:#fff;border-radius:8px;padding:7px 4px;border:1px solid #e5e7eb">
+              <div style="font-size:16px;font-weight:700;color:#7c3aed">${x.pipeCnt}</div>
+              <div style="font-size:9px;color:#6b7280">딜진행</div>
+            </div>
+            <div style="background:#fff;border-radius:8px;padding:7px 4px;border:1px solid #e5e7eb">
+              <div style="font-size:12px;font-weight:700;color:#16a34a">${x.pipeW>=1e8?(x.pipeW/1e8).toFixed(1)+'억':x.pipeW>=1e4?Math.round(x.pipeW/1e4)+'만':x.pipeW}</div>
+              <div style="font-size:9px;color:#6b7280">파이프가중</div>
+            </div>
           </div>
         </div>`;
       }).join('')}
-      <div style="margin-top:8px;padding:10px 14px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;display:flex;justify-content:space-between">
-        <span style="font-size:13px;font-weight:700;color:#15803d">전체 Win Rate</span>
-        <span style="font-size:15px;font-weight:800;color:#15803d">${total>0?Math.round(funnel[4].count/total*100):0}%</span>
+    </div>`:'<div class="text-muted text-center py-4">데이터 없음</div>';
+
+  // 병원별 Top 10
+  const custA={};
+  DB.d.pipeline.filter(d=>d.stage==='계약완료').forEach(d=>{custA[d.custName||'미분류']=(custA[d.custName||'미분류']||0)+Number(d.amount||0);});
+  const ctx2=document.getElementById('chart-cust-perf').getContext('2d');
+  if(custPerfChart) custPerfChart.destroy();
+  const cl=Object.keys(custA).sort((a,b)=>custA[b]-custA[a]).slice(0,10);
+  if(cl.length) custPerfChart=new Chart(ctx2,{
+    type:'bar',
+    data:{labels:cl,datasets:[{data:cl.map(c=>custA[c]),backgroundColor:'rgba(124,58,237,0.6)',borderColor:'#7c3aed',borderWidth:1.5,borderRadius:4}]},
+    options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmtAmt(v)}},y:{ticks:{font:{size:11}}}}}
+  });
+  else document.getElementById('chart-cust-perf').parentNode.innerHTML='<div class="text-muted text-center py-4" style="font-size:13px">계약완료 실적 없음</div>';
+
+  // Win Rate 퍼널
+  const total2=DB.d.pipeline.length;
+  const funnel=STAGES.map(s=>({stage:s,count:DB.d.pipeline.filter(d=>d.stage===s).length,amt:DB.d.pipeline.filter(d=>d.stage===s).reduce((a,d)=>a+Number(d.amount||0),0)}));
+  const maxCount=Math.max(...funnel.map(f=>f.count),1);
+  document.getElementById('winrate-funnel').innerHTML=total2===0
+    ?'<div class="text-muted text-center py-3" style="font-size:13px">딜 데이터 없음</div>'
+    :`<div style="display:flex;flex-direction:column;gap:8px">
+      ${funnel.map((f,i)=>{
+        const prev=i>0?funnel[i-1].count:f.count;
+        const conv=prev>0?Math.round(f.count/prev*100):0;
+        const barW=Math.round(f.count/maxCount*100);
+        return`<div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+            <span style="font-size:12px;font-weight:600;color:${SC[f.stage]}">${f.stage}</span>
+            <div style="display:flex;gap:8px;font-size:11px;color:#6b7280">
+              ${i>0?`<span style="color:${conv>=70?'#16a34a':conv>=40?'#ea580c':'#dc2626'};font-weight:700">↓${conv}%</span>`:'<span style="font-size:10px">시작</span>'}
+              <span>${f.count}건</span><span style="font-weight:600">${fmtAmt(f.amt)}</span>
+            </div>
+          </div>
+          <div style="background:#f3f4f6;border-radius:5px;height:22px;position:relative;overflow:hidden">
+            <div style="background:${SC[f.stage]};width:${barW}%;height:100%;border-radius:5px;opacity:.8"></div>
+          </div>
+        </div>`;
+      }).join('')}
+      <div style="margin-top:6px;padding:8px 12px;background:#f0fdf4;border-radius:8px;display:flex;justify-content:space-between">
+        <span style="font-size:12px;font-weight:700;color:#15803d">Win Rate</span>
+        <span style="font-size:14px;font-weight:800;color:#15803d">${total2>0?Math.round(funnel[4].count/total2*100):0}%</span>
       </div>
     </div>`;
 }
