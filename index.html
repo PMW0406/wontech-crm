@@ -1318,10 +1318,12 @@ function consParseExcel(input) {
         const nm = r['거래처명']; if(!nm) return;
         const amt2 = Number(r[' 금액 ']||r['금액']||0); if(!amt2) return;
         const prod = r['구분#4']||'';
-        if(!hospMap[nm]) hospMap[nm]={total:0,y2025:0,y2026:0,orders:0,prods:{}};
+        if(!hospMap[nm]) hospMap[nm]={total:0,y2025:0,y2026:0,orders:0,prods:{},m2025:{},m2026:{}};
         hospMap[nm].total += amt2;
-        if(r._yr===2025) hospMap[nm].y2025 += amt2;
-        else hospMap[nm].y2026 += amt2;
+        const rawDate = r['날짜'];
+        const mo = rawDate ? new Date(rawDate).getMonth()+1 : null;
+        if(r._yr===2025){ hospMap[nm].y2025 += amt2; if(mo) hospMap[nm].m2025[mo]=(hospMap[nm].m2025[mo]||0)+amt2; }
+        else { hospMap[nm].y2026 += amt2; if(mo) hospMap[nm].m2026[mo]=(hospMap[nm].m2026[mo]||0)+amt2; }
         hospMap[nm].orders++;
         if(prod) hospMap[nm].prods[prod] = (hospMap[nm].prods[prod]||0)+amt2;
       });
@@ -1549,10 +1551,9 @@ function renderConsHospitals() {
   const q = (document.getElementById('hosp-search')?.value||'').trim().toLowerCase();
   const all = Object.entries(CONS.hospitals).filter(([n])=>!q||n.toLowerCase().includes(q));
 
-  // 동기간 기준 (1–5월) YoY 계산 — monthly 데이터로 근사
-  // hospitals에는 y2025(연간), y2026(YTD 1-5월) 저장됨
-  // YoY 비교는 2025 전체 ÷12×5 로 동기간 근사
-  const ytd25est = h => Math.round((h.y2025||0) / 12 * 5);
+  // 동기간 기준: 2026 YTD 월 범위를 기준으로 2025 실제 동월 합산
+  const ytdMonths = Object.keys(CONS.monthly2026||{}).map(Number).filter(m=>m>=1&&m<=12);
+  const ytd25est = h => ytdMonths.reduce((s,m)=>s+(h.m2025?.[m]||0),0);
 
   const active26 = all.filter(([,h])=>h.y2026>0).length;
   const new26    = all.filter(([,h])=>h.y2026>0&&h.y2025<=0).length;
@@ -1642,7 +1643,8 @@ function renderHospRank() {
   const fmtS = v => !v||v<=0?'<span style="color:#d1d5db">-</span>':v>=1e8?(v/1e8).toFixed(1)+'억':v>=1e4?Math.round(v/1e4).toLocaleString()+'만':v.toLocaleString();
   const q = (document.getElementById('hosp-search')?.value||'').trim().toLowerCase();
   const sortKey = document.getElementById('hosp-sort')?.value||'ytd26';
-  const ytd25est = h => Math.round((h.y2025||0)/12*5);
+  const ytdMonths = Object.keys(CONS.monthly2026||{}).map(Number).filter(m=>m>=1&&m<=12);
+  const ytd25est = h => ytdMonths.reduce((s,m)=>s+(h.m2025?.[m]||0),0);
 
   let list = Object.entries(CONS.hospitals).filter(([n])=>!q||n.toLowerCase().includes(q));
   if(sortKey==='ytd26')  list.sort((a,b)=>b[1].y2026-a[1].y2026);
