@@ -913,6 +913,14 @@ const DB = {
 let stageChart=null, salesChart=null, perfChart=null, custPerfChart=null;
 let qItemCount=0;
 
+// 해외 병원명 접두사 목록
+const FOREIGN_PFX = ['미국/','일본/','중국/','태국/','영국/','독일/','호주/','싱가포르/','베트남/','인도/','프랑스/','이탈리아/','스페인/','캐나다/','브라질/','말레이시아/','인도네시아/','필리핀/','홍콩/','대만/'];
+function purgeForeignHospitals() {
+  Object.keys(CONS.hospitals||{}).forEach(nm => {
+    if(FOREIGN_PFX.some(p => nm.startsWith(p))) delete CONS.hospitals[nm];
+  });
+}
+
 async function init() {
   // 소모품 데이터 복원 (GitHub → localStorage fallback)
   try {
@@ -921,6 +929,7 @@ async function init() {
   } catch(e) {
     try { const sc=localStorage.getItem('wt_cons_data'); if(sc) Object.assign(CONS,JSON.parse(sc)); } catch(e2){}
   }
+  purgeForeignHospitals(); // 해외 병원 제거 (캐시 잔존 데이터 방어)
   // 견적서 공개 링크 처리 (?q=견적번호)
   const qParam = new URLSearchParams(location.search).get('q');
   if(qParam) {
