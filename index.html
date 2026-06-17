@@ -1258,7 +1258,7 @@ function renderDashboard() {
   const actionItems=DB.d.logs.filter(l=>l.nextDate&&l.nextAction).sort((a,b)=>a.nextDate.localeCompare(b.nextDate));
   const overdueItems=actionItems.filter(l=>l.nextDate<todayStr);
   const todayItems=actionItems.filter(l=>l.nextDate===todayStr);
-  const weekItems=actionItems.filter(l=>l.nextDate>todayStr&&l.nextDate<=new Date(todayD.getTime()+7*864e5).toISOString().split('T')[0]);
+  const weekItems=actionItems.filter(l=>l.nextDate>todayStr&&l.nextDate<=new Date(now.getTime()+7*864e5).toISOString().split('T')[0]);
   document.getElementById('action-overdue-cnt').textContent=overdueItems.length?`지연 ${overdueItems.length}건`:'';
   document.getElementById('action-today-cnt').textContent=todayItems.length?`오늘 ${todayItems.length}건`:'';
   document.getElementById('action-week-cnt').textContent=weekItems.length?`이번주 ${weekItems.length}건`:'';
