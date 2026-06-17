@@ -2611,6 +2611,7 @@ function savePipeline() {
     amount: Number(gV('p-amount'))||0, stage: newStage,
     prob: Number(gV('p-prob'))||0, expectedDate: gV('p-date'),
     sales: gV('p-sales'), note: gV('p-note'),
+    createdAt: prev ? (prev.createdAt || prev.stageUpdatedAt) : new Date().toISOString(),
     stageUpdatedAt: (prev && prev.stage===newStage) ? (prev.stageUpdatedAt||new Date().toISOString()) : new Date().toISOString()
   };
   if(!d.custName||!d.model){alert('병원명과 제품/모델을 입력하세요.');return;}
@@ -2786,19 +2787,24 @@ function renderPerformance(){
   }).sort((a,b)=>b.wonAmt-a.wonAmt);
   const maxWon=Math.max(...salesData.map(x=>x.wonAmt),1);
 
-  // KPI 요약
-  const totalWon=salesData.reduce((s,x)=>s+x.wonAmt,0);
+  // KPI — 파이프라인 액션 중심 (대시보드와 중복 없이)
+  const todayStr2 = now.toISOString().split('T')[0];
+  const in30Str = new Date(now.getTime()+30*864e5).toISOString().split('T')[0];
+  const closingSoon = DB.d.pipeline.filter(d=>d.stage!=='계약완료'&&d.expectedDate&&d.expectedDate>=todayStr2&&d.expectedDate<=in30Str);
+  const closingSoonAmt = closingSoon.reduce((s,d)=>s+Number(d.amount||0),0);
+  const overdue = DB.d.pipeline.filter(d=>d.stage!=='계약완료'&&d.expectedDate&&d.expectedDate<todayStr2);
   const totalLog=salesData.reduce((s,x)=>s+x.logCnt,0);
-  const totalPipe=salesData.reduce((s,x)=>s+x.pipeW,0);
+  const newDeals = DB.d.pipeline.filter(d=>yms.some(ym=>(d.createdAt||d.stageUpdatedAt||'').startsWith(ym)));
   const _yms = yms;
   document.getElementById('perf-kpi').innerHTML=[
-    {icon:'bi-trophy-fill',c:'#f59e0b',label:periodLabel+' 계약',value:fmtAmt(totalWon),sub:salesData.reduce((s,x)=>s+x.wonCnt,0)+'건 계약완료',
-      onclick:`showPerfDrill('deals','${periodLabel} 계약완료 딜',d=>d.stage==='계약완료'&&[${_yms.map(y=>`'${y}'`).join(',')}].some(ym=>(d.stageUpdatedAt||'').startsWith(ym)))`},
-    {icon:'bi-journal-check',c:'#2563eb',label:periodLabel+' 상담',value:totalLog+'건',sub:'영업팀 전체 상담일지',
+    {icon:'bi-alarm-fill',c:'#ea580c',label:'마감 임박',value:closingSoon.length+'건',sub:`${fmtAmt(closingSoonAmt)} · 30일 이내`,
+      onclick:`showPerfDrill('deals','마감 임박 딜 (30일 이내)',d=>d.stage!=='계약완료'&&d.expectedDate&&d.expectedDate>='${todayStr2}'&&d.expectedDate<='${in30Str}')`},
+    {icon:'bi-exclamation-triangle-fill',c:'#dc2626',label:'지연 딜',value:overdue.length+'건',sub:'예정일 초과 미완료',
+      onclick:`showPerfDrill('deals','지연 딜',d=>d.stage!=='계약완료'&&d.expectedDate&&d.expectedDate<'${todayStr2}')`},
+    {icon:'bi-journal-check',c:'#2563eb',label:periodLabel+' 상담',value:totalLog+'건',sub:'기간 내 상담일지',
       onclick:`showPerfDrill('logs','${periodLabel} 상담일지',l=>[${_yms.map(y=>`'${y}'`).join(',')}].some(ym=>(l.date||'').startsWith(ym)))`},
-    {icon:'bi-kanban',c:'#7c3aed',label:'파이프라인(가중)',value:fmtAmt(totalPipe),sub:'진행중 딜 전체',
-      onclick:`showPerfDrill('deals','진행중 파이프라인',d=>d.stage!=='계약완료')`},
-    {icon:'bi-people-fill',c:'#16a34a',label:'활동 영업사원',value:salesData.filter(x=>x.logCnt>0||x.wonCnt>0).length+'명',sub:`총 ${salesData.length}명 등록`,onclick:''},
+    {icon:'bi-plus-circle-fill',c:'#16a34a',label:periodLabel+' 신규 딜',value:newDeals.length+'건',sub:`${newDeals.reduce((s,d)=>s+Number(d.amount||0),0)>=1e4?Math.round(newDeals.reduce((s,d)=>s+Number(d.amount||0),0)/1e4).toLocaleString()+'만원':'0원'} 유입`,
+      onclick:`showPerfDrill('deals','${periodLabel} 신규 딜',d=>[${_yms.map(y=>`'${y}'`).join(',')}].some(ym=>(d.createdAt||d.stageUpdatedAt||'').startsWith(ym)))`},
   ].map(k=>`<div class="col-6 col-lg-3"><div class="card p-3" style="border-top:3px solid ${k.c};${k.onclick?'cursor:pointer;':''}" ${k.onclick?`onclick="${k.onclick}"`:''}">
     <div style="font-size:11px;color:#6b7280;margin-bottom:4px"><i class="bi ${k.icon} me-1" style="color:${k.c}"></i>${k.label}</div>
     <div style="font-size:1.4rem;font-weight:800;${k.onclick?'color:#2563eb;text-decoration:underline dotted;':''}">${k.value}</div>
