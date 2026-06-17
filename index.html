@@ -566,6 +566,16 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
 
     <div id="cons-cart-row" style="display:none"></div>
     <div id="cons-group-bars" style="display:none"></div>
+    <!-- 드릴다운 패널 -->
+    <div id="cons-drill-panel" style="display:none" class="mt-3">
+      <div class="card p-3">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div id="cons-drill-title" style="font-size:14px;font-weight:700"></div>
+          <button onclick="document.getElementById('cons-drill-panel').style.display='none'" style="background:none;border:none;font-size:18px;color:#9ca3af;cursor:pointer">×</button>
+        </div>
+        <div id="cons-drill-content"></div>
+      </div>
+    </div>
   </div>
 
   <!-- 병원별 분석 (통합) -->
@@ -1678,20 +1688,26 @@ function renderConsumables() {
   const cartV25   = totFull25>0 ? Math.round(cartV25full * totYtd25 / totFull25) : 0;
 
   const kpiData = [
-    {color:'#ff4500',icon:'bi-star-fill',      label:`Oligio Tip 전체 (${ytdLabel})`, value:fmtB(oligTotal26), sub:`전년 동기 ${fmtB(oligTotal25)}`, chg:oligTotal25>0?(oligTotal26/oligTotal25-1)*100:null},
-    {color:'#2563eb',icon:'bi-graph-up-arrow', label:`Oligio F·E (${ytdLabel})`,      value:fmtB(oligFe26),    sub:`전년 동기 ${fmtB(oligFe25)}`,    chg:oligFe25>0?(oligFe26/oligFe25-1)*100:null},
-    {color:'#7c3aed',icon:'bi-bar-chart',      label:`Oligio X/XM (${ytdLabel})`,     value:fmtB(oligXm26),    sub:`전년 동기 ${fmtB(oligXm25)}`,    chg:oligXm25>0?(oligXm26/oligXm25-1)*100:null},
-    {color:'#0891b2',icon:'bi-cpu',            label:`Cartridge (${ytdLabel})`,        value:fmtB(cartV26),     sub:`전년 동기 추정 ${fmtB(cartV25)}`, chg:cartV25>0?(cartV26/cartV25-1)*100:null},
+    {color:'#ff4500',icon:'bi-star-fill',      label:`Oligio Tip 전체 (${ytdLabel})`, value:fmtB(oligTotal26), sub:`전년 동기 ${fmtB(oligTotal25)}`, chg:oligTotal25>0?(oligTotal26/oligTotal25-1)*100:null,
+     drill:()=>showConsDrill(['Oligio Tip [F-4.0]','Oligio Tip [E-0.25]','Oligio Tip [XF-4.0]','Oligio Tip [XE-0.25]'],'Oligio Tip 전체 구매 병원')},
+    {color:'#2563eb',icon:'bi-graph-up-arrow', label:`Oligio F·E (${ytdLabel})`,      value:fmtB(oligFe26),    sub:`전년 동기 ${fmtB(oligFe25)}`,    chg:oligFe25>0?(oligFe26/oligFe25-1)*100:null,
+     drill:()=>showConsDrill(['Oligio Tip [F-4.0]','Oligio Tip [E-0.25]'],'Oligio F·E 구매 병원')},
+    {color:'#7c3aed',icon:'bi-bar-chart',      label:`Oligio X/XM (${ytdLabel})`,     value:fmtB(oligXm26),    sub:`전년 동기 ${fmtB(oligXm25)}`,    chg:oligXm25>0?(oligXm26/oligXm25-1)*100:null,
+     drill:()=>showConsDrill(['Oligio Tip [XF-4.0]','Oligio Tip [XE-0.25]'],'Oligio X/XM 구매 병원')},
+    {color:'#0891b2',icon:'bi-cpu',            label:`Cartridge (${ytdLabel})`,        value:fmtB(cartV26),     sub:`전년 동기 추정 ${fmtB(cartV25)}`, chg:cartV25>0?(cartV26/cartV25-1)*100:null,
+     drill:()=>showConsDrill(null,'Cartridge 구매 병원')},
   ];
-  document.getElementById('cons-kpi').innerHTML = kpiData.map(k=>`
+  document.getElementById('cons-kpi').innerHTML = kpiData.map((k,i)=>`
     <div class="col-6 col-lg-3">
-      <div class="card p-3" style="border-top:3px solid ${k.color}">
+      <div class="card p-3" style="border-top:3px solid ${k.color};cursor:pointer" onclick="_consKpiDrill(${i})">
         <div style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:6px"><i class="bi ${k.icon} me-1" style="color:${k.color}"></i>${k.label}</div>
-        <div style="font-size:1.5rem;font-weight:800;line-height:1;margin-bottom:4px">${k.value}</div>
+        <div style="font-size:1.5rem;font-weight:800;line-height:1;margin-bottom:4px;color:#2563eb;text-decoration:underline dotted">${k.value}</div>
         <div style="font-size:11px;color:#9ca3af">${k.sub}</div>
         ${k.chg!==null?`<div style="margin-top:5px">${chgBadge(k.chg,false)}</div>`:''}
       </div>
     </div>`).join('');
+  window._consKpiDrills = kpiData.map(k=>k.drill);
+  window._consKpiDrill = i => _consKpiDrills[i]&&_consKpiDrills[i]();
 
   function getOligioMonthly() {
     if (CONS.oligioMo2025 && Object.keys(CONS.oligioMo2025).length) return {mo25:CONS.oligioMo2025, mo26:CONS.oligioMo2026};
@@ -1768,11 +1784,12 @@ function renderConsumables() {
     const chg=v25>0?(v26/v25-1)*100:null;
     const pct=(v26/oligTotal26*100)||0;
     const barW=(v26/maxProd26*100)||0;
-    return `<div style="padding:10px 0;border-bottom:1px solid #f3f4f6">
+    return `<div style="padding:10px 0;border-bottom:1px solid #f3f4f6;cursor:pointer" onclick="showConsDrill(['${p.key}'],'${p.grp} ${p.label} 구매 병원')" title="클릭하여 병원 내역 조회">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
         <div style="display:flex;align-items:center;gap:8px">
           <span style="width:10px;height:10px;border-radius:3px;background:${p.col};display:inline-block;flex-shrink:0"></span>
           <span style="font-size:13px;font-weight:700">${p.grp} <span style="font-weight:400;color:#9ca3af;font-size:11px">${p.label}</span></span>
+          <span style="font-size:10px;color:#9ca3af"><i class="bi bi-search"></i> 병원조회</span>
         </div>
         <div style="text-align:right;display:flex;align-items:center;gap:8px">
           <span style="font-size:13px;font-weight:800">${fmtW(v26)}</span>
@@ -1810,6 +1827,59 @@ function renderConsumables() {
   if(consDonutChart){consDonutChart.destroy();consDonutChart=null;}
 }
 
+
+function showConsDrill(prodKeys, label) {
+  // prodKeys: 제품명 배열 또는 null(전체)
+  const fmtA = v => !v||v<=0?'-':v>=1e8?(v/1e8).toFixed(1)+'억':v>=1e4?Math.round(v/1e4).toLocaleString()+'만원':v.toLocaleString()+'원';
+  const ytdMonths = Object.keys(CONS.monthly2026||{}).map(Number).filter(m=>m>=1&&m<=12);
+
+  const rows = Object.entries(CONS.hospitals||{}).map(([name,h])=>{
+    const filter = t => !prodKeys || prodKeys.includes(t[2]);
+    const v25 = (h.txns2025||[]).filter(filter).reduce((s,t)=>s+t[3],0);
+    const v26 = (h.txns2026||[]).filter(filter).reduce((s,t)=>s+t[3],0);
+    const cnt = (h.txns2025||[]).filter(filter).length + (h.txns2026||[]).filter(filter).length;
+    if(!v25 && !v26) return null;
+    const yoy = v25>0 ? ((v26/v25-1)*100).toFixed(0) : null;
+    return {name, v25, v26, yoy, cnt, last: h.lastDate};
+  }).filter(Boolean).sort((a,b)=>b.v26-a.v26);
+
+  if(!rows.length) {
+    document.getElementById('cons-drill-content').innerHTML='<div class="text-muted text-center py-3">데이터 없음</div>';
+  } else {
+    const daysSince = ds => ds ? Math.floor((Date.now()-new Date(ds))/864e5) : null;
+    document.getElementById('cons-drill-content').innerHTML=`
+      <div style="font-size:12px;color:#6b7280;margin-bottom:8px">총 ${rows.length}개 병원 · 클릭하면 병원 상세로 이동</div>
+      <div style="overflow-x:auto">
+      <table class="table table-sm table-hover mb-0" style="font-size:12px">
+        <thead class="table-light"><tr>
+          <th style="min-width:180px">병원명</th>
+          <th class="text-end">2025 YTD</th>
+          <th class="text-end">2026 YTD</th>
+          <th class="text-end">YoY</th>
+          <th class="text-end">건수</th>
+          <th class="text-end">최근구매</th>
+        </tr></thead>
+        <tbody>${rows.map((r,i)=>{
+          const ds = daysSince(r.last);
+          const dsC = ds===null?'#d1d5db':ds>365?'#dc2626':ds>180?'#d97706':ds>90?'#f59e0b':'#16a34a';
+          const yoyC = r.yoy===null?'#9ca3af':Number(r.yoy)>=0?'#16a34a':'#dc2626';
+          const safeN = r.name.replace(/"/g,'&quot;');
+          return `<tr>
+            <td><span style="font-size:10px;color:#9ca3af">${i+1}. </span><span style="cursor:pointer;color:#2563eb;font-weight:600;text-decoration:underline dotted" data-name="${safeN}" onclick="showHospitalDetail(this.dataset.name)">${r.name}</span></td>
+            <td class="text-end" style="color:#6b7280">${fmtA(r.v25)}</td>
+            <td class="text-end fw-bold">${fmtA(r.v26)}</td>
+            <td class="text-end fw-bold" style="color:${yoyC}">${r.yoy!==null?(Number(r.yoy)>=0?'▲':'▼')+Math.abs(r.yoy)+'%':'-'}</td>
+            <td class="text-end" style="color:#6b7280">${r.cnt}건</td>
+            <td class="text-end" style="color:${dsC}">${ds!==null?ds+'일전':'-'}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table></div>`;
+  }
+  document.getElementById('cons-drill-title').textContent = label;
+  const panel = document.getElementById('cons-drill-panel');
+  panel.style.display = 'block';
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
 
 // ── 소모품 병원별 분석 ────────────────────────────────────────────────
 let _hospTab = 'risk';
