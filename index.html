@@ -3308,14 +3308,25 @@ function showHospitalDetail(name){
     document.getElementById('hosp-txn-detail').scrollIntoView({behavior:'smooth',block:'nearest'});
   };
 
+  // 표시 제외 제품 (월별/합계/패턴 모두 동일 기준 적용)
+  const EXCL_DISP = ['A/S소모품'];
+  const txnsFiltered25 = (hospCons?.txns2025||[]).filter(t=>t[2]&&!EXCL_DISP.includes(t[2]));
+  const txnsFiltered26 = (hospCons?.txns2026||[]).filter(t=>t[2]&&!EXCL_DISP.includes(t[2]));
+  const mAmt25 = {}; txnsFiltered25.forEach(t=>{mAmt25[t[0]]=(mAmt25[t[0]]||0)+t[3];});
+  const mAmt26 = {}; txnsFiltered26.forEach(t=>{mAmt26[t[0]]=(mAmt26[t[0]]||0)+t[3];});
+  const tot25f = txnsFiltered25.reduce((s,t)=>s+t[3],0);
+  const tot26f = txnsFiltered26.reduce((s,t)=>s+t[3],0);
+  const hasF25 = txnsFiltered25.length>0;
+  const hasF26 = txnsFiltered26.length>0;
+
   let consHtml = '';
-  if(!hospCons || (!has25&&!has26)) {
+  if(!hospCons || (!hasF25&&!hasF26)) {
     consHtml = '<div class="text-muted text-center py-5" style="font-size:13px">소모품 구매 이력이 없습니다</div>';
   } else {
     // 월별 내역 테이블
     const monthRows = allMonths.map(m=>{
-      const v25 = hospCons?.m2025?.[m]||0;
-      const v26 = hospCons?.m2026?.[m]||0;
+      const v25 = mAmt25[m]||0;
+      const v26 = mAmt26[m]||0;
       if(!v25&&!v26) return '';
       const diff = v25>0 && v26>0 ? ((v26/v25-1)*100).toFixed(0) : null;
       const diffHtml = diff!==null
@@ -3370,8 +3381,8 @@ function showHospitalDetail(name){
       const total=txns.reduce((s,t)=>s+t[3],0);
       return {cnt:txns.length, avgGap, avgAmt:Math.round(total/txns.length), total};
     };
-    const pat25 = calcPattern(hospCons.txns2025||[]);
-    const pat26 = calcPattern(hospCons.txns2026||[]);
+    const pat25 = calcPattern(txnsFiltered25);
+    const pat26 = calcPattern(txnsFiltered26);
     const patternHtml = (pat25||pat26) ? `
       <div class="mt-3" style="border-top:1px solid #e5e7eb;padding-top:10px">
         <div class="fw-bold mb-2" style="font-size:12px;color:#374151"><i class="bi bi-graph-up-arrow me-1 text-success"></i>발주 패턴 비교</div>
@@ -3400,8 +3411,8 @@ function showHospitalDetail(name){
             <tbody>${monthRows||'<tr><td colspan="4" class="text-center text-muted py-3">내역 없음</td></tr>'}</tbody>
             <tfoot class="table-light"><tr>
               <td class="fw-bold text-center" style="font-size:11px">합계</td>
-              <td class="text-end fw-bold" style="font-size:11px;color:#6b7280"><span style="cursor:pointer;text-decoration:underline dotted" onclick="_hospTxnDetail(2025,'all',null)">${fmtM(allMonths.reduce((s,m)=>s+(hospCons?.m2025?.[m]||0),0))}</span></td>
-              <td class="text-end fw-bold" style="font-size:11px;color:#1d4ed8"><span style="cursor:pointer;text-decoration:underline dotted" onclick="_hospTxnDetail(2026,'all',null)">${fmtM(hospCons?.y2026||0)}</span></td>
+              <td class="text-end fw-bold" style="font-size:11px;color:#6b7280"><span style="cursor:pointer;text-decoration:underline dotted" onclick="_hospTxnDetail(2025,'all',null)">${fmtM(tot25f)}</span></td>
+              <td class="text-end fw-bold" style="font-size:11px;color:#1d4ed8"><span style="cursor:pointer;text-decoration:underline dotted" onclick="_hospTxnDetail(2026,'all',null)">${fmtM(tot26f)}</span></td>
               <td></td>
             </tr></tfoot>
           </table>
