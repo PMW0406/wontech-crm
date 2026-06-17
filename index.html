@@ -163,9 +163,8 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
     <div class="nav-label">메인</div>
     <ul class="nav flex-column gap-0">
       <li><a class="nav-link active" onclick="showPage('dashboard',this)"><i class="bi bi-grid-1x2"></i>대시보드</a></li>
-      <li><a class="nav-link" onclick="showPage('pipeline',this)"><i class="bi bi-kanban"></i>영업 파이프라인</a></li>
+      <li><a class="nav-link" onclick="showPage('sales',this)"><i class="bi bi-kanban"></i>영업관리</a></li>
       <li><a class="nav-link" onclick="showPage('quotes',this)"><i class="bi bi-file-earmark-text"></i>견적서</a></li>
-      <li><a class="nav-link" onclick="showPage('performance',this)"><i class="bi bi-bar-chart-line"></i>영업 실적</a></li>
     </ul>
     <div class="nav-label mt-3">소모품</div>
     <ul class="nav flex-column gap-0">
@@ -347,76 +346,62 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
   </div>
 
   <!-- 파이프라인 -->
-  <div id="page-pipeline" class="page">
-    <div class="page-header"><h5><i class="bi bi-kanban me-2"></i>영업 파이프라인</h5><button class="btn btn-primary btn-sm" onclick="openModal('pipeline')"><i class="bi bi-plus-lg me-1"></i>딜 추가</button></div>
-    <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
-      <input type="text" id="pipe-search" class="form-control form-control-sm" style="max-width:180px" placeholder="병원명, 제품, 담당자..." oninput="renderPipeline()">
-      <select id="pipe-sales-filter" class="form-select form-select-sm" style="max-width:120px" onchange="renderPipeline()"><option value="">전체 담당자</option></select>
-      <div class="d-flex gap-1 flex-wrap" id="pipe-stage-chips">
-        <span class="pipe-chip on" onclick="setPipeChip('all',this)">전체</span>
-        <span class="pipe-chip" onclick="setPipeChip('리드',this)">리드</span>
-        <span class="pipe-chip" onclick="setPipeChip('상담중',this)">상담중</span>
-        <span class="pipe-chip" onclick="setPipeChip('견적발송',this)">견적발송</span>
-        <span class="pipe-chip" onclick="setPipeChip('협의중',this)">협의중</span>
-        <span class="pipe-chip" onclick="setPipeChip('계약완료',this)">계약완료</span>
-      </div>
-    </div>
-    <div id="pipe-summary" class="mb-3"></div>
-    <div class="pipeline-board" id="kanban-board" style="align-items:stretch"></div>
-  </div>
-
-  <!-- 견적서 -->
-  <div id="page-quotes" class="page">
-    <div class="page-header"><h5><i class="bi bi-file-earmark-text me-2"></i>견적서</h5><button class="btn btn-primary btn-sm" onclick="openModal('quote')"><i class="bi bi-plus-lg me-1"></i>견적서 작성</button></div>
-    <div class="card"><div class="card-body p-0"><table class="table table-hover mb-0">
-      <thead class="table-light"><tr><th>견적번호</th><th>병원명</th><th>견적일</th><th>담당</th><th>합계</th><th>상태</th><th></th></tr></thead>
-      <tbody id="quote-list"></tbody>
-    </table></div></div>
-  </div>
-
-  <!-- 영업 실적 -->
-  <div id="page-performance" class="page">
+  <div id="page-sales" class="page">
+    <!-- 헤더 -->
     <div class="page-header">
-      <h5><i class="bi bi-bar-chart-line me-2"></i>영업 실적 현황</h5>
-      <div class="d-flex gap-1">
-        <button class="dash-period-btn on" id="pp-month"   onclick="setPerfPeriod('month',this)">이번달</button>
-        <button class="dash-period-btn"    id="pp-quarter" onclick="setPerfPeriod('quarter',this)">이번분기</button>
-        <button class="dash-period-btn"    id="pp-year"    onclick="setPerfPeriod('year',this)">올해</button>
+      <h5><i class="bi bi-kanban me-2"></i>영업관리</h5>
+      <div class="d-flex gap-2 align-items-center">
+        <div class="d-flex gap-1">
+          <button class="dash-period-btn on" id="pp-month"   onclick="setPerfPeriod('month',this)">이번달</button>
+          <button class="dash-period-btn"    id="pp-quarter" onclick="setPerfPeriod('quarter',this)">이번분기</button>
+          <button class="dash-period-btn"    id="pp-year"    onclick="setPerfPeriod('year',this)">올해</button>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('pipeline')"><i class="bi bi-plus-lg me-1"></i>딜 추가</button>
       </div>
     </div>
-    <!-- KPI 요약 -->
+    <!-- KPI 카드 -->
     <div class="row g-3 mb-3" id="perf-kpi"></div>
-    <!-- 월별 실적 차트 -->
-    <div class="row g-3 mb-3">
-      <div class="col-md-7">
-        <div class="card p-3 h-100">
-          <div class="fw-bold mb-2" style="font-size:14px">월별 계약 실적 (최근 12개월)</div>
-          <canvas id="chart-perf" height="130"></canvas>
+    <!-- 탭 -->
+    <ul class="nav nav-tabs mb-3" id="sales-tabs">
+      <li class="nav-item"><a class="nav-link active" style="cursor:pointer" onclick="salesTab('pipeline',this)"><i class="bi bi-kanban me-1"></i>파이프라인</a></li>
+      <li class="nav-item"><a class="nav-link" style="cursor:pointer" onclick="salesTab('analysis',this)"><i class="bi bi-bar-chart-line me-1"></i>실적 분석</a></li>
+    </ul>
+    <!-- 파이프라인 탭 -->
+    <div id="sales-tab-pipeline">
+      <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+        <input type="text" id="pipe-search" class="form-control form-control-sm" style="max-width:180px" placeholder="병원명, 제품, 담당자..." oninput="renderPipeline()">
+        <select id="pipe-sales-filter" class="form-select form-select-sm" style="max-width:120px" onchange="renderPipeline()"><option value="">전체 담당자</option></select>
+        <div class="d-flex gap-1 flex-wrap" id="pipe-stage-chips">
+          <span class="pipe-chip on" onclick="setPipeChip('all',this)">전체</span>
+          <span class="pipe-chip" onclick="setPipeChip('리드',this)">리드</span>
+          <span class="pipe-chip" onclick="setPipeChip('상담중',this)">상담중</span>
+          <span class="pipe-chip" onclick="setPipeChip('견적발송',this)">견적발송</span>
+          <span class="pipe-chip" onclick="setPipeChip('협의중',this)">협의중</span>
+          <span class="pipe-chip" onclick="setPipeChip('계약완료',this)">계약완료</span>
         </div>
       </div>
-      <div class="col-md-5">
-        <div class="card p-3 h-100">
-          <div class="fw-bold mb-2" style="font-size:14px"><i class="bi bi-funnel-fill me-1" style="color:#7c3aed"></i>Win Rate 퍼널</div>
-          <div id="winrate-funnel"></div>
-        </div>
-      </div>
+      <div id="pipe-summary" class="mb-3"></div>
+      <div class="pipeline-board" id="kanban-board" style="align-items:stretch"></div>
     </div>
-    <!-- 영업사원별 실적 카드 -->
-    <div class="row g-3 mb-3">
-      <div class="col-12">
-        <div class="card p-3">
-          <div class="fw-bold mb-3" style="font-size:14px"><i class="bi bi-people-fill me-2" style="color:#2563eb"></i>영업사원별 실적</div>
-          <div id="sales-perf-table"></div>
+    <!-- 실적 분석 탭 -->
+    <div id="sales-tab-analysis" style="display:none">
+      <div class="row g-3 mb-3">
+        <div class="col-md-7">
+          <div class="card p-3 h-100">
+            <div class="fw-bold mb-2" style="font-size:14px">월별 계약 실적 (최근 12개월)</div>
+            <div style="position:relative;height:200px"><canvas id="chart-perf"></canvas></div>
+          </div>
+        </div>
+        <div class="col-md-5">
+          <div class="card p-3 h-100">
+            <div class="fw-bold mb-2" style="font-size:14px"><i class="bi bi-funnel-fill me-1" style="color:#7c3aed"></i>Win Rate 퍼널</div>
+            <div id="winrate-funnel"></div>
+          </div>
         </div>
       </div>
-    </div>
-    <!-- 병원별 Top 10 -->
-    <div class="row g-3">
-      <div class="col-12">
-        <div class="card p-3">
-          <div class="fw-bold mb-2" style="font-size:14px">병원별 계약실적 Top 10</div>
-          <canvas id="chart-cust-perf" height="160"></canvas>
-        </div>
+      <div class="card p-3 mb-3">
+        <div class="fw-bold mb-3" style="font-size:14px"><i class="bi bi-people-fill me-2" style="color:#2563eb"></i>영업사원별 실적</div>
+        <div id="sales-perf-table"></div>
       </div>
     </div>
     <!-- 드릴다운 패널 -->
@@ -430,6 +415,16 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
       </div>
     </div>
   </div>
+
+  <!-- 견적서 -->
+  <div id="page-quotes" class="page">
+    <div class="page-header"><h5><i class="bi bi-file-earmark-text me-2"></i>견적서</h5><button class="btn btn-primary btn-sm" onclick="openModal('quote')"><i class="bi bi-plus-lg me-1"></i>견적서 작성</button></div>
+    <div class="card"><div class="card-body p-0"><table class="table table-hover mb-0">
+      <thead class="table-light"><tr><th>견적번호</th><th>병원명</th><th>견적일</th><th>담당</th><th>합계</th><th>상태</th><th></th></tr></thead>
+      <tbody id="quote-list"></tbody>
+    </table></div></div>
+  </div>
+
 
   <!-- 고객사 -->
   <div id="page-customers" class="page">
@@ -1037,12 +1032,11 @@ function showPage(name, el) {
   if(el) el.classList.add('active');
   else { const links = document.querySelectorAll('.nav-link');
     links.forEach(l=>{ if(l.textContent.trim().includes(
-      {dashboard:'대시보드',pipeline:'파이프라인',quotes:'견적서',performance:'목표',customers:'고객사',equipments:'장비',logs:'상담일지',products:'제품',consumables:'매출현황','cons-hospitals':'병원별','cons-accounts':'거래처'}[name]||''
+      {dashboard:'대시보드',sales:'영업관리',quotes:'견적서',customers:'고객사',equipments:'장비',logs:'상담일지',products:'제품',consumables:'매출현황','cons-hospitals':'병원별','cons-accounts':'거래처'}[name]||''
     )) l.classList.add('active'); }); }
   if(name==='dashboard') renderDashboard();
-  else if(name==='pipeline') renderPipeline();
+  else if(name==='sales'||name==='pipeline'||name==='performance') renderSalesPage(name);
   else if(name==='quotes') renderQuotes();
-  else if(name==='performance') renderPerformance();
   else if(name==='customers') renderCustomers();
   else if(name==='equipments') initEquip();
   else if(name==='logs') renderLogs();
@@ -1050,6 +1044,27 @@ function showPage(name, el) {
   else if(name==='consumables') renderConsumables();
   else if(name==='cons-hospitals') renderConsHospitals();
   else if(name==='cons-accounts') renderConsAccounts();
+}
+
+function renderSalesPage(hint) {
+  // page-sales가 active가 아니면 직접 표시
+  const pg = document.getElementById('page-sales');
+  if(pg) { document.querySelectorAll('.page').forEach(p=>p.classList.remove('active')); pg.classList.add('active'); }
+  renderPerformance();
+  renderPipeline();
+  if(hint==='performance') {
+    const tabs = document.querySelectorAll('#sales-tabs .nav-link');
+    salesTab('analysis', tabs[1]);
+  }
+}
+
+function salesTab(tab, el) {
+  document.querySelectorAll('#sales-tabs .nav-link').forEach(a=>a.classList.remove('active'));
+  if(el) el.classList.add('active');
+  document.getElementById('sales-tab-pipeline').style.display = tab==='pipeline' ? '' : 'none';
+  document.getElementById('sales-tab-analysis').style.display = tab==='analysis' ? '' : 'none';
+  document.getElementById('perf-drill-panel').style.display = 'none';
+  if(tab==='analysis' && perfChart) { perfChart.resize(); }
 }
 
 // ── 토스트 ──────────────────────────────────────────────────────
@@ -2344,7 +2359,7 @@ function runGlobalSearch(kw) {
     results.push({group:'장비', icon:'bi-device-ssd', label:`${e.custName} — ${e.model}`, sub:e.serial||'', action:`showPage('equips');document.getElementById('equip-search').value='${(e.model||'').replace(/'/g,"\\'")}';filterEquip();closeSearch()`}));
   // 파이프라인
   DB.d.pipeline.filter(d => [d.custName,d.model,d.sales].join(' ').toLowerCase().includes(q)).slice(0,4).forEach(d =>
-    results.push({group:'파이프라인', icon:'bi-kanban', label:`${d.custName} — ${d.model}`, sub:`${d.stage} · ${fmtAmt(Number(d.amount||0))}`, action:`showPage('pipeline');closeSearch();editPipeline('${d.id}')`}));
+    results.push({group:'파이프라인', icon:'bi-kanban', label:`${d.custName} — ${d.model}`, sub:`${d.stage} · ${fmtAmt(Number(d.amount||0))}`, action:`showPage('sales');closeSearch();editPipeline('${d.id}')`}));
   // 견적서
   DB.d.quotes.filter(q2 => [q2.id,q2.cust,q2.sales].join(' ').toLowerCase().includes(q)).slice(0,4).forEach(qt =>
     results.push({group:'견적서', icon:'bi-file-earmark-text', label:`${qt.id} — ${qt.cust}`, sub:qt.sales||'', action:`showPage('quotes');closeSearch();editQuote('${qt.id}')`}));
@@ -2827,18 +2842,6 @@ function renderPerformance(){
       }).join('')}
     </div>`:'<div class="text-muted text-center py-4">데이터 없음</div>';
 
-  // 병원별 Top 10
-  const custA={};
-  DB.d.pipeline.filter(d=>d.stage==='계약완료').forEach(d=>{custA[d.custName||'미분류']=(custA[d.custName||'미분류']||0)+Number(d.amount||0);});
-  const ctx2=document.getElementById('chart-cust-perf').getContext('2d');
-  if(custPerfChart) custPerfChart.destroy();
-  const cl=Object.keys(custA).sort((a,b)=>custA[b]-custA[a]).slice(0,10);
-  if(cl.length) custPerfChart=new Chart(ctx2,{
-    type:'bar',
-    data:{labels:cl,datasets:[{data:cl.map(c=>custA[c]),backgroundColor:'rgba(124,58,237,0.6)',borderColor:'#7c3aed',borderWidth:1.5,borderRadius:4}]},
-    options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmtAmt(v)}},y:{ticks:{font:{size:11}}}}}
-  });
-  else document.getElementById('chart-cust-perf').parentNode.innerHTML='<div class="text-muted text-center py-4" style="font-size:13px">계약완료 실적 없음</div>';
 
   // Win Rate 퍼널
   const total2=DB.d.pipeline.length;
