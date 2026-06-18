@@ -128,6 +128,9 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
 /* 런처 위에 모달 표시 */
 .modal{z-index:10000!important}
 .modal-backdrop{z-index:9999!important}
+/* 접근권한 카드 */
+.access-card.selected{border-color:#ff4500!important;background:#fff5f2}
+.access-card:hover{border-color:#fdba74!important}
 </style>
 </head>
 <body>
@@ -3784,15 +3787,21 @@ async function deleteUser(id, email) {
   renderUsers();
 }
 
+function toggleAccessCard(el) {
+  el.classList.toggle('selected');
+}
+function getSelectedAccess() {
+  return [...document.querySelectorAll('#access-cards .access-card.selected')].map(c=>c.dataset.val).join(',');
+}
 function openAddUserModal() {
   ['new-user-email','new-user-pw','new-user-name'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   const roleEl=document.getElementById('new-user-role'); if(roleEl) roleEl.value='user';
-  const accessEl=document.getElementById('new-user-access'); if(accessEl) accessEl.value='korea';
+  document.querySelectorAll('#access-cards .access-card').forEach(c=>c.classList.remove('selected'));
   const errEl=document.getElementById('add-user-error'); if(errEl) errEl.style.display='none';
+  const acErr=document.getElementById('access-card-error'); if(acErr) acErr.style.display='none';
   const modalEl=document.getElementById('addUserModal');
   if(!modalEl){ alert('모달을 찾을 수 없습니다.'); return; }
-  const m = bootstrap.Modal.getOrCreateInstance(modalEl);
-  m.show();
+  bootstrap.Modal.getOrCreateInstance(modalEl).show();
 }
 
 async function saveNewUser() {
@@ -3800,7 +3809,8 @@ async function saveNewUser() {
   const pw = document.getElementById('new-user-pw').value.trim();
   const name = document.getElementById('new-user-name').value.trim();
   const role = document.getElementById('new-user-role').value;
-  const access = document.getElementById('new-user-access')?.value || 'korea';
+  const access = getSelectedAccess();
+  if(!access) { document.getElementById('access-card-error').style.display='block'; return; }
   const errEl = document.getElementById('add-user-error');
   if(!email||!pw) { errEl.textContent='이메일과 비밀번호를 입력하세요.'; errEl.style.display='block'; return; }
 
@@ -3869,12 +3879,21 @@ window.addEventListener('popstate', function(e) {
     <div class="mb-2"><label class="form-label fw-bold" style="font-size:12px">이메일</label><input type="email" id="new-user-email" class="form-control form-control-sm" placeholder="example@gmail.com"></div>
     <div class="mb-2"><label class="form-label fw-bold" style="font-size:12px">임시 비밀번호</label><input type="text" id="new-user-pw" class="form-control form-control-sm" placeholder="임시 비밀번호"></div>
     <div class="mb-2"><label class="form-label fw-bold" style="font-size:12px">이름</label><input type="text" id="new-user-name" class="form-control form-control-sm" placeholder="홍길동"></div>
-    <div class="mb-2"><label class="form-label fw-bold" style="font-size:12px">접근 권한</label>
-      <select id="new-user-access" class="form-select form-select-sm">
-        <option value="korea">🇰🇷 한국 CRM만</option>
-        <option value="japan">🇯🇵 일본법인만</option>
-        <option value="korea,japan">🇰🇷🇯🇵 둘 다</option>
-      </select>
+    <div class="mb-3">
+      <label class="form-label fw-bold" style="font-size:12px">접근 권한 <span style="font-weight:400;color:#6b7280">(복수 선택 가능)</span></label>
+      <div id="access-cards" style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="access-card" data-val="korea" onclick="toggleAccessCard(this)"
+          style="flex:1;min-width:100px;border:2px solid #e5e7eb;border-radius:10px;padding:10px 12px;cursor:pointer;text-align:center;transition:all .15s">
+          <div style="font-size:20px">🇰🇷</div>
+          <div style="font-size:12px;font-weight:700;margin-top:4px">한국 CRM</div>
+        </div>
+        <div class="access-card" data-val="japan" onclick="toggleAccessCard(this)"
+          style="flex:1;min-width:100px;border:2px solid #e5e7eb;border-radius:10px;padding:10px 12px;cursor:pointer;text-align:center;transition:all .15s">
+          <div style="font-size:20px">🇯🇵</div>
+          <div style="font-size:12px;font-weight:700;margin-top:4px">일본법인</div>
+        </div>
+      </div>
+      <div id="access-card-error" style="font-size:11px;color:#dc2626;margin-top:4px;display:none">최소 1개 선택하세요</div>
     </div>
     <div class="mb-2"><label class="form-label fw-bold" style="font-size:12px">역할</label>
       <select id="new-user-role" class="form-select form-select-sm"><option value="user">일반</option><option value="admin">관리자</option></select>
