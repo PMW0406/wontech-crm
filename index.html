@@ -330,6 +330,11 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
             onmouseover="this.style.background='rgba(255,255,255,.08)'" onmouseout="this.style.background=''">
             <span>🇯🇵</span><span style="flex:1">일본법인 관리</span><i class="bi bi-arrow-right" style="font-size:11px"></i>
           </div>
+          <div id="switcher-intl-item" onclick="location.href='https://wt-management.github.io/wontech/intl.html'"
+            style="display:none;margin-top:4px;border-radius:6px;padding:9px 12px;align-items:center;gap:8px;color:#94a3b8;font-size:12px;cursor:pointer;transition:background .15s"
+            onmouseover="this.style.background='rgba(255,255,255,.08)'" onmouseout="this.style.background=''">
+            <span>🌏</span><span style="flex:1">해외 영업</span><i class="bi bi-arrow-right" style="font-size:11px"></i>
+          </div>
           <div id="switcher-admin-item" onclick="document.getElementById('site-dropdown').style.display='none';sessionStorage.setItem('wt_app','admin');document.getElementById('main-content').style.display='none';showAdminPanel();document.getElementById('launcher-screen').style.display='flex';"
             style="display:none;margin-top:4px;border-radius:6px;padding:9px 12px;align-items:center;gap:8px;color:#94a3b8;font-size:12px;cursor:pointer;transition:background .15s"
             onmouseover="this.style.background='rgba(255,255,255,.08)'" onmouseout="this.style.background=''">
@@ -1395,6 +1400,15 @@ async function _showLauncherOrApp(user) {
           <div style="font-size:36px;margin-bottom:12px">🇯🇵</div>
           <div style="font-size:16px;font-weight:800;color:#111827;margin-bottom:6px">일본법인 관리</div>
           <div style="font-size:12px;color:#6b7280">매출 · 수주 · 임금</div>
+        </div>` : '',
+      (access.includes('intl') || access.includes('korea') || _isAdmin) ? `
+        <div onclick="location.href='https://wt-management.github.io/wontech/intl.html'"
+          style="background:#fff;border-radius:20px;padding:36px 40px;width:220px;text-align:center;cursor:pointer;transition:transform .15s,box-shadow .15s;box-shadow:0 8px 30px rgba(0,0,0,.3)"
+          onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 16px 40px rgba(0,0,0,.4)'"
+          onmouseout="this.style.transform='';this.style.boxShadow='0 8px 30px rgba(0,0,0,.3)'">
+          <div style="font-size:36px;margin-bottom:12px">🌏</div>
+          <div style="font-size:16px;font-weight:800;color:#111827;margin-bottom:6px">해외 영업</div>
+          <div style="font-size:12px;color:#6b7280">국가별 · 제품별 · 담당자별</div>
         </div>` : ''
     ].join('');
     document.getElementById('launcher-cards').innerHTML = cards;
@@ -1419,12 +1433,16 @@ function _hideLoading() {
 async function _bootApp(access) {
   await Promise.all([DB.load(), loadUserRole()]);
   // japan 권한 또는 관리자이면 사이트 전환 메뉴 표시
-  if(access?.includes('japan') || _isAdmin) {
+  if(access?.includes('japan') || access?.includes('intl') || _isAdmin) {
     document.getElementById('site-switcher').style.display='block';
   }
   if(access?.includes('japan')) {
     const ji = document.getElementById('switcher-japan-item');
     if(ji) { ji.style.display='flex'; }
+  }
+  if(access?.includes('intl') || access?.includes('korea') || _isAdmin) {
+    const ii = document.getElementById('switcher-intl-item');
+    if(ii) { ii.style.display='flex'; }
   }
   if(_isAdmin) {
     const ai = document.getElementById('switcher-admin-item');
