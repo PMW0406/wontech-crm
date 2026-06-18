@@ -2012,11 +2012,11 @@ function consParseExcel(input) {
 
       // 제품(device) 집계
       setMsg('제품 데이터 집계 중...');
-      function parseDeviceSheet(sheetName) {
-        const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {defval:null});
+      const parseDeviceSheet = (sn) => {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], {defval:null});
         return rows.filter(r => r['구분#2'] === '제품' && r['국내외'] === '국내');
-      }
-      function aggregateDevice(rows) {
+      };
+      const aggregateDevice = (rows) => {
         const monthly = {}, products = {}, prodMo = {};
         rows.forEach(r => {
           const amt = Number(r[' 금액 '] || r['금액'] || 0);
@@ -2031,7 +2031,7 @@ function consParseExcel(input) {
           }
         });
         return {monthly, products, prodMo};
-      }
+      };
       const rd25 = parseDeviceSheet(sheet25name);
       const rd26 = parseDeviceSheet(sheet26name);
       const ad25 = aggregateDevice(rd25);
