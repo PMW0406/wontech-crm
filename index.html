@@ -1016,10 +1016,6 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
         <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option><option value="4">4월</option><option value="5">5월</option><option value="6" selected>6월</option><option value="7">7월</option><option value="8">8월</option><option value="9">9월</option><option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
       </select>
     </div>
-    <!-- KPI 합계 -->
-    <div class="row g-3 mb-3" id="devrep-kpi"></div>
-    <!-- 담당자 카드 그리드 -->
-    <div id="devrep-cards" class="row g-3 mb-3"></div>
     <!-- 상세 드릴다운 -->
     <div id="devrep-detail" style="display:none" class="card p-0 mb-3">
       <div class="p-3 border-bottom d-flex align-items-center justify-content-between">
@@ -4646,10 +4642,7 @@ function renderDevReps() {
   const YTD   = Array.from({length:toM-fromM+1},(_,i)=>fromM+i);
   const reps  = DEVICE.reps||{};
 
-  if (!Object.keys(reps).length) {
-    document.getElementById('devrep-kpi').innerHTML = '<div class="col-12"><div class="card p-4 text-center text-muted">데이터가 없습니다.</div></div>';
-    return;
-  }
+  if (!Object.keys(reps).length) return;
 
   // per-rep YTD
   const entries = Object.entries(reps).map(([name, rep]) => {
@@ -4662,45 +4655,6 @@ function renderDevReps() {
     const topProd = Object.entries(yr===2026?rep.prods2026:rep.prods2025||{}).sort((a,b)=>b[1]-a[1])[0]?.[0]||'';
     return {name, rep, cur, pre, qty, cust, topProd, yoy: pre>0?(cur/pre-1)*100:null};
   }).sort((a,b)=>b.cur-a.cur);
-
-  const totalCur = entries.reduce((s,e)=>s+e.cur,0);
-  const totalPre = entries.reduce((s,e)=>s+e.pre,0);
-  const totalQty = entries.reduce((s,e)=>s+e.qty,0);
-  const yoyTotal = totalPre>0?(totalCur/totalPre-1)*100:null;
-
-  document.getElementById('devrep-kpi').innerHTML = [
-    {label:`전체 YTD 매출 (${fromM===toM?fromM+'월':fromM+'~'+toM+'월'})`, val:fmtW(totalCur), sub:`전년 동기 ${fmtW(totalPre)}`, col:'#2563eb', icon:'bi-currency-won'},
-    {label:'YoY 성장률', val:yoyTotal===null?'-':((yoyTotal>=0?'▲':'▼')+Math.abs(yoyTotal).toFixed(1)+'%'), sub:'전년 동기 대비', col:yoyTotal===null?'#6b7280':yoyTotal>=0?'#16a34a':'#dc2626', icon:'bi-graph-up'},
-    {label:'총 판매 대수', val:totalQty.toLocaleString()+'대', sub:`${yr}년 기준`, col:'#7c3aed', icon:'bi-boxes'},
-    {label:'담당자 수', val:entries.filter(e=>e.cur>0).length+'명', sub:`전년 ${entries.filter(e=>e.pre>0).length}명`, col:'#0891b2', icon:'bi-person-badge'},
-  ].map(c=>`<div class="col-6 col-md-3"><div class="kpi-card">
-    <div class="kpi-label"><i class="bi ${c.icon} me-1" style="color:${c.col}"></i>${c.label}</div>
-    <div class="kpi-value" style="color:${c.col};font-size:1.4rem">${c.val}</div>
-    <div class="kpi-sub">${c.sub}</div>
-  </div></div>`).join('');
-
-  // rep cards
-  const COLS = ['#2563eb','#7c3aed','#0891b2','#16a34a','#ea580c','#dc2626','#64748b','#854d0e'];
-  document.getElementById('devrep-cards').innerHTML = entries.map((e,i) => {
-    const pct = totalCur>0?(e.cur/totalCur*100):0;
-    const yoyBadge = e.yoy!==null
-      ? `<span style="font-size:11px;font-weight:700;color:${e.yoy>=0?'#16a34a':'#dc2626'}">${e.yoy>=0?'▲':'▼'}${Math.abs(e.yoy).toFixed(1)}%</span>` : '';
-    const col = COLS[i%COLS.length];
-    return `<div class="col-md-4 col-lg-3">
-      <div class="card p-3" style="cursor:pointer;border-left:4px solid ${col}" onclick="showDevRepDetail('${e.name.replace(/'/g,'\\\'')}')" title="클릭하면 상세 보기">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-          <div style="font-size:13px;font-weight:700;color:#111827">${e.name}</div>
-          <div>${yoyBadge}</div>
-        </div>
-        <div style="font-size:18px;font-weight:800;color:${col};margin-bottom:2px">${fmtW(e.cur)}</div>
-        <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">전년 ${fmtW(e.pre)} · ${e.qty}대 · ${e.cust}개사</div>
-        <div style="background:#f3f4f6;border-radius:4px;height:6px;overflow:hidden;margin-bottom:6px">
-          <div style="width:${pct.toFixed(1)}%;height:100%;background:${col};border-radius:4px"></div>
-        </div>
-        <div style="font-size:10px;color:#9ca3af">점유율 ${pct.toFixed(1)}% · 주력: ${e.topProd||'-'}</div>
-      </div>
-    </div>`;
-  }).join('');
 
   // rank table
   document.getElementById('devrep-rank-table').innerHTML = entries.map((e,i) => {
