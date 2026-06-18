@@ -1230,7 +1230,7 @@ async function _showLauncherOrApp(user) {
     if(_isAdmin) document.getElementById('launcher-admin-btn').style.display = '';
     document.getElementById('launcher-screen').style.display = 'flex';
     _hideLoading();
-  } else if(access.includes('japan')) {
+  } else if(access.includes('japan') || access.includes('jp')) {
     const {data:{session:_s}} = await _sb.auth.getSession();
     let _jurl = 'https://wt-management.github.io/wtj-management/';
     if(_s) _jurl += '#at='+encodeURIComponent(_s.access_token)+'&rt='+encodeURIComponent(_s.refresh_token);
