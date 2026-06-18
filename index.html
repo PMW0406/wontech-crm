@@ -281,6 +281,16 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
       </div>
     </div>
     <a class="nav-link" style="color:#6b7280;margin:0 0 4px" onclick="openSearch()"><i class="bi bi-search"></i>통합 검색 <kbd style="font-size:9px;background:#1e293b;border:1px solid #334155;border-radius:4px;padding:1px 4px;color:#94a3b8;margin-left:auto">⌘K</kbd></a>
+    <!-- 사이트 전환 -->
+    <div id="site-switcher" style="display:none;border-top:1px solid #1e293b;margin-top:8px;padding-top:8px">
+      <div style="font-size:10px;color:#475569;font-weight:600;letter-spacing:.5px;padding:0 8px;margin-bottom:6px">SITES</div>
+      <a class="nav-link" style="background:rgba(255,69,0,.12);color:#ff4500;font-weight:700;pointer-events:none">
+        <span style="font-size:13px">🇰🇷</span> 한국 CRM <i class="bi bi-check2" style="margin-left:auto;font-size:12px"></i>
+      </a>
+      <a class="nav-link" style="color:#64748b" onclick="location.href='https://wt-management.github.io/wtj-management/'">
+        <span style="font-size:13px">🇯🇵</span> 일본법인 관리 <i class="bi bi-arrow-right" style="margin-left:auto;font-size:11px"></i>
+      </a>
+    </div>
   </div>
 </nav>
 
@@ -1131,16 +1141,17 @@ async function init() {
 async function _showLauncherOrApp(user) {
   const {data: profile} = await _sb.from('crm_profiles').select('access,role').eq('id', user.id).single();
   const access = (profile?.access || 'korea').split(',').map(s=>s.trim());
+  _currentAccess = access;
   _isAdmin = profile?.role === 'admin';
   // 새로고침 시 이전에 CRM 선택했으면 런처 건너뜀
   if(sessionStorage.getItem('wt_app') === 'korea' && access.includes('korea')) {
-    await _bootApp(); return;
+    await _bootApp(access); return;
   }
   if(access.length > 1 || _isAdmin) {
     // 여러 법인 접근 가능 or 관리자 → 런처 표시
     const cards = [
       access.includes('korea') ? `
-        <div onclick="sessionStorage.setItem('wt_app','korea');history.replaceState({page:'launcher'},'',location.href);document.getElementById('launcher-screen').style.display='none';_bootApp();"
+        <div onclick="sessionStorage.setItem('wt_app','korea');history.replaceState({page:'launcher'},'',location.href);document.getElementById('launcher-screen').style.display='none';_bootApp(_currentAccess);"
           style="background:#fff;border-radius:20px;padding:36px 40px;width:220px;text-align:center;cursor:pointer;transition:transform .15s,box-shadow .15s;box-shadow:0 8px 30px rgba(0,0,0,.3)"
           onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 16px 40px rgba(0,0,0,.4)'"
           onmouseout="this.style.transform='';this.style.boxShadow='0 8px 30px rgba(0,0,0,.3)'">
@@ -1165,7 +1176,7 @@ async function _showLauncherOrApp(user) {
   } else if(access.includes('japan')) {
     location.href = 'https://wt-management.github.io/wtj-management/';
   } else {
-    await _bootApp();
+    await _bootApp(access);
   }
 }
 
@@ -1174,8 +1185,12 @@ function _hideLoading() {
   if(el) el.style.display='none';
 }
 
-async function _bootApp() {
+async function _bootApp(access) {
   await Promise.all([DB.load(), loadUserRole()]);
+  // japan 접근권한 있으면 사이트 전환 메뉴 표시
+  if(access?.includes('japan')) {
+    document.getElementById('site-switcher').style.display='block';
+  }
   const lastPage = sessionStorage.getItem('wt_page') || 'dashboard';
   showPage(lastPage);
   document.getElementById('main-content').style.display='block';
@@ -3739,6 +3754,7 @@ function delLog(){
 
 // ── 사용자 관리 ──────────────────────────────────────────────────────
 let _isAdmin = false;
+let _currentAccess = ['korea'];
 
 async function loadUserRole() {
   const {data:{session}} = await _sb.auth.getSession();
@@ -3889,10 +3905,18 @@ init();
 
 window.addEventListener('popstate', function(e) {
   if(e.state?.page === 'launcher') {
+    sessionStorage.removeItem('wt_app');
+    sessionStorage.removeItem('wt_page');
     document.getElementById('main-content').style.display = 'none';
     document.getElementById('launcher-screen').style.display = 'flex';
   } else if(e.state?.page) {
     showPage(e.state.page, null, true);
+  } else {
+    // 히스토리 첫 엔트리 이전 — 현재 페이지 유지
+    const cur = sessionStorage.getItem('wt_page');
+    if(cur && document.getElementById('main-content').style.display !== 'none') {
+      history.pushState({page: cur}, '', location.href.split('#')[0] + '#' + cur);
+    }
   }
 });
 </script>
