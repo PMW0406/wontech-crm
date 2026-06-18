@@ -1198,7 +1198,8 @@ async function _showLauncherOrApp(user) {
   _isAdmin = profile?.role === 'admin';
   // 새로고침 시 이전 상태 복원
   if(sessionStorage.getItem('wt_app') === 'admin' && _isAdmin) {
-    showAdminPanel(); document.getElementById('launcher-screen').style.display='flex'; return;
+    document.getElementById('launcher-screen').style.display='flex';
+    showAdminPanel(); _hideLoading(); return;
   }
   if(sessionStorage.getItem('wt_app') === 'korea' && access.includes('korea')) {
     await _bootApp(access); return;
@@ -3884,6 +3885,7 @@ function showAdminPanel() {
 }
 
 function hideAdminPanel() {
+  sessionStorage.removeItem('wt_app');
   document.getElementById('launcher-admin').style.display = 'none';
   document.getElementById('launcher-main').style.display = 'flex';
 }
