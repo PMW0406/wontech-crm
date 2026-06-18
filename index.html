@@ -4013,7 +4013,7 @@ async function saveNewUser() {
   const adminData = await adminRes.json();
   if(!adminRes.ok) { errEl.textContent='오류: '+(adminData.error||adminData.message||'알 수 없는 오류'); errEl.style.display='block'; return; }
 
-  const userId = adminData.id;
+  const userId = adminData.user?.id || adminData.id;
   if(userId) {
     await _sb.from('crm_profiles').upsert({id: userId, email, display_name: name||email.split('@')[0], dept, position, role, access, temp_pw: pw});
   }
