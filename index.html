@@ -1402,20 +1402,6 @@ async function _showLauncherOrApp(user) {
         </div>` : '',
 
  : '',
-      access.includes('japan') ? `
-        <div onclick="location.href='https://wt-management.github.io/wtj-management/'"
-          style="${cardStyle}" onmouseover="${cardHover}" onmouseout="${cardOut}">
-          <div style="height:5px;background:linear-gradient(90deg,#f59e0b,#ef4444)"></div>
-          <div style="padding:28px 24px">
-            <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#f59e0b,#ef4444);display:flex;align-items:center;justify-content:center;margin-bottom:16px;box-shadow:0 8px 20px rgba(245,158,11,.35)">
-              <i class="bi bi-building-fill" style="font-size:22px;color:#fff"></i>
-            </div>
-            <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:6px;letter-spacing:-.3px">일본법인 관리</div>
-            <div style="font-size:11px;color:#64748b;line-height:1.6">매출 · 수주<br>임금 현황</div>
-            <div style="margin-top:16px;display:flex;align-items:center;gap:4px;font-size:11px;color:#f59e0b;font-weight:600">
-              입장하기 <i class="bi bi-arrow-right" style="font-size:10px"></i></div>
-          </div>
-        </div>` : '',
       (access.includes('intl') || access.includes('korea') || _isAdmin) ? `
         <div onclick="(async()=>{const {data:{session:s}}=await _sb.auth.getSession();let u='https://wt-management.github.io/wontech/intl.html';if(s)u+='#at='+encodeURIComponent(s.access_token)+'&rt='+encodeURIComponent(s.refresh_token);location.href=u;})()"
           style="${cardStyle}" onmouseover="${cardHover}" onmouseout="${cardOut}">
@@ -1430,6 +1416,20 @@ async function _showLauncherOrApp(user) {
               입장하기 <i class="bi bi-arrow-right" style="font-size:10px"></i></div>
           </div>
         </div>` : ''
+      access.includes('japan') ? `
+        <div onclick="location.href='https://wt-management.github.io/wtj-management/'"
+          style="${cardStyle}" onmouseover="${cardHover}" onmouseout="${cardOut}">
+          <div style="height:5px;background:linear-gradient(90deg,#f59e0b,#ef4444)"></div>
+          <div style="padding:28px 24px">
+            <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#f59e0b,#ef4444);display:flex;align-items:center;justify-content:center;margin-bottom:16px;box-shadow:0 8px 20px rgba(245,158,11,.35)">
+              <i class="bi bi-building-fill" style="font-size:22px;color:#fff"></i>
+            </div>
+            <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:6px;letter-spacing:-.3px">일본법인 관리</div>
+            <div style="font-size:11px;color:#64748b;line-height:1.6">매출 · 수주<br>임금 현황</div>
+            <div style="margin-top:16px;display:flex;align-items:center;gap:4px;font-size:11px;color:#f59e0b;font-weight:600">
+              입장하기 <i class="bi bi-arrow-right" style="font-size:10px"></i></div>
+          </div>
+        </div>` : '',
     ].join('');
     document.getElementById('launcher-cards').innerHTML = cards;
     if(_isAdmin) document.getElementById('launcher-admin-btn').style.display = '';
