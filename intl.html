@@ -451,7 +451,6 @@ function handleUpload(file){
   rd.readAsArrayBuffer(file);
 }
 
-renderOverview();
 
 </script>
 </div><!-- /main -->
@@ -487,5 +486,77 @@ renderOverview();
 </div>
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
+<script>
+
+// ── Supabase Auth ──────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://mhfacbsittfdkknwybhc.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_aPMOOWAlyJlMcP1ZM_gpPA_jlrcvCRd';
+const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let _currentUser = null;
+
+async function doLogin() {
+  const email = (document.getElementById('login-email').value||'').trim().toLowerCase();
+  const pw    = (document.getElementById('login-pw').value||'').trim();
+  const btn   = document.getElementById('login-btn');
+  const errEl = document.getElementById('login-error');
+  if(!email||!pw){errEl.textContent='이메일과 비밀번호를 입력하세요.';errEl.style.display='block';return;}
+  btn.disabled=true; btn.textContent='로그인 중...'; errEl.style.display='none';
+  const {data,error} = await _sb.auth.signInWithPassword({email, password:pw});
+  if(error){btn.disabled=false;btn.textContent='로그인';errEl.textContent='이메일 또는 비밀번호가 올바르지 않습니다.';errEl.style.display='block';return;}
+  await _afterLogin(data.session.user);
+}
+
+async function _afterLogin(user) {
+  const {data:profile} = await _sb.from('crm_profiles').select('display_name,access,role').eq('id',user.id).maybeSingle();
+  const access = profile?.access||'';
+  const allowed = access.includes('korea')||access.includes('intl')||profile?.role==='admin';
+  if(!allowed){
+    await _sb.auth.signOut();
+    const errEl=document.getElementById('login-error');
+    errEl.textContent='해외영업 접근 권한이 없습니다.';errEl.style.display='block';
+    const btn=document.getElementById('login-btn');btn.disabled=false;btn.textContent='로그인';
+    return;
+  }
+  _currentUser={email:user.email,name:profile?.display_name||user.email.split('@')[0],access,role:profile?.role||'general'};
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('main').style.display='block';
+  const un=document.getElementById('user-name');if(un)un.textContent=_currentUser.name;
+  const lb=document.getElementById('logout-btn');if(lb)lb.style.display='';
+  renderOverview();
+}
+
+async function doLogout() {
+  await _sb.auth.signOut();
+  document.getElementById('main').style.display='none';
+  const un=document.getElementById('user-name');if(un)un.textContent='';
+  const lb=document.getElementById('logout-btn');if(lb)lb.style.display='none';
+  document.getElementById('login-email').value='';
+  document.getElementById('login-pw').value='';
+  document.getElementById('login-btn').disabled=false;
+  document.getElementById('login-btn').textContent='로그인';
+  document.getElementById('login-error').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+}
+
+(async()=>{
+  const hash=window.location.hash;
+  if(hash){
+    const hp=new URLSearchParams(hash.slice(1));
+    const at=hp.get('at'),rt=hp.get('rt');
+    if(at&&rt){
+      await _sb.auth.setSession({access_token:decodeURIComponent(at),refresh_token:decodeURIComponent(rt)});
+      history.replaceState(null,'',location.pathname);
+    }
+  }
+  const {data:{session}} = await _sb.auth.getSession();
+  document.getElementById('app-loading').style.display='none';
+  if(session){
+    await _afterLogin(session.user);
+  } else {
+    document.getElementById('login-screen').style.display='flex';
+  }
+})();
+
+</script>
 </body>
 </html>
