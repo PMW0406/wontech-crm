@@ -1148,7 +1148,7 @@ async function _showLauncherOrApp(user) {
     // 여러 법인 접근 가능 or 관리자 → 런처 표시
     const cards = [
       access.includes('korea') ? `
-        <div onclick="document.getElementById('launcher-screen').style.display='none';_bootApp();"
+        <div onclick="history.pushState({page:'crm'},'',location.href);document.getElementById('launcher-screen').style.display='none';_bootApp();"
           style="background:#fff;border-radius:20px;padding:36px 40px;width:220px;text-align:center;cursor:pointer;transition:transform .15s,box-shadow .15s;box-shadow:0 8px 30px rgba(0,0,0,.3)"
           onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 16px 40px rgba(0,0,0,.4)'"
           onmouseout="this.style.transform='';this.style.boxShadow='0 8px 30px rgba(0,0,0,.3)'">
@@ -3874,6 +3874,14 @@ function fmtDate(d){if(!d)return'';try{return new Date(d).toLocaleDateString('ko
 function fmtAmt(n){n=Number(n)||0;if(!n)return'0원';if(n>=100000000)return(n/100000000).toFixed(1)+'억';if(n>=10000000)return(n/10000000).toFixed(1)+'천만';if(n>=10000)return Math.round(n/10000)+'만';return n.toLocaleString()+'원';}
 
 init();
+
+window.addEventListener('popstate', function(e) {
+  // 뒤로가기 시 CRM → 런처로 복귀
+  if(document.getElementById('main-content').style.display !== 'none') {
+    document.getElementById('main-content').style.display = 'none';
+    document.getElementById('launcher-screen').style.display = 'flex';
+  }
+});
 </script>
 </body>
 </html>
