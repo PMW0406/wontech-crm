@@ -125,6 +125,9 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
 .vip-silver{background:#f1f5f9;color:#475569}
 /* 이탈위험 */
 .risk-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;background:#fef2f2;border:1px solid #fecaca;margin-bottom:6px}
+/* 런처 위에 모달 표시 */
+.modal{z-index:10000!important}
+.modal-backdrop{z-index:9999!important}
 </style>
 </head>
 <body>
@@ -249,7 +252,6 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
       <li><a class="nav-link" onclick="showPage('equipments',this)"><i class="bi bi-cpu"></i>장비</a></li>
       <li><a class="nav-link" onclick="showPage('logs',this)"><i class="bi bi-journal-text"></i>상담일지</a></li>
       <li><a class="nav-link" onclick="showPage('products',this)"><i class="bi bi-box-seam"></i>제품</a></li>
-      <li id="nav-users" style="display:none"><a class="nav-link" onclick="showPage('users',this)"><i class="bi bi-people"></i>사용자 관리</a></li>
     </ul>
   </div>
   <div class="sidebar-footer">
@@ -560,19 +562,6 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
     </table></div></div>
   </div>
 
-  <!-- 사용자 관리 -->
-  <div id="page-users" class="page">
-    <div class="page-header">
-      <h5>사용자 관리</h5>
-      <button class="btn btn-primary btn-sm" onclick="openAddUserModal()"><i class="bi bi-person-plus me-1"></i>사용자 추가</button>
-    </div>
-    <div class="card"><div class="card-body p-0">
-      <table class="table table-hover mb-0">
-        <thead class="table-light"><tr><th>이메일</th><th>이름</th><th>권한</th><th>상태</th><th></th></tr></thead>
-        <tbody id="user-list"></tbody>
-      </table>
-    </div></div>
-  </div>
 
   <!-- 소모품 매출 -->
   <div id="page-consumables" class="page">
