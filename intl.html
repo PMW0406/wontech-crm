@@ -70,10 +70,12 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;background:#f0f4f8;color
           <i class="bi bi-chevron-up" style="font-size:10px"></i>
         </button>
         <div id="intl-site-dd" style="display:none;position:absolute;bottom:110%;left:0;right:0;background:#1e293b;border:1px solid #334155;border-radius:8px;overflow:hidden;z-index:200">
-          <a href="https://wt-management.github.io/wontech/" style="display:flex;align-items:center;gap:8px;padding:9px 12px;color:#94a3b8;font-size:12px;text-decoration:none;border-bottom:1px solid #334155" onmouseover="this.style.background='#334155'" onmouseout="this.style.background=''">
-            <i class="bi bi-bar-chart-line" style="color:#0891b2"></i>국내 영업 CRM</a>
-          <a href="https://wt-management.github.io/wontech/wt-agency.html" style="display:flex;align-items:center;gap:8px;padding:9px 12px;color:#94a3b8;font-size:12px;text-decoration:none;border-bottom:1px solid #334155" onmouseover="this.style.background='#334155'" onmouseout="this.style.background=''">
-            <i class="bi bi-shop" style="color:#f59e0b"></i>대리점 관리</a>
+          <a onclick="(async()=>{const {data:{session:s}}=await _sb.auth.getSession();let u='https://wt-management.github.io/wontech/';if(s)u+='#at='+encodeURIComponent(s.access_token)+'&rt='+encodeURIComponent(s.refresh_token);location.href=u;})()" style="display:flex;align-items:center;gap:8px;padding:9px 12px;color:#94a3b8;font-size:12px;text-decoration:none;border-bottom:1px solid #334155;cursor:pointer" onmouseover="this.style.background='#334155'" onmouseout="this.style.background=''">
+            <i class="bi bi-bar-chart-line" style="color:#0891b2"></i>한국 영업</a>
+          <a onclick="(async()=>{const {data:{session:s}}=await _sb.auth.getSession();let u='https://wt-management.github.io/wontech/wt-agency.html';if(s)u+='#at='+encodeURIComponent(s.access_token)+'&rt='+encodeURIComponent(s.refresh_token);location.href=u;})()" style="display:flex;align-items:center;gap:8px;padding:9px 12px;color:#94a3b8;font-size:12px;text-decoration:none;border-bottom:1px solid #334155;cursor:pointer" onmouseover="this.style.background='#334155'" onmouseout="this.style.background=''">
+            <i class="bi bi-shop" style="color:#f59e0b"></i>일본법인 관리</a>
+          <a onclick="(async()=>{const {data:{session:s}}=await _sb.auth.getSession();let u='https://wt-management.github.io/wontech/?admin=1';if(s)u='https://wt-management.github.io/wontech/#at='+encodeURIComponent(s.access_token)+'&rt='+encodeURIComponent(s.refresh_token)+'&goto=admin';location.href=u;})()" style="display:flex;align-items:center;gap:8px;padding:9px 12px;color:#94a3b8;font-size:12px;text-decoration:none;border-bottom:1px solid #334155;cursor:pointer" onmouseover="this.style.background='#334155'" onmouseout="this.style.background=''">
+            <i class="bi bi-gear" style="color:#94a3b8"></i>관리자 페이지</a>
           <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;color:#0d9488;font-size:12px;background:rgba(13,148,136,.1)">
             <i class="bi bi-globe" style="color:#0d9488"></i>해외 영업 (현재)</div>
         </div>
@@ -257,7 +259,7 @@ function showPage(n,el){
   document.querySelectorAll('.nav-link').forEach(a=>a.classList.remove('active'));
   document.getElementById('page-'+n).classList.add('active');
   if(el) el.classList.add('active');
-  ({overview:renderOverview,'by-country':renderByCountry,'by-product':renderByProduct,'by-rep':renderByRep})[n]?.();
+  ({overview:renderOverview,'by-country':renderByCountry,'by-product':renderByProduct,'by-cons':renderByCons,'by-rep':renderByRep})[n]?.();
 }
 
 function _ovPC(){ const f=+document.getElementById('ov-from').value,t=document.getElementById('ov-to'); if(+t.value<f)t.value=f; renderOverview(); }
