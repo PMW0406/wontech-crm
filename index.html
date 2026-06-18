@@ -591,22 +591,6 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
         </div>
       </div>
     </div>
-    <!-- 사용자 추가 모달 -->
-    <div class="modal fade" id="addUserModal" tabindex="-1"><div class="modal-dialog modal-sm"><div class="modal-content">
-      <div class="modal-header border-0 pb-0"><h6 class="modal-title"><i class="bi bi-person-plus me-2 text-primary"></i>사용자 추가</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-      <div class="modal-body">
-        <div class="mb-2"><label class="form-label fw-bold" style="font-size:12px">이메일</label><input type="email" id="new-user-email" class="form-control form-control-sm" placeholder="example@gmail.com"></div>
-        <div class="mb-2"><label class="form-label fw-bold" style="font-size:12px">임시 비밀번호</label><input type="text" id="new-user-pw" class="form-control form-control-sm" placeholder="임시 비밀번호"></div>
-        <div class="mb-2"><label class="form-label fw-bold" style="font-size:12px">이름</label><input type="text" id="new-user-name" class="form-control form-control-sm" placeholder="홍길동"></div>
-        <div class="mb-2"><label class="form-label fw-bold" style="font-size:12px">권한</label>
-          <select id="new-user-role" class="form-select form-select-sm"><option value="user">일반</option><option value="admin">관리자</option></select>
-        </div>
-        <div id="add-user-error" style="font-size:12px;color:#dc2626;display:none"></div>
-      </div>
-      <div class="modal-footer border-0 pt-0">
-        <button class="btn btn-primary w-100" onclick="saveNewUser()">추가</button>
-      </div>
-    </div></div></div>
 
     <!-- 업로드 비밀번호 모달 -->
     <div class="modal fade" id="consPasswordModal" tabindex="-1"><div class="modal-dialog modal-sm"><div class="modal-content">
@@ -3823,20 +3807,19 @@ async function saveNewUser() {
   const pw = document.getElementById('new-user-pw').value.trim();
   const name = document.getElementById('new-user-name').value.trim();
   const role = document.getElementById('new-user-role').value;
+  const access = document.getElementById('new-user-access')?.value || 'korea';
   const errEl = document.getElementById('add-user-error');
   if(!email||!pw) { errEl.textContent='이메일과 비밀번호를 입력하세요.'; errEl.style.display='block'; return; }
 
-  // Supabase Admin API (service role 필요) 대신 signUp 사용
   const {data, error} = await _sb.auth.signUp({email, password: pw});
   if(error) { errEl.textContent='오류: '+error.message; errEl.style.display='block'; return; }
 
-  // 프로필 등록
   if(data.user) {
-    await _sb.from('crm_profiles').upsert({id: data.user.id, email, display_name: name||email.split('@')[0], role});
+    await _sb.from('crm_profiles').upsert({id: data.user.id, email, display_name: name||email.split('@')[0], role, access});
   }
   bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
   showToast('사용자 추가됨!', true);
-  renderUsers();
+  renderAdminUsers();
 }
 
 // ── 제품 ──────────────────────────────────────────────────────
@@ -3885,5 +3868,29 @@ window.addEventListener('popstate', function(e) {
   }
 });
 </script>
+
+<!-- 사용자 추가 모달 (body 최상위 — main-content 밖) -->
+<div class="modal fade" id="addUserModal" tabindex="-1"><div class="modal-dialog modal-sm"><div class="modal-content">
+  <div class="modal-header border-0 pb-0"><h6 class="modal-title"><i class="bi bi-person-plus me-2 text-primary"></i>사용자 추가</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body">
+    <div class="mb-2"><label class="form-label fw-bold" style="font-size:12px">이메일</label><input type="email" id="new-user-email" class="form-control form-control-sm" placeholder="example@gmail.com"></div>
+    <div class="mb-2"><label class="form-label fw-bold" style="font-size:12px">임시 비밀번호</label><input type="text" id="new-user-pw" class="form-control form-control-sm" placeholder="임시 비밀번호"></div>
+    <div class="mb-2"><label class="form-label fw-bold" style="font-size:12px">이름</label><input type="text" id="new-user-name" class="form-control form-control-sm" placeholder="홍길동"></div>
+    <div class="mb-2"><label class="form-label fw-bold" style="font-size:12px">접근 권한</label>
+      <select id="new-user-access" class="form-select form-select-sm">
+        <option value="korea">🇰🇷 한국 CRM만</option>
+        <option value="japan">🇯🇵 일본법인만</option>
+        <option value="korea,japan">🇰🇷🇯🇵 둘 다</option>
+      </select>
+    </div>
+    <div class="mb-2"><label class="form-label fw-bold" style="font-size:12px">역할</label>
+      <select id="new-user-role" class="form-select form-select-sm"><option value="user">일반</option><option value="admin">관리자</option></select>
+    </div>
+    <div id="add-user-error" style="font-size:12px;color:#dc2626;display:none"></div>
+  </div>
+  <div class="modal-footer border-0 pt-0">
+    <button class="btn btn-primary w-100" onclick="saveNewUser()">추가</button>
+  </div>
+</div></div></div>
 </body>
 </html>
