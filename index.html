@@ -282,7 +282,7 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
       <li><a class="nav-link" onclick="showPage('consumables',this)"><i class="bi bi-capsule"></i>소모품 매출</a></li>
       <li><a class="nav-link" onclick="showPage('cons-hospitals',this)"><i class="bi bi-building-check"></i>병원별 분석</a></li>
       <li><a class="nav-link" onclick="showPage('device-sales',this)"><i class="bi bi-box-seam"></i>제품 매출</a></li>
-      <li><a class="nav-link" onclick="showPage('device-reps',this)"><i class="bi bi-person-badge"></i>담당자별 분석</a></li>
+      <li id="nav-device-reps" style="display:none"><a class="nav-link" onclick="showPage('device-reps',this)"><i class="bi bi-person-badge"></i>담당자별 분석</a></li>
     </ul>
     <div class="nav-label mt-3">영업</div>
     <ul class="nav flex-column gap-0">
@@ -1376,6 +1376,7 @@ async function _showLauncherOrApp(user) {
   const access = (profile?.access || 'korea').split(',').map(s=>s.trim());
   _currentAccess = access;
   _isAdmin = profile?.role === 'admin';
+  _isMgr   = _isAdmin || profile?.role === 'manager';
   // 새로고침 시 이전 상태 복원
   if(sessionStorage.getItem('wt_app') === 'admin' && _isAdmin) {
     document.getElementById('launcher-screen').style.display='flex';
@@ -1469,6 +1470,11 @@ async function _bootApp(access) {
   if(_isAdmin) {
     const ai = document.getElementById('switcher-admin-item');
     if(ai) { ai.style.display='flex'; }
+  }
+  // 팀장/관리자만 담당자별 분석 메뉴 표시
+  if(_isMgr) {
+    const rm = document.getElementById('nav-device-reps');
+    if(rm) rm.style.display='';
   }
   const lastPage = sessionStorage.getItem('wt_page') || 'sales-overview';
   showPage(lastPage);
@@ -4298,6 +4304,7 @@ function delLog(){
 
 // ── 사용자 관리 ──────────────────────────────────────────────────────
 let _isAdmin = false;
+let _isMgr   = false;
 let _currentAccess = ['korea'];
 
 async function loadUserRole() {
@@ -4305,6 +4312,7 @@ async function loadUserRole() {
   if(!session) return;
   const {data} = await _sb.from('crm_profiles').select('role,display_name,position,dept').eq('id', session.user.id).single();
   _isAdmin = data?.role === 'admin';
+  _isMgr   = _isAdmin || data?.role === 'manager';
   if(data) _updateSidebarProfile(data, session.user.email);
 }
 
@@ -4363,8 +4371,9 @@ async function renderAdminUsers() {
         <input type="checkbox" ${(p.access||'').includes('japan')?'checked':''} onchange="toggleAccess('${p.id}','japan',this.checked)" style="accent-color:#f59e0b"> 일본</label>
     </div></td>
     <td style="padding:12px 16px"><select style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:4px 8px;font-size:12px;color:#fff" onchange="updateUserRole('${p.id}',this.value)">
-      <option value="user" ${p.role!=='admin'?'selected':''} style="background:#1e293b">일반</option>
-      <option value="admin" ${p.role==='admin'?'selected':''} style="background:#1e293b">관리자</option>
+      <option value="user"    ${(!p.role||p.role==='user')?'selected':''}    style="background:#1e293b">팀원</option>
+      <option value="manager" ${p.role==='manager'?'selected':''} style="background:#1e293b">팀/파트장</option>
+      <option value="admin"   ${p.role==='admin'?'selected':''}   style="background:#1e293b">관리자</option>
     </select></td>
     <td style="padding:12px 16px;display:flex;gap:6px">
       <button onclick="sendResetEmail('${p.email}')" style="background:rgba(59,130,246,.2);border:1px solid rgba(59,130,246,.3);color:#93c5fd;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer">PW재설정</button>
