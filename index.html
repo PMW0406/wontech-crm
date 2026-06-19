@@ -1113,13 +1113,16 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
   <div class="modal-body"><input type="hidden" id="p-id">
     <div class="row g-2">
       <div class="col-12"><label class="form-label">병원명 *</label><div class="ac-wrap"><input type="text" id="p-cust" class="form-control form-control-sm" oninput="acInput(this,'p-cust')" onkeydown="acKey(event,'p-cust')" autocomplete="off"><div class="ac-dropdown" id="ac-p-cust"></div></div></div>
-      <div class="col-12"><label class="form-label">제품/모델 *</label><input type="text" id="p-model" class="form-control form-control-sm"></div>
+      <div class="col-12"><label class="form-label">제품/모델 *</label><div class="ac-wrap"><input type="text" id="p-model" class="form-control form-control-sm" oninput="acInput(this,'p-model')" onkeydown="acKey(event,'p-model')" autocomplete="off"><div class="ac-dropdown" id="ac-p-model"></div></div></div>
       <div class="col-6"><label class="form-label">예상금액 (원)</label><input type="number" id="p-amount" class="form-control form-control-sm"></div>
       <div class="col-6"><label class="form-label">단계</label><select id="p-stage" class="form-select form-select-sm"><option>리드</option><option>상담중</option><option>견적발송</option><option>협의중</option><option>계약완료</option></select></div>
       <div class="col-6"><label class="form-label">성공확률 (%)</label><input type="number" id="p-prob" class="form-control form-control-sm" value="50"></div>
       <div class="col-6"><label class="form-label">예상마감일</label><input type="date" id="p-date" class="form-control form-control-sm"></div>
       <div class="col-12"><label class="form-label">담당영업사원</label><input type="text" id="p-sales" class="form-control form-control-sm"></div>
       <div class="col-12"><label class="form-label">메모</label><textarea id="p-note" class="form-control form-control-sm" rows="2"></textarea></div>
+      <div class="col-12"><label class="form-label">다음 액션</label><input type="text" id="p-next-action" class="form-control form-control-sm" placeholder="예) 견적서 발송, 원장 미팅 요청..."></div>
+      <div class="col-6"><label class="form-label">다음 액션 일자</label><input type="date" id="p-next-date" class="form-control form-control-sm"></div>
+      <div class="col-6"><label class="form-label">액션 유형</label><select id="p-next-type" class="form-select form-select-sm"><option value="">선택</option><option>전화</option><option>방문</option><option>견적발송</option><option>데모</option><option>계약검토</option><option>기타</option></select></div>
     </div>
   </div>
   <div class="modal-footer">
@@ -3114,11 +3117,17 @@ function acGetNames() {
   const fromLog   = DB.d.logs.map(l => l.custName).filter(Boolean);
   return [...new Set([...fromCust, ...fromEquip, ...fromPipe, ...fromLog])].sort((a,b)=>a.localeCompare(b,'ko'));
 }
+function acGetModels() {
+  const fromDevice = Object.keys(DEVICE.products2025||{}).concat(Object.keys(DEVICE.products2026||{}));
+  const fromPipe   = DB.d.pipeline.map(p => p.model).filter(Boolean);
+  return [...new Set([...fromDevice, ...fromPipe])].sort((a,b)=>a.localeCompare(b,'ko'));
+}
 function acInput(inp, id) {
   const q = inp.value.trim();
   const dd = document.getElementById('ac-' + id);
   if (!q) { dd.classList.remove('open'); return; }
-  const matches = acGetNames().filter(n => n.includes(q)).slice(0, 10);
+  const list = id === 'p-model' ? acGetModels() : acGetNames();
+  const matches = list.filter(n => n.toLowerCase().includes(q.toLowerCase())).slice(0, 10);
   if (!matches.length) { dd.classList.remove('open'); return; }
   _acIdx[id] = -1;
   const rect = inp.getBoundingClientRect();
@@ -3402,6 +3411,7 @@ function renderPipeline() {
             <span style="background:${probColor(d.prob)};color:#fff;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700">${d.prob||0}%</span>
           </div>
           ${d.expectedDate?`<div style="font-size:10px;color:${isOverdue?'#dc2626':isClosingThis?'#d97706':'#9ca3af'};margin-top:5px;font-weight:${isOverdue||isClosingThis?'700':'400'}"><i class="bi bi-calendar3 me-1"></i>마감 ${fmtDate(d.expectedDate)}${isOverdue?' ⚠️ 기한초과':isClosingThis?' · 이달마감':''}</div>`:''}
+          ${d.nextAction?`<div style="font-size:10px;color:#059669;margin-top:4px;background:#ecfdf5;border-radius:4px;padding:3px 6px;display:flex;gap:4px;align-items:center"><i class="bi bi-arrow-right-circle-fill"></i><span>${d.nextAction}${d.nextDate?' · '+fmtDate(d.nextDate):''}</span></div>`:''}
         </div>`;
       }).join('')}
     </div>`;
@@ -3410,11 +3420,12 @@ function renderPipeline() {
 
 function openModal(type,data={}) {
   if(type==='pipeline'){
-    ['p-id','p-cust','p-model','p-amount','p-sales','p-note'].forEach(id=>setV(id,''));
+    ['p-id','p-cust','p-model','p-amount','p-sales','p-note','p-next-action','p-next-date'].forEach(id=>setV(id,''));
     setV('p-sales', currentUserName());
     document.getElementById('p-stage').value='리드';
     document.getElementById('p-prob').value='50';
     document.getElementById('p-date').value='';
+    document.getElementById('p-next-type').value='';
     document.getElementById('p-del-btn').style.display='none';
     new bootstrap.Modal(document.getElementById('pipelineModal')).show();
   } else if(type==='quote'){
@@ -3453,6 +3464,8 @@ function editPipeline(id) {
   const d=DB.d.pipeline.find(x=>x.id===id); if(!d)return;
   setV('p-id',d.id); setV('p-cust',d.custName); setV('p-model',d.model);
   setV('p-amount',d.amount); setV('p-sales',d.sales); setV('p-note',d.note||'');
+  setV('p-next-action',d.nextAction||''); setV('p-next-date',d.nextDate||'');
+  document.getElementById('p-next-type').value=d.nextType||'';
   document.getElementById('p-stage').value=d.stage||'리드';
   document.getElementById('p-prob').value=d.prob||50;
   setV('p-date',d.expectedDate||'');
@@ -3469,6 +3482,7 @@ function savePipeline() {
     amount: Number(gV('p-amount'))||0, stage: newStage,
     prob: Number(gV('p-prob'))||0, expectedDate: gV('p-date'),
     sales: gV('p-sales'), note: gV('p-note'),
+    nextAction: gV('p-next-action'), nextDate: gV('p-next-date'), nextType: document.getElementById('p-next-type').value,
     createdAt: prev ? (prev.createdAt || prev.stageUpdatedAt) : new Date().toISOString(),
     stageUpdatedAt: (prev && prev.stage===newStage) ? (prev.stageUpdatedAt||new Date().toISOString()) : new Date().toISOString()
   };
