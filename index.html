@@ -300,45 +300,45 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
   </div>
   <div class="sidebar-footer">
     <div id="sidebar-user" style="display:none;background:#1e293b;border-radius:8px;padding:8px 10px;margin-bottom:8px">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div style="width:28px;height:28px;border-radius:50%;background:#ff4500;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff" id="sidebar-user-avatar">?</div>
-          <div>
-            <div style="font-size:12px;font-weight:700;color:#f1f5f9" id="sidebar-user-name">-</div>
-            <div style="font-size:10px;color:#64748b" id="sidebar-user-id">-</div>
-            <div style="font-size:10px;color:#475569;margin-top:1px" id="sidebar-user-dept"></div>
-          </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <div style="width:30px;height:30px;border-radius:50%;background:#ff4500;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0" id="sidebar-user-avatar">?</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:700;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sidebar-user-name">-</div>
+          <div style="font-size:10px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sidebar-user-id">-</div>
+          <div style="font-size:10px;color:#475569;margin-top:1px" id="sidebar-user-dept"></div>
         </div>
-        <div style="display:flex;gap:2px">
-          <button onclick="openChangePwModal()" title="비밀번호 변경" style="background:none;border:none;color:#64748b;cursor:pointer;padding:2px 4px;font-size:14px" onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#64748b'"><i class="bi bi-key"></i></button>
-          <button onclick="doLogout()" title="로그아웃" style="background:none;border:none;color:#64748b;cursor:pointer;padding:2px 4px;font-size:14px" onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#64748b'"><i class="bi bi-box-arrow-right"></i></button>
-        </div>
+      </div>
+      <div style="display:flex;gap:4px">
+        <button onclick="openChangePwModal()" style="flex:1;background:rgba(255,255,255,.06);border:1px solid #334155;border-radius:6px;padding:5px 0;color:#94a3b8;font-size:11px;cursor:pointer">
+          <i class="bi bi-key"></i> 비밀번호</button>
+        <button onclick="doLogout()" style="flex:1;background:rgba(255,255,255,.06);border:1px solid #334155;border-radius:6px;padding:5px 0;color:#94a3b8;font-size:11px;cursor:pointer">
+          <i class="bi bi-box-arrow-right"></i> 로그아웃</button>
       </div>
     </div>
     <a class="nav-link" style="color:#6b7280;margin:0 0 4px" onclick="openSearch()"><i class="bi bi-search"></i>통합 검색 <kbd style="font-size:9px;background:#1e293b;border:1px solid #334155;border-radius:4px;padding:1px 4px;color:#94a3b8;margin-left:auto">⌘K</kbd></a>
     <!-- 사이트 전환 드롭다운 -->
-    <div id="site-switcher" style="display:none;position:relative;padding:8px 8px 0;border-top:1px solid #1e293b;margin-top:8px">
+    <div id="site-switcher" style="display:none;position:relative;padding:0 8px 8px">
       <button id="site-switcher-btn" onclick="(function(){var d=document.getElementById('site-dropdown');d.style.display=d.style.display==='block'?'none':'block'})()"
-        style="width:100%;background:rgba(255,255,255,.05);border:1px solid #334155;border-radius:8px;padding:8px 12px;color:#94a3b8;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:8px;text-align:left">
-        <span style="font-size:14px">🌐</span><span style="flex:1;font-weight:600">사이트 전환</span><i class="bi bi-chevron-up" style="font-size:10px;opacity:.6"></i>
+        style="width:100%;background:rgba(255,255,255,.05);border:1px solid #334155;border-radius:8px;padding:7px 10px;color:#94a3b8;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;text-align:left">
+        <i class="bi bi-grid-3x3-gap" style="font-size:13px"></i><span style="flex:1;font-weight:600">사이트 이동</span><i class="bi bi-chevron-up" style="font-size:10px"></i>
       </button>
-      <div id="site-dropdown" style="display:none;position:absolute;bottom:calc(100% + 4px);left:8px;right:8px;background:#1e293b;border:1px solid #334155;border-radius:10px;overflow:hidden;box-shadow:0 -8px 24px rgba(0,0,0,.5);z-index:200">
+      <div id="site-dropdown" style="display:none;position:absolute;bottom:110%;left:0;right:0;background:#1e293b;border:1px solid #334155;border-radius:10px;overflow:hidden;box-shadow:0 -8px 24px rgba(0,0,0,.5);z-index:200">
         <div style="padding:6px">
-          <div style="background:rgba(255,69,0,.12);border-radius:6px;padding:9px 12px;display:flex;align-items:center;gap:8px;color:#ff4500;font-size:12px;font-weight:700">
+          <div style="border-radius:6px;padding:9px 12px;display:flex;align-items:center;gap:8px;color:#ff4500;font-size:12px;font-weight:700;background:rgba(255,69,0,.12)">
             <span>🇰🇷</span><span style="flex:1">한국 영업</span><i class="bi bi-check2" style="font-size:11px"></i>
           </div>
-          <div id="switcher-japan-item" onclick="(async()=>{const {data:{session:s}}=await _sb.auth.getSession();let u='https://wt-management.github.io/wtj-management/';if(s)u+='#at='+encodeURIComponent(s.access_token)+'&rt='+encodeURIComponent(s.refresh_token);location.href=u;})()""
-            style="display:none;margin-top:4px;border-radius:6px;padding:9px 12px;align-items:center;gap:8px;color:#94a3b8;font-size:12px;cursor:pointer;transition:background .15s"
+          <div id="switcher-japan-item" onclick="(async()=>{const {data:{session:s}}=await _sb.auth.getSession();let u='https://wt-management.github.io/wtj-management/';if(s)u+='#at='+encodeURIComponent(s.access_token)+'&rt='+encodeURIComponent(s.refresh_token);location.href=u;})()"
+            style="display:none;margin-top:2px;border-radius:6px;padding:9px 12px;align-items:center;gap:8px;color:#94a3b8;font-size:12px;cursor:pointer;transition:background .15s"
             onmouseover="this.style.background='rgba(255,255,255,.08)'" onmouseout="this.style.background=''">
             <span>🇯🇵</span><span style="flex:1">일본법인 관리</span><i class="bi bi-arrow-right" style="font-size:11px"></i>
           </div>
           <div id="switcher-intl-item" onclick="(async()=>{const {data:{session:s}}=await _sb.auth.getSession();let u='https://wt-management.github.io/wontech/intl.html';if(s)u+='#at='+encodeURIComponent(s.access_token)+'&rt='+encodeURIComponent(s.refresh_token);location.href=u;})()"
-            style="display:none;margin-top:4px;border-radius:6px;padding:9px 12px;align-items:center;gap:8px;color:#94a3b8;font-size:12px;cursor:pointer;transition:background .15s"
+            style="display:none;margin-top:2px;border-radius:6px;padding:9px 12px;align-items:center;gap:8px;color:#94a3b8;font-size:12px;cursor:pointer;transition:background .15s"
             onmouseover="this.style.background='rgba(255,255,255,.08)'" onmouseout="this.style.background=''">
             <span>🌏</span><span style="flex:1">해외 영업</span><i class="bi bi-arrow-right" style="font-size:11px"></i>
           </div>
           <div id="switcher-admin-item" onclick="document.getElementById('site-dropdown').style.display='none';sessionStorage.setItem('wt_app','admin');document.getElementById('main-content').style.display='none';showAdminPanel();document.getElementById('launcher-screen').style.display='flex';"
-            style="display:none;margin-top:4px;border-radius:6px;padding:9px 12px;align-items:center;gap:8px;color:#94a3b8;font-size:12px;cursor:pointer;transition:background .15s"
+            style="display:none;margin-top:2px;border-radius:6px;padding:9px 12px;align-items:center;gap:8px;color:#94a3b8;font-size:12px;cursor:pointer;transition:background .15s"
             onmouseover="this.style.background='rgba(255,255,255,.08)'" onmouseout="this.style.background=''">
             <span>⚙️</span><span style="flex:1">관리자 페이지</span><i class="bi bi-arrow-right" style="font-size:11px"></i>
           </div>
