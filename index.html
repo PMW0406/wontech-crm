@@ -2228,9 +2228,10 @@ function consParseExcel(input) {
         const processRow = (r, yr) => {
           const amtKey = Object.keys(r).find(_devAmtKey)||'';
           const amt = Number(r[amtKey]||0);
-          if (!amt || amt < 0) return;
+          if (!amt || amt < 100) return;  // 1원 더미 제거
           let qty = parseInt(r['수량']||0);
           if (qty <= 0) qty = 1;
+          if (amt / qty < 1_000_000) return;  // 단가 100만원 미만 팁샷/소모품 제외
           const mo   = monthNum(r['월']);
           const prod = (r['구분#4']||'').trim();
           const name = (r['거래처명']||'').trim();
