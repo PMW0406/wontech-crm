@@ -1990,8 +1990,9 @@ async function doLogin() {
 
 async function doLogout() {
   await _sb.auth.signOut();
-  sessionStorage.removeItem('wt_app');
-  sessionStorage.removeItem('wt_page');
+  // Supabase 세션 localStorage 완전 삭제 (브라우저 재시작 후 자동 로그인 방지)
+  Object.keys(localStorage).filter(k=>k.startsWith('sb-')).forEach(k=>localStorage.removeItem(k));
+  sessionStorage.clear();
   document.getElementById('sidebar-user').style.display='none';
   document.getElementById('main-content').style.display='none';
   const ls = document.getElementById('login-screen');
