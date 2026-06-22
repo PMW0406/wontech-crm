@@ -183,7 +183,7 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
   </div>
 
   <!-- 관리자 패널 -->
-  <div id="launcher-admin" style="display:none;width:100%;max-width:1200px;padding:40px 32px">
+  <div id="launcher-admin" style="display:none;width:100%;max-width:1200px;padding:60px 32px 40px">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px">
       <button onclick="hideAdminPanel()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#94a3b8;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px"><i class="bi bi-arrow-left me-1"></i>돌아가기</button>
       <div style="font-size:18px;font-weight:700;color:#fff"><i class="bi bi-shield-lock me-2 text-warning"></i>사용자 관리</div>
@@ -4466,10 +4466,31 @@ function _renderLauncherCards(access) {
 async function renderAdminUsers() {
   const el = document.getElementById('admin-user-list');
   el.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:#64748b">불러오는 중...</td></tr>`;
-  const {data: profiles} = await _sb.from('crm_profiles').select('*').order('email');
+  const {data: profiles} = await _sb.from('crm_profiles').select('*').order('dept').order('display_name');
   if(!profiles?.length) { el.innerHTML=`<tr><td colspan="8" style="text-align:center;padding:24px;color:#64748b">사용자 없음</td></tr>`; return; }
   const iS = "background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:4px 8px;font-size:12px;color:#fff;width:90px";
-  el.innerHTML = profiles.map(p=>{
+
+  // 부서별 그룹화
+  const groups = {};
+  profiles.forEach(p => {
+    const dept = p.dept?.trim() || '(부서 미지정)';
+    if(!groups[dept]) groups[dept] = [];
+    groups[dept].push(p);
+  });
+  const deptOrder = Object.keys(groups).sort((a,b) => a==='(부서 미지정)'?1:b==='(부서 미지정)'?-1:a.localeCompare(b,'ko'));
+
+  const rows = [];
+  deptOrder.forEach(dept => {
+    rows.push(`<tr><td colspan="8" style="padding:10px 16px 6px;background:rgba(255,255,255,.04);border-top:1px solid rgba(255,255,255,.1);border-bottom:1px solid rgba(255,255,255,.06)">
+      <span style="font-size:11px;font-weight:700;color:#0d9488;letter-spacing:.05em;text-transform:uppercase"><i class="bi bi-building me-1"></i>${dept}</span>
+      <span style="font-size:10px;color:#475569;margin-left:6px">${groups[dept].length}명</span>
+    </td></tr>`);
+    groups[dept].forEach(p => rows.push(_adminUserRow(p, iS)));
+  });
+  el.innerHTML = rows.join('');
+}
+
+function _adminUserRow(p, iS) {
     const pwId = 'pw_'+p.id.replace(/-/g,'');
     const hasPw = p.temp_pw && p.temp_pw.trim();
     return `<tr style="border-bottom:1px solid rgba(255,255,255,.06)">
@@ -4500,7 +4521,7 @@ async function renderAdminUsers() {
       <button onclick="sendResetEmail('${p.email}')" style="background:rgba(59,130,246,.2);border:1px solid rgba(59,130,246,.3);color:#93c5fd;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer">PW재설정</button>
       <button onclick="deleteUser('${p.id}','${p.email}')" style="background:rgba(220,38,38,.2);border:1px solid rgba(220,38,38,.3);color:#fca5a5;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer">삭제</button>
     </td>
-  </tr>`;}).join('');
+  </tr>`;
 }
 
 async function updateUserAccess(id, access) {
