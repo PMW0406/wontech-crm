@@ -676,6 +676,14 @@ function miniBar(label,v,max,col){
   if(session) await afterLogin(session.user);
   else document.getElementById('login-screen').style.display='flex';
 })();
+
+// bfcache(뒤로/앞으로 캐시) 복원 시 전사 종합으로 리셋 — 떠나기 전 페이지가 그대로 뜨는 문제 방지
+window.addEventListener('pageshow', function(e){
+  if(!e.persisted) return;
+  if(document.getElementById('login-screen').style.display!=='none') return;
+  showPage('overview', document.getElementById('nav-overview'));
+  try{ renderOverview(); }catch(_){}
+});
 </script>
 </body>
 </html>
