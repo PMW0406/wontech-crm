@@ -151,6 +151,8 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
 .access-card.selected{border-color:#0891b2!important;background:linear-gradient(135deg,rgba(8,145,178,.06),rgba(13,148,136,.06))!important;box-shadow:0 0 0 3px rgba(8,145,178,.15)}
 .access-card[data-val=intl].selected{border-color:#7c3aed!important;background:linear-gradient(135deg,rgba(124,58,237,.06),rgba(8,145,178,.06))!important;box-shadow:0 0 0 3px rgba(124,58,237,.15)}
 .access-card[data-val=japan].selected{border-color:#f59e0b!important;background:linear-gradient(135deg,rgba(245,158,11,.06),rgba(239,68,68,.06))!important;box-shadow:0 0 0 3px rgba(245,158,11,.15)}
+.access-card[data-val=total].selected{border-color:#4f46e5!important;background:linear-gradient(135deg,rgba(79,70,229,.06),rgba(124,58,237,.06))!important;box-shadow:0 0 0 3px rgba(79,70,229,.15)}
+.access-card[data-val=daily].selected{border-color:#16a34a!important;background:linear-gradient(135deg,rgba(22,163,74,.06),rgba(13,148,136,.06))!important;box-shadow:0 0 0 3px rgba(22,163,74,.15)}
 .access-card:hover:not(.selected){border-color:#cbd5e1!important;background:#f8fafc!important}
 /* 앱 로딩 오버레이 */
 #app-loading{position:fixed;inset:0;background:#0f172a;z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px}
@@ -198,7 +200,7 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
           <th style="padding:12px 16px;text-align:left;font-size:11px;color:#64748b;font-weight:600;white-space:nowrap">부서</th>
           <th style="padding:12px 16px;text-align:left;font-size:11px;color:#64748b;font-weight:600;white-space:nowrap">직급</th>
           <th style="padding:12px 16px;text-align:left;font-size:11px;color:#64748b;font-weight:600;white-space:nowrap">임시 비밀번호</th>
-          <th style="padding:12px 16px;text-align:left;font-size:11px;color:#64748b;font-weight:600;white-space:nowrap">접근 권한</th>
+          <th style="padding:12px 16px;text-align:left;font-size:11px;color:#64748b;font-weight:600;white-space:nowrap">접근 / 업로드 권한</th>
           <th style="padding:12px 16px;text-align:left;font-size:11px;color:#64748b;font-weight:600;white-space:nowrap">역할</th>
           <th style="padding:12px 16px;white-space:nowrap"></th>
         </tr></thead>
@@ -4867,6 +4869,11 @@ async function renderAdminUsers() {
   el.innerHTML = rows.join('');
 }
 
+const WT_SITES = [['korea','한국','#0891b2'],['intl','해외','#0d9488'],['japan','일본','#f59e0b'],['total','종합','#4f46e5'],['daily','일보','#16a34a']];
+function _siteChecks(p, field, fn) {
+  const cur = (p[field]||'').split(',').map(s=>s.trim());
+  return WT_SITES.map(([k,lbl,col])=>`<label style="display:flex;align-items:center;gap:5px;font-size:11px;color:#94a3b8;cursor:pointer;white-space:nowrap"><input type="checkbox" ${cur.includes(k)?'checked':''} onchange="${fn}('${p.id}','${k}',this.checked)" style="accent-color:${col}"> ${lbl}</label>`).join('');
+}
 function _adminUserRow(p, iS) {
     const pwId = 'pw_'+p.id.replace(/-/g,'');
     const hasPw = p.temp_pw && p.temp_pw.trim();
@@ -4881,13 +4888,9 @@ function _adminUserRow(p, iS) {
         <button onclick="togglePw('${pwId}','${p.temp_pw}')" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:13px;padding:2px" title="비밀번호 보기"><i class="bi bi-eye"></i></button>
       </div>` : `<span style="font-size:11px;color:#475569">-</span>`}
     </td>
-    <td style="padding:12px 16px"><div style="display:flex;flex-direction:column;gap:4px">
-      <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:#94a3b8;cursor:pointer;white-space:nowrap">
-        <input type="checkbox" ${(p.access||'').includes('korea')?'checked':''} onchange="toggleAccess('${p.id}','korea',this.checked)" style="accent-color:#0891b2"> 한국</label>
-      <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:#94a3b8;cursor:pointer;white-space:nowrap">
-        <input type="checkbox" ${(p.access||'').includes('intl')?'checked':''} onchange="toggleAccess('${p.id}','intl',this.checked)" style="accent-color:#0d9488"> 해외</label>
-      <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:#94a3b8;cursor:pointer;white-space:nowrap">
-        <input type="checkbox" ${(p.access||'').includes('japan')?'checked':''} onchange="toggleAccess('${p.id}','japan',this.checked)" style="accent-color:#f59e0b"> 일본</label>
+    <td style="padding:12px 16px"><div style="display:flex;gap:18px">
+      <div><div style="font-size:10px;color:#64748b;font-weight:700;margin-bottom:4px;letter-spacing:.03em">접근</div><div style="display:flex;flex-direction:column;gap:3px">${_siteChecks(p,'access','toggleAccess')}</div></div>
+      <div><div style="font-size:10px;color:#64748b;font-weight:700;margin-bottom:4px;letter-spacing:.03em">업로드</div><div style="display:flex;flex-direction:column;gap:3px">${_siteChecks(p,'upload','toggleUpload')}</div></div>
     </div></td>
     <td style="padding:12px 16px"><select style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:4px 8px;font-size:12px;color:#fff" onchange="updateUserRole('${p.id}',this.value)">
       <option value="user"    ${(!p.role||p.role==='user')?'selected':''}    style="background:#1e293b">팀원</option>
@@ -4913,6 +4916,16 @@ async function toggleAccess(id, key, checked) {
   const newAccess = [...set].sort().join(',');
   await _sb.from('crm_profiles').update({access: newAccess}).eq('id', id);
   showToast('접근 권한 변경됨', true);
+}
+async function toggleUpload(id, key, checked) {
+  const {data:p} = await _sb.from('crm_profiles').select('upload').eq('id',id).single();
+  const parts = (p?.upload||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const set = new Set(parts);
+  if(checked) set.add(key); else set.delete(key);
+  const newUpload = [...set].sort().join(',');
+  const {error} = await _sb.from('crm_profiles').update({upload: newUpload}).eq('id', id);
+  if(error){ showToast('업로드 권한 저장 실패: '+error.message, true, true); return; }
+  showToast('업로드 권한 변경됨', true);
 }
 
 async function sendResetEmail(email) {
@@ -5549,6 +5562,22 @@ window.addEventListener('popstate', function(e) {
           </div>
           <div style="font-size:11px;font-weight:800;color:#1e293b;letter-spacing:-.2px">일본법인</div>
           <div style="font-size:10px;color:#94a3b8;margin-top:2px">Japan</div>
+        </div>
+        <div class="access-card" data-val="total" onclick="toggleAccessCard(this)"
+          style="flex:1;min-width:90px;border:2px solid #e5e7eb;border-radius:14px;padding:14px 10px 12px;cursor:pointer;text-align:center;transition:all .18s;background:#fff">
+          <div style="width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;box-shadow:0 4px 12px rgba(79,70,229,.25)">
+            <i class="bi bi-pie-chart-fill" style="font-size:18px;color:#fff"></i>
+          </div>
+          <div style="font-size:11px;font-weight:800;color:#1e293b;letter-spacing:-.2px">전사 종합</div>
+          <div style="font-size:10px;color:#94a3b8;margin-top:2px">Total</div>
+        </div>
+        <div class="access-card" data-val="daily" onclick="toggleAccessCard(this)"
+          style="flex:1;min-width:90px;border:2px solid #e5e7eb;border-radius:14px;padding:14px 10px 12px;cursor:pointer;text-align:center;transition:all .18s;background:#fff">
+          <div style="width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,#16a34a,#0d9488);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;box-shadow:0 4px 12px rgba(22,163,74,.25)">
+            <i class="bi bi-receipt" style="font-size:18px;color:#fff"></i>
+          </div>
+          <div style="font-size:11px;font-weight:800;color:#1e293b;letter-spacing:-.2px">일일매출보고</div>
+          <div style="font-size:10px;color:#94a3b8;margin-top:2px">Daily</div>
         </div>
       </div>
       <div id="access-card-error" style="font-size:11px;color:#dc2626;margin-top:4px;display:none">최소 1개 선택하세요</div>
