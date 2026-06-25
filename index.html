@@ -1867,9 +1867,12 @@ const _ovFmt = v => v>=1e8?(v/1e8).toFixed(1)+'억':v>=1e4?Math.round(v/1e4).toL
 function _ovEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function _ovKpiBox(label,val,col){ return '<div style="flex:1;min-width:88px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 11px"><div style="font-size:10px;color:#6b7280;margin-bottom:2px">'+label+'</div><div style="font-size:15px;font-weight:800;color:'+col+'">'+val+'</div></div>'; }
 function _ovShowModal(titleHtml, bodyHtml){
+  const el = document.getElementById('ovDetailModal');
   document.getElementById('ovDetailTitle').innerHTML = titleHtml;
   document.getElementById('ovDetailBody').innerHTML = bodyHtml;
-  new bootstrap.Modal(document.getElementById('ovDetailModal')).show();
+  const mbody = el.querySelector('.modal-body'); if(mbody) mbody.scrollTop = 0;
+  // 같은 모달 인스턴스 재사용 — 모달 안에서 또 클릭해도 backdrop 중복/잔류 방지
+  bootstrap.Modal.getOrCreateInstance(el).show();
 }
 // 제품 1건을 거래내역으로 집계 (월별/거래처별)
 function _ovProdAgg(cat, name){
