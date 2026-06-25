@@ -1951,7 +1951,7 @@ function openOvCategory(cat){
 async function _loadPending() {
   try {
     const {data, error} = await _sb.from('pending_sales').select('*').order('expected_date', {ascending:false});
-    if(!error && data) PENDING = data;
+    if(!error && data) PENDING = data.filter(r=>(r.channel||'korea')!=='intl');  // 해외 예정분은 intl.html에서 관리
   } catch(e) { console.warn('pending load', e); }
 }
 

@@ -34,6 +34,15 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;background:#f0f4f8;color
 .period-bar{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;padding:10px 14px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0}
 .upload-zone{border:2px dashed #cbd5e1;border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:.2s}
 .upload-zone:hover{border-color:#0d9488;background:#f0fdfa}
+.pmodal{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px}
+.pmodal-box{background:#fff;border-radius:14px;width:460px;max-width:100%;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.pmodal-head{display:flex;justify-content:space-between;align-items:center;padding:15px 18px;border-bottom:1px solid #eef2f7;font-weight:700;font-size:15px}
+.pmodal-x{cursor:pointer;font-size:22px;color:#94a3b8;line-height:1}
+.pmodal-body{padding:16px 18px}
+.pmodal-body label{font-size:12px;font-weight:600;margin-bottom:3px;display:block;color:#475569}
+.pmodal-foot{display:flex;gap:8px;align-items:center;padding:13px 18px;border-top:1px solid #eef2f7}
+.pend-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:600;opacity:0;transition:opacity .2s;pointer-events:none}
+.pend-toast.show{opacity:1}
 @media(max-width:768px){.sidebar{display:none}.main{margin-left:0}}
 </style>
 </head>
@@ -56,6 +65,7 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;background:#f0f4f8;color
       <li><a class="nav-link" onclick="showPage('by-product',this)"><i class="bi bi-box-seam"></i>제품별 분석</a></li>
       <li><a class="nav-link" onclick="showPage('by-cons',this)"><i class="bi bi-capsule"></i>소모품 분석</a></li>
       <li><a class="nav-link" onclick="showPage('by-rep',this)"><i class="bi bi-person-badge"></i>담당자별 분석</a></li>
+      <li><a class="nav-link" onclick="showPage('pending',this)"><i class="bi bi-hourglass-split"></i>예정분 관리</a></li>
     </ul>
   </div>
   <!-- 계정 정보 (사이트 이동 위에) -->
@@ -234,6 +244,56 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;background:#f0f4f8;color
   <div class="card p-3"><div class="fw-bold mb-2" style="font-size:13px">담당자별 순위 <span style="font-size:11px;font-weight:400;color:#9ca3af">클릭 시 상세</span></div><div id="rp-rank"></div></div>
 </div>
 
+<div id="page-pending" class="page">
+  <div class="page-header"><h5><i class="bi bi-hourglass-split" style="color:#f59e0b"></i>해외 예정분 관리 <span style="font-size:12px;font-weight:400;color:#9ca3af">회계 미반영 매출</span></h5>
+    <button class="btn btn-sm" style="background:#0d9488;color:#fff" onclick="openPendForm()"><i class="bi bi-plus-lg me-1"></i>예정분 추가</button>
+  </div>
+  <div style="padding:9px 13px;background:#f0fdfa;border:1px solid #99f6e4;border-radius:9px;font-size:12px;color:#0d9488;margin-bottom:14px">
+    <i class="bi bi-info-circle me-1"></i>해외 예정분(회계 미반영)을 지역·법인별로 입력하면 해외 매출의 <b>미반영 포함(관리매출)</b>과 전사 종합에 합산됩니다. 회계에 잡히면 <b>「반영처리」</b>를 눌러 합산에서 제외하세요.
+  </div>
+  <div class="row g-2 mb-3" id="pend-summary"></div>
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <select id="pend-f-region" class="form-select form-select-sm" style="width:130px" onchange="renderPending()"><option value="">전체 지역</option></select>
+    <input type="text" id="pend-f-kw" class="form-control form-control-sm" style="width:190px" placeholder="거래처·제품 검색" oninput="renderPending()">
+    <label style="font-size:12px;color:#6b7280;display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="pend-f-mine" onchange="renderPending()" style="width:14px;height:14px"> 내 입력만</label>
+  </div>
+  <div class="card p-0" style="overflow-x:auto">
+    <table class="table table-sm table-hover mb-0 align-middle" style="font-size:13px;min-width:880px">
+      <thead><tr style="background:#f8fafc;font-size:12px;color:#6b7280">
+        <th style="padding:9px 12px">예정일</th><th>지역</th><th>구분</th><th>제품</th><th>거래처</th>
+        <th style="text-align:right">금액</th><th style="text-align:center">상태</th><th>담당</th><th style="text-align:center">관리</th>
+      </tr></thead>
+      <tbody id="pend-tbody"></tbody>
+    </table>
+    <div id="pend-empty" style="display:none" class="text-center text-muted py-5">등록된 해외 예정분이 없습니다.</div>
+  </div>
+</div>
+
+<!-- 해외 예정분 입력 모달 (커스텀, bootstrap JS 미사용) -->
+<div id="pendModal" class="pmodal" style="display:none">
+  <div class="pmodal-box">
+    <div class="pmodal-head"><span id="pend-modal-title">예정분 추가</span><span class="pmodal-x" onclick="closePendForm()">&times;</span></div>
+    <div class="pmodal-body">
+      <input type="hidden" id="pf-id">
+      <div class="row g-2">
+        <div class="col-6"><label>지역 / 법인 *</label><select id="pf-region" class="form-select form-select-sm"></select></div>
+        <div class="col-6"><label>구분</label><select id="pf-cat" class="form-select form-select-sm"><option value="장비">장비</option><option value="소모품">소모품</option></select></div>
+        <div class="col-6"><label>예정일 *</label><input type="date" id="pf-date" class="form-control form-control-sm"></div>
+        <div class="col-6"><label>금액 (원) *</label><input type="number" id="pf-amount" class="form-control form-control-sm" placeholder="0" oninput="_pfHint()"><div id="pf-hint" style="font-size:11px;color:#0d9488"></div></div>
+        <div class="col-12"><label>제품</label><input type="text" id="pf-product" class="form-control form-control-sm" list="pf-prod-list" placeholder="예: Oligio X" autocomplete="off"><datalist id="pf-prod-list"></datalist></div>
+        <div class="col-7"><label>거래처 / 디스트리뷰터</label><input type="text" id="pf-client" class="form-control form-control-sm" autocomplete="off"></div>
+        <div class="col-5"><label>수량</label><input type="number" id="pf-qty" class="form-control form-control-sm" placeholder="(선택)"></div>
+        <div class="col-12"><label>메모</label><input type="text" id="pf-memo" class="form-control form-control-sm" placeholder="(선택)"></div>
+      </div>
+    </div>
+    <div class="pmodal-foot">
+      <button class="btn btn-outline-danger btn-sm me-auto" id="pf-del" style="display:none" onclick="deletePend()">삭제</button>
+      <button class="btn btn-secondary btn-sm" onclick="closePendForm()">취소</button>
+      <button class="btn btn-sm" style="background:#0d9488;color:#fff" onclick="savePend()">저장</button>
+    </div>
+  </div>
+</div>
+
 <div id="page-upload" class="page">
   <div class="page-header"><h5><i class="bi bi-cloud-upload" style="color:#0d9488"></i>데이터 업데이트</h5></div>
   <div class="card p-4 text-center">
@@ -266,7 +326,7 @@ function showPage(n,el){
   document.getElementById('page-'+n).classList.add('active');
   if(el) el.classList.add('active');
   sessionStorage.setItem('intl_page', n);
-  ({overview:renderOverview,'by-country':renderByCountry,'by-product':renderByProduct,'by-cons':renderByCons,'by-rep':renderByRep})[n]?.();
+  ({overview:renderOverview,'by-country':renderByCountry,'by-product':renderByProduct,'by-cons':renderByCons,'by-rep':renderByRep,pending:renderPending})[n]?.();
 }
 
 function _ovPC(){ const f=+document.getElementById('ov-from').value,t=document.getElementById('ov-to'); if(+t.value<f)t.value=f; renderOverview(); }
@@ -301,6 +361,7 @@ function renderOverview(){
   const cur=yr===2026?INTL:INTL.data2025, pre=yr===2026?INTL.data2025:null;
   const tot=ytd(cur.monthly,f,t), totU=ytd(cur.monthly_usd,f,t);
   const ptot=pre?ytd(pre.monthly,f,t):0, yoy=pct(tot,ptot);
+  const pAgg=(yr===2026)?_pendAggIntl(2026):{monthly:{}}; const pendYtd=ytd(pAgg.monthly||{},f,t);
   const nct=Object.values(cur.countries||{}).filter(c=>Object.keys(c.m||{}).some(m=>+m>=f&&+m<=t&&c.m[m]>0)).length;
   document.getElementById('upd-label').textContent='기준일 '+(INTL.updatedAt||'');
   const pl=f===t?f+'월':f+'~'+t+'월';
@@ -309,7 +370,7 @@ function renderOverview(){
   const diffAmt = tot - ptot;
   const diffStr = diffAmt>=0 ? '+'+fmtW(diffAmt) : '-'+fmtW(Math.abs(diffAmt));
   document.getElementById('ov-kpi').innerHTML=[
-    {l:'해외 합계 ('+pl+')',v:fmtW(tot),s:'전년 '+fmtW(ptot)+' '+bdg(yoy),c:'#111827',i:'bi-currency-won'},
+    {l:'해외 합계 ('+pl+')',v:fmtW(tot),s:'전년 '+fmtW(ptot)+' '+bdg(yoy)+(pendYtd>0?' · <span style="color:#0d9488;font-weight:700">미반영 +'+fmtW(pendYtd)+'</span>':''),c:'#111827',i:'bi-currency-won'},
     {l:'전년 대비 증감',v:diffStr,s:'동기 증감액',c:diffAmt>=0?'#16a34a':'#dc2626',i:diffAmt>=0?'bi-graph-up-arrow':'bi-graph-down-arrow'},
     {l:'거래 국가수',v:nct+'개국',s:'활성 국가',c:'#0d9488',i:'bi-globe'},
     {l:'YoY',v:yoy===null?'-':((parseFloat(yoy)>=0?'▲':'▼')+Math.abs(parseFloat(yoy))+'%'),s:'전년 동기 대비',c:yoy===null?'#6b7280':parseFloat(yoy)>=0?'#16a34a':'#dc2626',i:'bi-graph-up'},
@@ -670,6 +731,7 @@ async function _afterLogin(user) {
     return;
   }
   _currentUser={email:user.email,name:profile?.display_name||user.email.split('@')[0],access,role:profile?.role||'general',position:profile?.position||'',dept:profile?.dept||''};
+  _meId=user.id; _meName=_currentUser.name;
   document.getElementById('login-screen').style.display='none';
   document.getElementById('main').style.display='block';
   updateSidebarUser(_currentUser.name, _currentUser.email, _currentUser.position, _currentUser.dept);
@@ -683,6 +745,7 @@ async function _afterLogin(user) {
       }
     }
   } catch(_e) { console.log('해외 데이터 로드 실패 (내장 데이터 사용):', _e.message); }
+  await _loadIntlPending();   // 해외 예정분(미반영) 로드
   var _sameDoc=false; try{ _sameDoc = !!document.referrer && new URL(document.referrer).pathname===location.pathname; }catch(e){ _sameDoc=false; }
   // 다른 사이트/페이지에서 진입(또는 토큰 해시)하면 종합현황, intl 자체 새로고침이면 마지막 페이지 유지
   var _saved = (location.hash.includes('at=') || !_sameDoc) ? 'overview' : (sessionStorage.getItem('intl_page') || 'overview');
@@ -701,6 +764,157 @@ async function doLogout() {
   document.getElementById('login-btn').textContent='로그인';
   document.getElementById('login-error').style.display='none';
   document.getElementById('login-screen').style.display='flex';
+}
+
+// ── 해외 예정분(회계 미반영 매출) ──────────────────────────────
+let INTL_PEND=[], _meId=null, _meName='';
+const INTL_REGIONS=['동남아','중화','중동','유럽','미주','태국법인','미국법인','일본법인','기타'];
+async function _loadIntlPending(){
+  try{
+    const {data,error}=await _sb.from('pending_sales').select('*').order('expected_date',{ascending:false});
+    if(!error&&data) INTL_PEND=data.filter(r=>r.channel==='intl');
+  }catch(e){ console.warn('intl pending load', e); INTL_PEND=[]; }
+}
+function _pendAggIntl(yr){
+  const agg={monthly:{},regions:{},total:0,count:0};
+  (INTL_PEND||[]).forEach(p=>{
+    if(p.status==='취소'||p.status==='반영됨') return;        // 회계 잡힘/취소 → 합산 제외
+    const d=p.expected_date?new Date(p.expected_date+'T00:00:00'):null;
+    if(!(d&&!isNaN(d)&&d.getFullYear()===yr)) return;
+    const mo=d.getMonth()+1,amt=Number(p.amount||0),rg=p.region||'기타';
+    agg.monthly[mo]=(agg.monthly[mo]||0)+amt; agg.regions[rg]=(agg.regions[rg]||0)+amt;
+    agg.total+=amt; agg.count++;
+  });
+  return agg;
+}
+function _pToast(msg){
+  let t=document.getElementById('_ptoast');
+  if(!t){ t=document.createElement('div'); t.id='_ptoast'; t.className='pend-toast'; document.body.appendChild(t); }
+  t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2200);
+}
+function renderPending(){
+  const fr=document.getElementById('pend-f-region');
+  if(fr && fr.options.length<=1) fr.innerHTML='<option value="">전체 지역</option>'+INTL_REGIONS.map(r=>'<option value="'+r+'">'+r+'</option>').join('');
+  const agg=_pendAggIntl(2026);
+  const active=(INTL_PEND||[]).filter(p=>p.status!=='취소');
+  const totAll=active.reduce((s,p)=>s+Number(p.amount||0),0);
+  const reflectedCnt=(INTL_PEND||[]).filter(p=>p.status==='반영됨').length;
+  const cards=[
+    {l:'예정분 합계',v:fmtW(totAll),c:'#111827',s:active.length+'건 (취소 제외)'},
+    {l:'미반영 합산',v:fmtW(agg.total),c:'#0d9488',s:agg.count+'건 · 해외매출 포함'},
+    {l:'회계반영 완료',v:reflectedCnt+'건',c:'#16a34a',s:'수동 확인'},
+    {l:'등록 지역',v:Object.keys(agg.regions).length+'개',c:'#7c3aed',s:'활성 지역/법인'},
+  ];
+  document.getElementById('pend-summary').innerHTML=cards.map(c=>'<div class="col-6 col-md-3"><div class="card p-2 px-3 h-100"><div style="font-size:11px;color:#6b7280">'+c.l+'</div><div style="font-size:1.2rem;font-weight:700;color:'+c.c+'">'+c.v+'</div><div style="font-size:10px;color:#9ca3af">'+c.s+'</div></div></div>').join('');
+
+  const fReg=document.getElementById('pend-f-region')?.value||'';
+  const fKw=(document.getElementById('pend-f-kw')?.value||'').trim().toLowerCase();
+  const fMine=document.getElementById('pend-f-mine')?.checked;
+  const ORD={'예정':0,'반영됨':1,'취소':2};
+  const rows=(INTL_PEND||[]).filter(p=>{
+    if(fReg && (p.region||'기타')!==fReg) return false;
+    if(fMine && p.owner_id!==_meId) return false;
+    if(fKw && !(((p.hospital||'')+(p.product||'')+(p.memo||'')).toLowerCase().includes(fKw))) return false;
+    return true;
+  }).sort((a,b)=>(ORD[a.status||'예정']-ORD[b.status||'예정'])||((a.expected_date<b.expected_date)?1:-1));
+
+  const tb=document.getElementById('pend-tbody'),empty=document.getElementById('pend-empty');
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  if(!rows.length){ tb.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tb.innerHTML=rows.map(p=>{
+    const st=p.status||'예정';
+    let badge2,dim='';
+    if(st==='취소'){ badge2='<span style="font-size:11px;color:#9ca3af">취소</span>'; dim='opacity:.5'; }
+    else if(st==='반영됨'){ badge2='<span style="font-size:11px;color:#16a34a;font-weight:600">✓ 회계반영</span>'; dim='opacity:.55'; }
+    else badge2='<span style="font-size:11px;color:#0d9488;font-weight:600">예정</span>';
+    const catB=p.category==='소모품'?'<span style="font-size:11px;color:#2563eb">소모품</span>':'<span style="font-size:11px;color:#7c3aed">장비</span>';
+    let act='<button class="btn btn-sm btn-link p-0 me-2" style="font-size:12px" onclick="openPendForm(\''+p.id+'\')">수정</button>';
+    if(st==='예정') act+='<button class="btn btn-sm btn-link p-0 text-success" style="font-size:12px;text-decoration:none" onclick="_markPend(\''+p.id+'\',\'반영됨\')" title="회계에 잡혔으면 눌러 합산에서 제외">반영처리</button>';
+    else if(st==='반영됨') act+='<button class="btn btn-sm btn-link p-0 text-muted" style="font-size:12px;text-decoration:none" onclick="_markPend(\''+p.id+'\',\'예정\')">되돌리기</button>';
+    return '<tr style="'+dim+'"><td style="padding:8px 12px;white-space:nowrap">'+(p.expected_date||'')+'</td>'
+      +'<td><span style="font-size:11px;font-weight:600">'+esc(p.region||'기타')+'</span></td>'
+      +'<td>'+catB+'</td>'
+      +'<td>'+(p.product?esc(p.product):'<span class="text-muted">-</span>')+'</td>'
+      +'<td>'+(p.hospital?esc(p.hospital):'<span class="text-muted">-</span>')+'</td>'
+      +'<td style="text-align:right;font-weight:600;white-space:nowrap">'+fmtW(Number(p.amount)||0)+'</td>'
+      +'<td style="text-align:center">'+badge2+'</td>'
+      +'<td style="font-size:12px;color:#6b7280;white-space:nowrap">'+esc(p.owner_name||'')+'</td>'
+      +'<td style="text-align:center;white-space:nowrap">'+act+'</td></tr>';
+  }).join('');
+}
+function _pendDatalists(){
+  const prods=new Set();
+  Object.keys(INTL.products||{}).forEach(k=>prods.add(k));
+  Object.keys(INTL.prods_dev||{}).forEach(k=>prods.add(k));
+  Object.keys(INTL.prods_cons||{}).forEach(k=>prods.add(k));
+  (INTL_PEND||[]).forEach(p=>{ if(p.product)prods.add(p.product); });
+  document.getElementById('pf-prod-list').innerHTML=[...prods].sort().map(v=>'<option value="'+String(v).replace(/"/g,'&quot;')+'">').join('');
+  document.getElementById('pf-region').innerHTML=INTL_REGIONS.map(r=>'<option value="'+r+'">'+r+'</option>').join('');
+}
+function _pfHint(){ const v=Number(document.getElementById('pf-amount').value||0); document.getElementById('pf-hint').textContent=v?fmtW(v):''; }
+function _todayS(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function openPendForm(id){
+  _pendDatalists();
+  const p=id?(INTL_PEND||[]).find(x=>x.id===id):null;
+  document.getElementById('pend-modal-title').textContent=p?'예정분 수정':'예정분 추가';
+  document.getElementById('pf-id').value=p?p.id:'';
+  document.getElementById('pf-region').value=p?(p.region||'동남아'):'동남아';
+  document.getElementById('pf-cat').value=p?(p.category||'장비'):'장비';
+  document.getElementById('pf-date').value=p?p.expected_date:_todayS();
+  document.getElementById('pf-product').value=p?(p.product||''):'';
+  document.getElementById('pf-client').value=p?(p.hospital||''):'';
+  document.getElementById('pf-amount').value=p?p.amount:'';
+  document.getElementById('pf-qty').value=p?(p.qty||''):'';
+  document.getElementById('pf-memo').value=p?(p.memo||''):'';
+  document.getElementById('pf-del').style.display=p?'':'none';
+  _pfHint();
+  document.getElementById('pendModal').style.display='flex';
+}
+function closePendForm(){ document.getElementById('pendModal').style.display='none'; }
+async function savePend(){
+  const id=document.getElementById('pf-id').value;
+  const expected_date=document.getElementById('pf-date').value;
+  const amount=Math.round(Number(document.getElementById('pf-amount').value||0));
+  if(!expected_date){ _pToast('예정일을 입력하세요'); return; }
+  if(!amount||amount<=0){ _pToast('금액을 입력하세요'); return; }
+  const row={
+    channel:'intl',
+    region:document.getElementById('pf-region').value,
+    category:document.getElementById('pf-cat').value,
+    expected_date, amount,
+    qty:Math.round(Number(document.getElementById('pf-qty').value||0))||null,
+    product:document.getElementById('pf-product').value.trim()||null,
+    hospital:document.getElementById('pf-client').value.trim()||null,
+    memo:document.getElementById('pf-memo').value.trim()||null,
+    owner_id:_meId, owner_name:_meName, updated_at:new Date().toISOString()
+  };
+  _pToast('저장 중...');
+  try{
+    if(id){ const {error}=await _sb.from('pending_sales').update(row).eq('id',id); if(error) throw error; }
+    else  { const {error}=await _sb.from('pending_sales').insert(row); if(error) throw error; }
+    await _loadIntlPending(); closePendForm(); renderPending();
+    if(document.getElementById('page-overview').classList.contains('active')) renderOverview();
+    _pToast('저장 완료!');
+  }catch(e){ _pToast('저장 실패: '+(e.message||e)); }
+}
+async function deletePend(){
+  const id=document.getElementById('pf-id').value; if(!id) return;
+  if(!confirm('이 예정분을 삭제할까요?')) return;
+  try{
+    const {error}=await _sb.from('pending_sales').delete().eq('id',id); if(error) throw error;
+    await _loadIntlPending(); closePendForm(); renderPending();
+    if(document.getElementById('page-overview').classList.contains('active')) renderOverview();
+    _pToast('삭제 완료');
+  }catch(e){ _pToast('삭제 실패: '+(e.message||e)); }
+}
+async function _markPend(id,status){
+  try{
+    const {error}=await _sb.from('pending_sales').update({status,updated_at:new Date().toISOString()}).eq('id',id); if(error) throw error;
+    await _loadIntlPending(); renderPending();
+    if(document.getElementById('page-overview').classList.contains('active')) renderOverview();
+    _pToast(status==='반영됨'?'회계반영 처리됨':'되돌렸습니다');
+  }catch(e){ _pToast('실패: '+(e.message||e)); }
 }
 
 (async()=>{

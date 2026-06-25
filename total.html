@@ -342,13 +342,19 @@ function _pendEff(p){
   return {eff:'pending'};
 }
 function _pendingAgg(yr){
-  const agg={consMonthly:{},devMonthly:{},consProducts:{},devProducts:{},total:0,count:0};
+  const agg={consMonthly:{},devMonthly:{},intlMonthly:{},consProducts:{},devProducts:{},total:0,count:0,intlTotal:0,intlCount:0};
   (PENDING||[]).forEach(p=>{
     const d=p.expected_date?new Date(p.expected_date+'T00:00:00'):null;
     if(!(d&&!isNaN(d)&&d.getFullYear()===yr)) return;
-    const e=_pendEff(p);
+    const mo=d.getMonth()+1,amt=Number(p.amount||0);
+    if((p.channel||'korea')==='intl'){            // 해외 예정분 — 상태만으로 판정(회계 txn 자동매칭 없음)
+      if(p.status==='취소'||p.status==='반영됨') return;
+      agg.intlMonthly[mo]=(agg.intlMonthly[mo]||0)+amt; agg.intlTotal+=amt; agg.intlCount++;
+      return;
+    }
+    const e=_pendEff(p);                            // 국내 — 기존 회계 자동매칭
     if(e.eff==='reflected'||e.eff==='cancelled') return;
-    const mo=d.getMonth()+1,amt=Number(p.amount||0),isCons=p.category==='소모품';
+    const isCons=p.category==='소모품';
     if(isCons){agg.consMonthly[mo]=(agg.consMonthly[mo]||0)+amt; if(p.product) agg.consProducts[p.product]=(agg.consProducts[p.product]||0)+amt;}
     else {agg.devMonthly[mo]=(agg.devMonthly[mo]||0)+amt; if(p.product) agg.devProducts[p.product]=(agg.devProducts[p.product]||0)+amt;}
     agg.total+=amt; agg.count++;
@@ -393,15 +399,18 @@ function showPage(name,el){
 // ── 전사 종합 ────────────────────────────────────────────
 function renderOverview(){
   const f=+document.getElementById('ov-from').value, t=+document.getElementById('ov-to').value;
-  const pend=_pendingAgg(2026);   // 예정분(국내 미반영) — 항상 계산
+  const pend=_pendingAgg(2026);   // 예정분(국내+해외 미반영) — 항상 계산
 
   const domConsC=sumMo(CONS.monthly2026,f,t), domDevC=sumMo(DEVICE.monthly2026,f,t);
   const domC=domConsC+domDevC;                                          // 국내 회계반영
   const domPend=sumMo(pend.consMonthly,f,t)+sumMo(pend.devMonthly,f,t); // 국내 예정분
   const domI=domC+domPend;                                              // 국내 미반영 포함
-  const intl=sumMo(INTL.monthly,f,t);                                   // 해외(예정분 없음)
+  const intl=sumMo(INTL.monthly,f,t);                                   // 해외 회계반영
+  const intlPend=sumMo(pend.intlMonthly,f,t);                           // 해외 예정분
+  const intlI=intl+intlPend;                                            // 해외 미반영 포함
   const totalC=domC+intl;                                               // 전사 회계반영
-  const totalI=domI+intl;                                               // 전사 미반영 포함
+  const totalI=domI+intlI;                                              // 전사 미반영 포함
+  const allPend=domPend+intlPend;                                       // 전사 예정분
   const domPrev=sumMo(CONS.monthly2025,f,t)+sumMo(DEVICE.monthly2025,f,t);
   const intlPrev=sumMo(INTL.data2025&&INTL.data2025.monthly,f,t);
   const totalPrev=domPrev+intlPrev;
@@ -410,10 +419,10 @@ function renderOverview(){
 
   // KPI — 회계반영(메인) / 미반영 포함(우측)
   const kpis=[
-    {l:'전사 매출 ('+periodLbl+')',i:'bi-currency-won',c:'#0f172a',conf:totalC,inc:totalI,prev:totalPrev,pend:domPend,hasPend:true},
+    {l:'전사 매출 ('+periodLbl+')',i:'bi-currency-won',c:'#0f172a',conf:totalC,inc:totalI,prev:totalPrev,pend:allPend,hasPend:true},
     {l:'국내 매출',i:'bi-hospital',c:DOM_BLUE,conf:domC,inc:domI,prev:domPrev,pend:domPend,hasPend:true,share:totalC>0?Math.round(domC/totalC*100):0},
-    {l:'해외 매출',i:'bi-globe-americas',c:INTL_TEAL,conf:intl,inc:intl,prev:intlPrev,pend:0,hasPend:false,share:totalC>0?Math.round(intl/totalC*100):0},
-    {l:'월 평균 (전사)',i:'bi-graph-up',c:'#7c3aed',conf:totalC/months,inc:totalI/months,prev:totalPrev/months,pend:domPend/months,hasPend:true,avg:true},
+    {l:'해외 매출',i:'bi-globe-americas',c:INTL_TEAL,conf:intl,inc:intlI,prev:intlPrev,pend:intlPend,hasPend:true,share:totalC>0?Math.round(intl/totalC*100):0},
+    {l:'월 평균 (전사)',i:'bi-graph-up',c:'#7c3aed',conf:totalC/months,inc:totalI/months,prev:totalPrev/months,pend:allPend/months,hasPend:true,avg:true},
   ];
   document.getElementById('ov-kpi').innerHTML=kpis.map(c=>{
     const y=pct(c.conf,c.prev);
@@ -432,7 +441,7 @@ function renderOverview(){
   const m12=Array.from({length:12},(_,i)=>i+1);
   const domVals=m12.map(m=>+(((CONS.monthly2026&&CONS.monthly2026[m]||0)+(DEVICE.monthly2026&&DEVICE.monthly2026[m]||0))/1e8).toFixed(2));
   const intlVals=m12.map(m=>+(((INTL.monthly&&INTL.monthly[m]||0))/1e8).toFixed(2));
-  const pendVals=m12.map(m=>+(((pend.consMonthly[m]||0)+(pend.devMonthly[m]||0))/1e8).toFixed(2));
+  const pendVals=m12.map(m=>+(((pend.consMonthly[m]||0)+(pend.devMonthly[m]||0)+(pend.intlMonthly[m]||0))/1e8).toFixed(2));
   const prevVals=m12.map(m=>+(((CONS.monthly2025&&CONS.monthly2025[m]||0)+(DEVICE.monthly2025&&DEVICE.monthly2025[m]||0)+((INTL.data2025&&INTL.data2025.monthly&&INTL.data2025.monthly[m])||0))/1e8).toFixed(2));
   const hasPend=pendVals.some(v=>v>0);
   if(_ovChart){_ovChart.destroy();_ovChart=null;}
@@ -449,7 +458,7 @@ function renderOverview(){
   });
 
   // 국내·해외 표 (도넛/장비소모품 대체)
-  renderOvTable({domC,domI,domPend,domPrev,intl,intlPrev,totalC,totalI,totalPrev});
+  renderOvTable({domC,domI,domPend,domPrev,intl,intlI,intlPrev,totalC,totalI,totalPrev});
 
   // 제품 통합 Top (회계반영 기준)
   renderOvProds(f,t,null);
@@ -473,7 +482,7 @@ function renderOvTable(d){
     '<thead><tr><th>구분</th><th>매출(회계반영)</th><th>비중</th><th>미반영 포함</th><th>전년</th><th>전년대비</th></tr></thead>'+
     '<tbody>'+
       row('국내',DOM_BLUE,d.domC,d.domI,d.domPrev,d.totalC,true)+
-      row('해외',INTL_TEAL,d.intl,d.intl,d.intlPrev,d.totalC,false)+
+      row('해외',INTL_TEAL,d.intl,d.intlI,d.intlPrev,d.totalC,true)+
     '</tbody>'+
     '<tfoot><tr class="total-row"><td>전사 합계</td><td>'+fmtW(d.totalC)+'</td><td>100.0%</td>'+
       '<td style="color:#0e7490">'+(d.totalI>d.totalC?fmtW(d.totalI):'<span style="color:#cbd5e1">—</span>')+'</td>'+
@@ -525,14 +534,14 @@ function renderThisMonth(){
   const domConf=(CONS.monthly2026&&CONS.monthly2026[tmo]||0)+(DEVICE.monthly2026&&DEVICE.monthly2026[tmo]||0);
   const intlConf=(INTL.monthly&&INTL.monthly[tmo]||0);
   const conf=domConf+intlConf;
-  const pendMo=(pend.consMonthly[tmo]||0)+(pend.devMonthly[tmo]||0);
+  const pendMo=(pend.consMonthly[tmo]||0)+(pend.devMonthly[tmo]||0)+(pend.intlMonthly[tmo]||0);
   const manage=conf+pendMo;
   const tgt=_monthTarget(tmo);
   const rate=tgt>0?Math.round(manage/tgt*100):0;
   document.getElementById('tm-target').textContent=tgt>0?(tmo+'월 국내목표 '+fmtW(tgt)):'';
   document.getElementById('tm-cards').innerHTML=[
     '<div class="tm-box"><div class="tm-l"><i class="bi bi-check-circle me-1" style="color:#0f172a"></i>회계 확정 (전사)</div><div class="tm-v" style="color:#0f172a">'+fmtW(conf)+'</div><div class="tm-s">국내 '+fmtW(domConf)+' · 해외 '+fmtW(intlConf)+'</div></div>',
-    '<div class="tm-box"><div class="tm-l"><i class="bi bi-hourglass-split me-1" style="color:#0891b2"></i>예정분 (국내 미반영)</div><div class="tm-v" style="color:#0891b2">+'+fmtW(pendMo)+'</div><div class="tm-s">'+pend.count+'건 합산</div></div>',
+    '<div class="tm-box"><div class="tm-l"><i class="bi bi-hourglass-split me-1" style="color:#0891b2"></i>예정분 (미반영)</div><div class="tm-v" style="color:#0891b2">+'+fmtW(pendMo)+'</div><div class="tm-s">국내 '+pend.count+'건 · 해외 '+pend.intlCount+'건</div></div>',
     '<div class="tm-box accent"><div class="tm-l"><i class="bi bi-bullseye me-1" style="color:#0f766e"></i>관리 합계 (확정+예정)</div><div class="tm-v" style="color:#0f766e">'+fmtW(manage)+'</div>'+(tgt>0?('<div class="tm-s">국내목표 대비 '+rate+'%</div><div class="tm-prog"><div style="width:'+Math.min(100,rate)+'%"></div></div>'):'<div class="tm-s">확정+예정</div>')+'</div>',
   ].join('');
 }
