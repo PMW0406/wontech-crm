@@ -392,10 +392,7 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
       <select id="ov-to-sel" class="form-select form-select-sm" style="width:70px" onchange="_ovPeriodChange()">
         <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option><option value="4">4월</option><option value="5">5월</option><option value="6" selected>6월</option><option value="7">7월</option><option value="8">8월</option><option value="9">9월</option><option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
       </select>
-      <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#2563eb;cursor:pointer;margin-left:auto;white-space:nowrap" title="아직 회계에 안 잡힌 예정분을 합산해 관리매출로 표시 (2026년 한정)">
-        <input type="checkbox" id="ov-inc-pending" checked onchange="renderSalesOverview()" style="cursor:pointer;width:14px;height:14px"> 예정분 포함
-        <span id="ov-pend-badge" style="font-size:11px;color:#9ca3af;font-weight:500"></span>
-      </label>
+      <span style="margin-left:auto;font-size:11px;color:#9ca3af;white-space:nowrap"><i class="bi bi-info-circle me-1"></i>KPI는 <b style="color:#6b7280">회계반영</b> / <b style="color:#7c3aed">미반영 포함</b> 두 값을 함께 표시</span>
     </div>
     <!-- KPI 카드 -->
     <div class="row g-3 mb-3" id="ov-kpi"></div>
@@ -1828,39 +1825,45 @@ function renderSalesOverview() {
   const devCurMo  = yr===2026?DEVICE.monthly2026||{}:DEVICE.monthly2025||{};
   const devPrMo   = yr===2026?DEVICE.monthly2025||{}:{};
 
-  // 예정분 포함 토글 (회계 미반영분, 2026년 한정)
-  const incPend = !!(document.getElementById('ov-inc-pending')?.checked) && yr===2026;
+  // 예정분(회계 미반영) — 2026만 존재. 토글 없이 KPI에 회계/미반영포함 2값으로 표시
+  const incPend = yr===2026;
   const pend = incPend ? _pendingView(yr).agg : null;
   const consPendMo = pend?pend.consMonthly:{}, devPendMo = pend?pend.devMonthly:{};
 
-  const consYtd   = YTD.reduce((s,m)=>s+(consCurMo[m]||0)+(consPendMo[m]||0),0);
-  const consPrev  = YTD.reduce((s,m)=>s+(consPrMo[m]||0),0);
-  const devYtd    = YTD.reduce((s,m)=>s+(devCurMo[m]||0)+(devPendMo[m]||0),0);
-  const devPrev   = YTD.reduce((s,m)=>s+(devPrMo[m]||0),0);
+  // 회계반영(C) / 미반영포함(I)
+  const consYtdC = YTD.reduce((s,m)=>s+(consCurMo[m]||0),0);
+  const devYtdC  = YTD.reduce((s,m)=>s+(devCurMo[m]||0),0);
   const consPendYtd = YTD.reduce((s,m)=>s+(consPendMo[m]||0),0);
   const devPendYtd  = YTD.reduce((s,m)=>s+(devPendMo[m]||0),0);
-  const total     = consYtd+devYtd;
+  const consYtdI = consYtdC+consPendYtd, devYtdI = devYtdC+devPendYtd;
+  const consPrev = YTD.reduce((s,m)=>s+(consPrMo[m]||0),0);
+  const devPrev  = YTD.reduce((s,m)=>s+(devPrMo[m]||0),0);
+  const totalC = consYtdC+devYtdC, totalI = consYtdI+devYtdI, totalPend = consPendYtd+devPendYtd;
   const totalPrev = consPrev+devPrev;
-  const yoy       = totalPrev>0?(total/totalPrev-1)*100:null;
-  const consYoy   = consPrev>0?(consYtd/consPrev-1)*100:null;
-  const devYoy    = devPrev>0?(devYtd/devPrev-1)*100:null;
+  const yoy     = totalPrev>0?(totalC/totalPrev-1)*100:null;   // 회계 기준
+  const consYoy = consPrev>0?(consYtdC/consPrev-1)*100:null;
+  const devYoy  = devPrev>0?(devYtdC/devPrev-1)*100:null;
 
   const upd = CONS.updatedAt||DEVICE.updatedAt||'';
   const ovUpd = document.getElementById('overview-updated');
   if (ovUpd) ovUpd.textContent = upd ? '기준일 '+upd : '';
-  const pendBadge = document.getElementById('ov-pend-badge');
-  if (pendBadge) pendBadge.textContent = incPend ? '· 예정 +'+fmtW(consPendYtd+devPendYtd) : (yr!==2026?'(2026년만)':'');
 
-  const badge = v => v===null?'':
-    '<span style="font-size:11px;font-weight:700;color:'+(v>=0?'#16a34a':'#dc2626')+'">'+(v>=0?'▲':'▼')+Math.abs(v).toFixed(1)+'%</span>';
-
+  const badge = v => v===null?'':'<span style="font-size:11px;font-weight:700;color:'+(v>=0?'#16a34a':'#dc2626')+'">'+(v>=0?'▲':'▼')+Math.abs(v).toFixed(1)+'%</span>';
   const periodLbl = fromM===toM ? fromM+'월' : fromM+'~'+toM+'월';
-  document.getElementById('ov-kpi').innerHTML = [
-    {label:'합계 YTD ('+periodLbl+')', val:fmtW(total),   sub:incPend?'회계+예정 '+fmtW(consPendYtd+devPendYtd):'소모품+제품 국내', col:'#111827', icon:'bi-currency-won', yoy},
-    {label:'소모품 YTD', val:fmtW(consYtd), sub:incPend?'예정 +'+fmtW(consPendYtd)+' 포함':'전년 '+fmtW(consPrev), col:'#2563eb', icon:'bi-capsule',  yoy:consYoy, click:"openOvCategory('cons')"},
-    {label:'제품 YTD',   val:fmtW(devYtd),  sub:incPend?'예정 +'+fmtW(devPendYtd)+' 포함':'전년 '+fmtW(devPrev),  col:'#16a34a', icon:'bi-box-seam', yoy:devYoy, click:"openOvCategory('dev')"},
-    {label:'YoY 성장률', val:yoy===null?'-':((yoy>=0?'▲':'▼')+Math.abs(yoy).toFixed(1)+'%'), sub:'전년 동기 합계 대비', col:yoy===null?'#6b7280':yoy>=0?'#16a34a':'#dc2626', icon:'bi-graph-up', yoy:null},
-  ].map(c=>'<div class="col-6 col-md-3"><div class="kpi-card"'+(c.click?' onclick="'+c.click+'" style="cursor:pointer" title="클릭하면 전체 품목 랭킹 조회"':'')+'><div class="kpi-label"><i class="bi '+c.icon+' me-1" style="color:'+c.col+'"></i>'+c.label+(c.click?' <i class="bi bi-search" style="font-size:9px;color:#cbd5e1"></i>':'')+'</div><div class="kpi-value" style="color:'+c.col+';font-size:1.45rem">'+c.val+'</div><div class="kpi-sub">'+c.sub+' '+badge(c.yoy)+'</div></div></div>').join('');
+  const _kpiHead = c => '<div class="kpi-label"><i class="bi '+c.icon+' me-1" style="color:'+c.col+'"></i>'+c.label+(c.click?' <i class="bi bi-search" style="font-size:9px;color:#cbd5e1"></i>':'')+'</div>';
+  const _kpiDual = c => '<div class="col-6 col-md-3"><div class="kpi-card"'+(c.click?' onclick="'+c.click+'" style="cursor:pointer" title="클릭하면 전체 품목 랭킹 조회"':'')+'>'+_kpiHead(c)
+    +'<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px">'
+      +'<div><div style="font-size:10px;color:#9ca3af;margin-bottom:1px;font-weight:600">회계반영</div><div class="kpi-value" style="color:'+c.col+';font-size:1.4rem;line-height:1.1">'+c.mainVal+'</div><div class="kpi-sub" style="margin-top:3px">'+c.mainSub+'</div></div>'
+      +'<div style="text-align:right;border-left:1px solid #eef2f7;padding-left:11px"><div style="font-size:10px;color:#7c3aed;margin-bottom:1px;font-weight:600">미반영 포함</div><div style="font-size:1.1rem;font-weight:800;color:#4b5563;line-height:1.1">'+c.rightVal+'</div><div style="font-size:10px;color:#9ca3af;margin-top:3px">예정 +'+c.pendStr+'</div></div>'
+    +'</div></div></div>';
+  const _kpiSingle = c => '<div class="col-6 col-md-3"><div class="kpi-card">'+_kpiHead(c)+'<div class="kpi-value" style="color:'+c.col+';font-size:1.45rem">'+c.mainVal+'</div><div class="kpi-sub">'+c.mainSub+'</div></div></div>';
+  const kpis = [
+    {dual:incPend, label:'합계 YTD ('+periodLbl+')', icon:'bi-currency-won', col:'#111827', mainVal:fmtW(totalC), mainSub:'국내 소모품+제품 '+badge(yoy), rightVal:fmtW(totalI), pendStr:fmtW(totalPend)},
+    {dual:incPend, label:'소모품 YTD', icon:'bi-capsule', col:'#2563eb', click:"openOvCategory('cons')", mainVal:fmtW(consYtdC), mainSub:'전년 '+fmtW(consPrev)+' '+badge(consYoy), rightVal:fmtW(consYtdI), pendStr:fmtW(consPendYtd)},
+    {dual:incPend, label:'제품 YTD', icon:'bi-box-seam', col:'#16a34a', click:"openOvCategory('dev')", mainVal:fmtW(devYtdC), mainSub:'전년 '+fmtW(devPrev)+' '+badge(devYoy), rightVal:fmtW(devYtdI), pendStr:fmtW(devPendYtd)},
+    {dual:false, label:'YoY 성장률', icon:'bi-graph-up', col:yoy===null?'#6b7280':yoy>=0?'#16a34a':'#dc2626', mainVal:yoy===null?'-':((yoy>=0?'▲':'▼')+Math.abs(yoy).toFixed(1)+'%'), mainSub:'전년 동기 회계 대비'},
+  ];
+  document.getElementById('ov-kpi').innerHTML = kpis.map(c=>c.dual?_kpiDual(c):_kpiSingle(c)).join('');
 
   const months12 = Array.from({length:12},(_,i)=>i+1);
   const consVals   = months12.map(m=>Math.round((consCurMo[m]||0)/1e4));
