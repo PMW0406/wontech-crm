@@ -1885,11 +1885,22 @@ function _ovProdAgg(cat, name){
   return {isCons, mo26, mo25, byHosp, qtyHosp, tot26:(src.products2026||{})[name]||0, tot25:(src.products2025||{})[name]||0};
 }
 function _ovMonthBars(mo26, mo25, accent){
+  const H=84;
   const maxMo=Math.max(1,...Array.from({length:12},(_,i)=>Math.max(mo26[i+1]||0,mo25[i+1]||0)));
-  return '<div style="display:flex;gap:3px;align-items:flex-end;padding-top:4px">'+Array.from({length:12},(_,i)=>{
-    const m=i+1,v=mo26[m]||0,pv=mo25[m]||0,h=(v/maxMo*100),ph=(pv/maxMo*100);
-    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px" title="'+m+'월: '+_ovFmt(v)+(pv?(' / 전년 '+_ovFmt(pv)):'')+'"><div style="width:100%;height:84px;position:relative;display:flex;align-items:flex-end"><div style="width:100%;height:'+h.toFixed(1)+'%;background:'+accent+';border-radius:3px 3px 0 0;min-height:'+(v>0?2:0)+'px"></div>'+(pv>0?'<div style="position:absolute;left:0;right:0;bottom:'+ph.toFixed(1)+'%;border-top:1.5px dashed #94a3b8"></div>':'')+'</div><div style="font-size:9px;color:#9ca3af">'+m+'</div></div>';
-  }).join('')+'</div>';
+  const bars=Array.from({length:12},(_,i)=>{
+    const m=i+1,v=mo26[m]||0,pv=mo25[m]||0,h=(v/maxMo*100);
+    return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px" title="'+m+'월: 2026 '+_ovFmt(v)+' / 2025 '+_ovFmt(pv)+'"><div style="width:100%;height:'+H+'px;display:flex;align-items:flex-end"><div style="width:64%;margin:0 auto;height:'+h.toFixed(1)+'%;background:'+accent+';border-radius:3px 3px 0 0;min-height:'+(v>0?2:0)+'px"></div></div><div style="font-size:9px;color:#9ca3af">'+m+'</div></div>';
+  }).join('');
+  // 2025 = 연결된 꺾은선
+  const pts=Array.from({length:12},(_,i)=>{const m=i+1,pv=mo25[m]||0;return ((m-0.5)/12*100).toFixed(2)+','+(H-(pv/maxMo*H)).toFixed(2);}).join(' ');
+  const dots=Array.from({length:12},(_,i)=>{const m=i+1,pv=mo25[m]||0;if(!pv)return '';return '<circle cx="'+((m-0.5)/12*100).toFixed(2)+'" cy="'+(H-(pv/maxMo*H)).toFixed(2)+'" r="2.5" fill="#fff" stroke="#64748b" stroke-width="1.5" vector-effect="non-scaling-stroke"/>';}).join('');
+  const svg='<svg viewBox="0 0 100 '+H+'" preserveAspectRatio="none" style="position:absolute;top:0;left:0;width:100%;height:'+H+'px;pointer-events:none"><polyline points="'+pts+'" fill="none" stroke="#64748b" stroke-width="1.8" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>'+dots+'</svg>';
+  return '<div style="position:relative;margin-bottom:16px"><div style="display:flex;gap:3px;align-items:flex-end">'+bars+'</div>'+svg+'</div>';
+}
+// 상위 거래처 클릭 → 제품모달 닫고 병원별 상세 모달 열기
+function _ovToHosp(name){
+  try{ bootstrap.Modal.getOrCreateInstance(document.getElementById('ovDetailModal')).hide(); }catch(e){}
+  setTimeout(function(){ try{ showHospitalDetail(name); }catch(e){ console.error('hosp detail', e); } }, 230);
 }
 // 제품 클릭 → 상세
 function openOvDetail(cat, name){
@@ -1899,14 +1910,14 @@ function openOvDetail(cat, name){
   const yoyHtml=yoy===null?'<span style="color:#9ca3af">신규</span>':'<span style="color:'+(yoy>=0?'#16a34a':'#dc2626')+'">'+(yoy>=0?'▲':'▼')+Math.abs(yoy).toFixed(1)+'%</span>';
   const hosps=Object.entries(d.byHosp).sort((a,b)=>b[1]-a[1]).slice(0,10);
   const maxH=hosps.length?hosps[0][1]:1;
-  const hospHtml=hosps.length?hosps.map(([h,v],i)=>'<div style="padding:5px 0;border-bottom:1px solid #f3f4f6"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="font-weight:600">'+(i+1)+'. '+_ovEsc(h)+(d.qtyHosp[h]?' <span style="color:#9ca3af;font-weight:400">·'+d.qtyHosp[h].toLocaleString()+'개</span>':'')+'</span><span style="font-weight:700;color:'+accent+'">'+_ovFmt(v)+'</span></div><div style="background:#f3f4f6;border-radius:3px;height:5px;overflow:hidden"><div style="width:'+(v/maxH*100).toFixed(1)+'%;height:100%;background:'+accent+'"></div></div></div>').join(''):'<div class="text-muted" style="font-size:12px;padding:8px 0">거래처별 내역 없음 (회계 거래내역 미저장 품목)</div>';
+  const hospHtml=hosps.length?hosps.map(([h,v],i)=>'<div data-h="'+String(h).replace(/"/g,'&quot;')+'" onclick="_ovToHosp(this.getAttribute(\'data-h\'))" title="클릭하면 거래처 상세 보기" style="padding:5px 4px;border-bottom:1px solid #f3f4f6;cursor:pointer;border-radius:6px;transition:background .12s" onmouseover="this.style.background=\'#f8fafc\'" onmouseout="this.style.background=\'\'"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="font-weight:600">'+(i+1)+'. '+_ovEsc(h)+' <i class="bi bi-box-arrow-up-right" style="font-size:8px;color:#cbd5e1"></i>'+(d.qtyHosp[h]?' <span style="color:#9ca3af;font-weight:400">·'+d.qtyHosp[h].toLocaleString()+'개</span>':'')+'</span><span style="font-weight:700;color:'+accent+'">'+_ovFmt(v)+'</span></div><div style="background:#f3f4f6;border-radius:3px;height:5px;overflow:hidden"><div style="width:'+(v/maxH*100).toFixed(1)+'%;height:100%;background:'+accent+'"></div></div></div>').join(''):'<div class="text-muted" style="font-size:12px;padding:8px 0">거래처별 내역 없음 (회계 거래내역 미저장 품목)</div>';
   const pend=(typeof _pendingView==='function'?_pendingView(2026).items:[]).filter(it=>it.p.product===name && it.p.category===catLbl && (it.eff==='pending'||it.eff==='candidate'));
   const pendTot=pend.reduce((s,it)=>s+Number(it.p.amount||0),0);
   const pendHtml=pend.length?'<div style="margin-top:14px;background:#faf5ff;border:1px solid #ede9fe;border-radius:10px;padding:10px 12px"><div style="font-size:12px;font-weight:700;color:#7c3aed;margin-bottom:5px"><i class="bi bi-hourglass-split me-1"></i>예정분(회계 미반영) '+_ovFmt(pendTot)+'</div>'+pend.map(it=>'<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;color:#6b7280"><span>'+(it.p.expected_date||'')+' · '+_ovEsc(it.p.hospital||'-')+'</span><span style="font-weight:600">'+_ovFmt(it.p.amount)+'</span></div>').join('')+'</div>':'';
   const body='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">'
     +_ovKpiBox('YTD 매출',_ovFmt(d.tot26),accent)+_ovKpiBox('전년 동기',_ovFmt(d.tot25),'#6b7280')
     +_ovKpiBox('전년 대비',yoyHtml,'#111827')+_ovKpiBox('거래처 수',Object.keys(d.byHosp).length?Object.keys(d.byHosp).length+'곳':'-','#111827')+'</div>'
-    +'<div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:2px"><i class="bi bi-graph-up me-1"></i>월별 매출 추이 <span style="font-size:10px;font-weight:400;color:#9ca3af">막대=2026 · 점선=2025</span></div>'
+    +'<div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:2px"><i class="bi bi-graph-up me-1"></i>월별 매출 추이 <span style="font-size:10px;font-weight:400;color:#9ca3af">막대=2026 · 선=2025</span></div>'
     +_ovMonthBars(d.mo26,d.mo25,accent)
     +'<div style="font-size:12px;font-weight:700;color:#374151;margin:16px 0 4px"><i class="bi bi-hospital me-1"></i>상위 거래처</div>'+hospHtml+pendHtml;
   _ovShowModal(_ovEsc(name)+' <span style="font-size:12px;font-weight:600;color:'+accent+';background:'+(d.isCons?'#eff6ff':'#f0fdf4')+';padding:2px 8px;border-radius:8px;margin-left:6px">'+catLbl+'</span>', body);
