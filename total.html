@@ -327,7 +327,7 @@ async function loadAll(){
   try{ const {data:pd}=await _sb.from('pending_sales').select('*'); PENDING=pd||[]; }catch(e){ PENDING=[]; }
   try{ const {data:td}=await _sb.from('targets').select('id,data'); TARGETS=(td||[]).map(r=>r.data); }catch(e){ TARGETS=[]; }
   try{ const {data:st}=await _sb.from('sales_targets').select('year,month,dept,item,amount'); SALEST=st||[]; }catch(e){ SALEST=[]; }
-  try{ const {data:rm}=await _sb.from('cons_cache').select('data').eq('key','region_map').maybeSingle(); REGMAP=(rm&&rm.data&&rm.data.data)||REGMAP; }catch(e){}
+  try{ const {data:rm}=await _sb.from('cons_cache').select('data').eq('key','region_map').maybeSingle(); REGMAP=(rm&&rm.data)||REGMAP; }catch(e){}
   const upd=CONS.updatedAt||DEVICE.updatedAt||INTL.updatedAt||'';
   document.getElementById('updated-label').textContent=upd?('기준일 '+upd):'';
 }
