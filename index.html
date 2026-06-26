@@ -2667,10 +2667,13 @@ function consParseExcel(input) {
       const sheet26name = _pickSheet('2026');
       if (!sheet25name || !sheet26name) throw new Error('2025년/2026년 시트를 찾을 수 없습니다.');
 
+      // 회계파일 컬럼명에 앞뒤 공백(" 월 ","  금액  " 등)이 섞여 r['월'] 정확매칭이 실패 → 키 트림(첫 occurrence 유지)
+      const _sj = (sn) => XLSX.utils.sheet_to_json(wb.Sheets[sn], {defval:null}).map(r => { const o={}; for(const k in r){ const t=String(k).trim(); if(!(t in o)) o[t]=r[k]; } return o; });
+
       setMsg('데이터 집계 중...', '소모품 국내 필터링');
 
       function parseSheet(sheetName) {
-        const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {defval:null});
+        const rows = _sj(sheetName);
         return rows.filter(r => r['구분#2'] === '소모품' && r['국내외'] === '국내');
       }
 
@@ -2776,13 +2779,13 @@ function consParseExcel(input) {
       // 제품(device) 집계 — 수량·담당자·거래처 포함
       setMsg('제품 데이터 집계 중...');
       const _devAmtKey = k => k.includes('금액');
-      const _devRows = (sn) => XLSX.utils.sheet_to_json(wb.Sheets[sn], {defval:null})
+      const _devRows = (sn) => _sj(sn)
         .filter(r => r['구분#2'] === '제품군' && r['국내외'] === '국내');
       const rd25 = _devRows(sheet25name);
       const rd26 = _devRows(sheet26name);
 
       // 구분#2 고유값 확인
-      const _allRows26 = XLSX.utils.sheet_to_json(wb.Sheets[sheet26name], {defval:null});
+      const _allRows26 = _sj(sheet26name);
       const _cats = [...new Set(_allRows26.map(r=>r['구분#2']).filter(Boolean))];
 
       const aggregateDeviceFull = (rows25, rows26) => {
@@ -2935,7 +2938,7 @@ function consParseExcel(input) {
 
       // ── 해외 데이터 집계 및 저장 ────────────────────────────────
       setMsg('해외 매출 데이터 집계 중...');
-      const _intlRows = sn => XLSX.utils.sheet_to_json(wb.Sheets[sn], {defval:null}).filter(r => r['국내외'] === '해외');
+      const _intlRows = sn => _sj(sn).filter(r => r['국내외'] === '해외');
       const _ri25 = _intlRows(sheet25name), _ri26 = _intlRows(sheet26name);
       const _aggIntl = (r25i, r26i) => {
         const mo={},mu={},mq={},pr={},pc={},pd={},pm={},pmq={},pq={},ct={},rp={};
