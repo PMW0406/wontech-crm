@@ -263,7 +263,7 @@ const SUPABASE_URL='https://mhfacbsittfdkknwybhc.supabase.co';
 const SUPABASE_KEY='sb_publishable_aPMOOWAlyJlMcP1ZM_gpPA_jlrcvCRd';
 const _sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-let CONS={}, DEVICE={}, INTL={}, PENDING=[], TARGETS=[], _user=null;
+let CONS={}, DEVICE={}, INTL={}, PENDING=[], TARGETS=[], ILBO_PEND=[], _user=null;
 let SALEST=[], REGMAP={pair:{},name:{},country:{}};   // 매출목표 + 거래처→지역 매핑
 let _ovChart=null;
 const DOM_BLUE='#2563eb', INTL_TEAL='#0d9488', DEV_PURPLE='#7c3aed', CONS_CYAN='#0891b2';
@@ -337,6 +337,7 @@ async function loadAll(){
     INTL=Object.assign({}, ib.INTL2026||{}, {data2025:ib.INTL2025||{}, updatedAt:ib.updatedAt||''});
   }catch(e){ console.warn('cons_cache load', e); }
   try{ const {data:pd}=await _sb.from('pending_sales').select('*'); PENDING=pd||[]; }catch(e){ PENDING=[]; }
+  try{ const {data:ip}=await _sb.from('cons_cache').select('data').eq('key','ilbo_pending').maybeSingle(); ILBO_PEND=((ip&&ip.data&&ip.data.rows)||[]).filter(function(p){return p.region==='해외'&&p.status!=='반영됨'&&p.status!=='취소';}); }catch(e){ ILBO_PEND=[]; }
   try{ const {data:td}=await _sb.from('targets').select('id,data'); TARGETS=(td||[]).map(r=>r.data); }catch(e){ TARGETS=[]; }
   try{ const {data:stc}=await _sb.from('cons_cache').select('data').eq('key','sales_targets').maybeSingle(); if(stc&&stc.data&&Array.isArray(stc.data.rows)) SALEST=stc.data.rows; }catch(e){}
   if(!SALEST.length){ try{ const {data:st}=await _sb.from('sales_targets').select('year,month,dept,item,amount'); SALEST=st||[]; }catch(e){ SALEST=[]; } }
@@ -404,6 +405,12 @@ function _pendingAgg(yr){
     if(isCons){agg.consMonthly[mo]=(agg.consMonthly[mo]||0)+amt; if(p.product) agg.consProducts[p.product]=(agg.consProducts[p.product]||0)+amt;}
     else {agg.devMonthly[mo]=(agg.devMonthly[mo]||0)+amt; if(p.product) agg.devProducts[p.product]=(agg.devProducts[p.product]||0)+amt;}
     agg.total+=amt; agg.count++;
+  });
+  (ILBO_PEND||[]).forEach(function(p){
+    var ds=p.expectedDate||p.expected_date||''; var d=ds?new Date(ds+'T00:00:00'):null;
+    if(!(d&&!isNaN(d)&&d.getFullYear()===yr)) return;
+    var mo=d.getMonth()+1, amt=Number(p.amount||0);
+    agg.intlMonthly[mo]=(agg.intlMonthly[mo]||0)+amt; agg.intlTotal+=amt; agg.intlCount++;
   });
   return agg;
 }
@@ -638,6 +645,12 @@ function _pendForReport(){   // 국내(제품/소모품) + 해외(지역별) 미
       const e=_pendEff(p); if(e.eff==='reflected'||e.eff==='cancelled') return;
       const it=p.category==='소모품'?'소모품':'제품'; kr[it][mo]=(kr[it][mo]||0)+amt;
     }
+  });
+  (ILBO_PEND||[]).forEach(function(p){
+    var ds=p.expectedDate||p.expected_date||''; var d=ds?new Date(ds+'T00:00:00'):null;
+    if(!(d&&!isNaN(d)&&d.getFullYear()===2026)) return;
+    var mo=d.getMonth()+1, amt=Number(p.amount||0);
+    intl['기타']=intl['기타']||{}; intl['기타'][mo]=(intl['기타'][mo]||0)+amt;
   });
   return {kr,intl};
 }
