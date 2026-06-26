@@ -373,7 +373,7 @@ function renderOverview(){
   const cur=yr===2026?INTL:INTL.data2025, pre=yr===2026?INTL.data2025:null;
   const tot=ytd(cur.monthly,f,t), totU=ytd(cur.monthly_usd,f,t);
   const ptot=pre?ytd(pre.monthly,f,t):0, yoy=pct(tot,ptot);
-  const pAgg=(yr===2026)?_pendAggIntl(2026):{monthly:{}}; const pendYtd=ytd(pAgg.monthly||{},f,t);
+  const pAgg=(yr===2026)?_pendCombined(2026):{monthly:{},total:0}; const pendYtd=(yr===2026)?(pAgg.total||0):0;
   const nct=Object.values(cur.countries||{}).filter(c=>Object.keys(c.m||{}).some(m=>+m>=f&&+m<=t&&c.m[m]>0)).length;
   document.getElementById('upd-label').textContent='기준일 '+(INTL.updatedAt||'');
   const pl=f===t?f+'월':f+'~'+t+'월';
@@ -382,7 +382,7 @@ function renderOverview(){
   const diffAmt = tot - ptot;
   const diffStr = diffAmt>=0 ? '+'+fmtW(diffAmt) : '-'+fmtW(Math.abs(diffAmt));
   document.getElementById('ov-kpi').innerHTML=[
-    {l:'해외 합계 ('+pl+')',v:fmtW(tot),s:'전년 '+fmtW(ptot)+' '+bdg(yoy)+(pendYtd>0?' · <span style="color:#0d9488;font-weight:700">미반영 +'+fmtW(pendYtd)+'</span>':''),c:'#111827',i:'bi-currency-won'},
+    {l:'해외 합계 ('+pl+')',v:fmtW(tot),s:'전년 '+fmtW(ptot)+' '+bdg(yoy)+(pendYtd>0?' · <span style="color:#0d9488;font-weight:700">미반영 +'+fmtW(pendYtd)+' → 관리 '+fmtW(tot+pendYtd)+'</span>':''),c:'#111827',i:'bi-currency-won'},
     {l:'전년 대비 증감',v:diffStr,s:'동기 증감액',c:diffAmt>=0?'#16a34a':'#dc2626',i:diffAmt>=0?'bi-graph-up-arrow':'bi-graph-down-arrow'},
     {l:'거래 국가수',v:nct+'개국',s:'활성 국가',c:'#0d9488',i:'bi-globe'},
     {l:'YoY',v:yoy===null?'-':((parseFloat(yoy)>=0?'▲':'▼')+Math.abs(parseFloat(yoy))+'%'),s:'전년 동기 대비',c:yoy===null?'#6b7280':parseFloat(yoy)>=0?'#16a34a':'#dc2626',i:'bi-graph-up'},
@@ -758,7 +758,7 @@ async function _afterLogin(user) {
     }
   } catch(_e) { console.log('해외 데이터 로드 실패 (내장 데이터 사용):', _e.message); }
   await _loadIntlPending();   // 해외 예정분(미반영) 로드
-  _loadIlboPending();
+  await _loadIlboPending();
   var _sameDoc=false; try{ _sameDoc = !!document.referrer && new URL(document.referrer).pathname===location.pathname; }catch(e){ _sameDoc=false; }
   // 다른 사이트/페이지에서 진입(또는 토큰 해시)하면 종합현황, intl 자체 새로고침이면 마지막 페이지 유지
   var _saved = (location.hash.includes('at=') || !_sameDoc) ? 'overview' : (sessionStorage.getItem('intl_page') || 'overview');
@@ -773,7 +773,7 @@ async function doLogout() {
 }
 
 // ── 해외 예정분(회계 미반영 매출) ──────────────────────────────
-let INTL_PEND=[], _meId=null, _meName='';
+let INTL_PEND=[], _meId=null, _meName=''; let ILBO_PEND=[];
 const INTL_REGIONS=['동남아','중화','중동','유럽','미주','태국법인','미국법인','일본법인','기타'];
 async function _loadIntlPending(){
   try{
@@ -793,6 +793,22 @@ function _pendAggIntl(yr){
   });
   return agg;
 }
+function _ilboAgg(yr){
+  const agg={monthly:{},regions:{},total:0,count:0};
+  (ILBO_PEND||[]).forEach(function(p){
+    var ds=p.expectedDate||p.expected_date||''; var d=ds?new Date(ds+'T00:00:00'):null;
+    if(!(d&&!isNaN(d)&&d.getFullYear()===yr)) return;
+    var mo=d.getMonth()+1, amt=Number(p.amount||0);
+    agg.monthly[mo]=(agg.monthly[mo]||0)+amt; agg.total+=amt; agg.count++;
+  });
+  return agg;
+}
+function _pendCombined(yr){
+  var a=_pendAggIntl(yr), b=_ilboAgg(yr);
+  var monthly=Object.assign({},a.monthly);
+  for(var m in b.monthly) monthly[m]=(monthly[m]||0)+b.monthly[m];
+  return {monthly:monthly, regions:a.regions, total:a.total+b.total, count:a.count+b.count, manualCount:a.count, ilboCount:b.count, manualTotal:a.total, ilboTotal:b.total};
+}
 function _pToast(msg){
   let t=document.getElementById('_ptoast');
   if(!t){ t=document.createElement('div'); t.id='_ptoast'; t.className='pend-toast'; document.body.appendChild(t); }
@@ -801,13 +817,13 @@ function _pToast(msg){
 function renderPending(){
   const fr=document.getElementById('pend-f-region');
   if(fr && fr.options.length<=1) fr.innerHTML='<option value="">전체 지역</option>'+INTL_REGIONS.map(r=>'<option value="'+r+'">'+r+'</option>').join('');
-  const agg=_pendAggIntl(2026);
+  const agg=_pendCombined(2026);
   const active=(INTL_PEND||[]).filter(p=>p.status!=='취소');
   const totAll=active.reduce((s,p)=>s+Number(p.amount||0),0);
   const reflectedCnt=(INTL_PEND||[]).filter(p=>p.status==='반영됨').length;
   const cards=[
     {l:'예정분 합계',v:fmtW(totAll),c:'#111827',s:active.length+'건 (취소 제외)'},
-    {l:'미반영 합산',v:fmtW(agg.total),c:'#0d9488',s:agg.count+'건 · 해외매출 포함'},
+    {l:'미반영 합산',v:fmtW(agg.total),c:'#0d9488',s:(agg.manualCount||0)+'+'+(agg.ilboCount||0)+'건(수동+일보) · 종합 합산'},
     {l:'회계반영 완료',v:reflectedCnt+'건',c:'#16a34a',s:'수동 확인'},
     {l:'등록 지역',v:Object.keys(agg.regions).length+'개',c:'#7c3aed',s:'활성 지역/법인'},
   ];
@@ -948,7 +964,7 @@ async function _markPend(id,status){
 async function _loadIlboPending(){
   try{
     const {data}=await _sb.from('cons_cache').select('data').eq('key','ilbo_pending').maybeSingle();
-    const rows=((data&&data.data&&data.data.rows)||[]).filter(function(p){return p.region==='해외'&&p.status!=='반영됨'&&p.status!=='취소';});
+    const rows=((data&&data.data&&data.data.rows)||[]).filter(function(p){return p.region==='해외'&&p.status!=='반영됨'&&p.status!=='취소';}); ILBO_PEND=rows;
     var tb=document.getElementById('ilbo-pend-tbody'),emp=document.getElementById('ilbo-pend-empty'),sum=document.getElementById('ilbo-pend-sum');
     if(!tb) return;
     if(!rows.length){ tb.innerHTML=''; if(emp) emp.style.display='block'; if(sum) sum.textContent='· 0건'; return; }
