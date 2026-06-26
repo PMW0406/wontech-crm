@@ -1652,15 +1652,22 @@ async function _loadIlboPending(){
     if(sum) sum.textContent='· '+rows.length+'건 · '+total.toLocaleString()+'원';
   }catch(e){ console.warn('ilbo pending load',e); }
 }
-// 일매출일보 미반영분 — 월별 금액 맵(2026). 종합 KPI '미반영 포함' 합계에 합산(소/제 구분 없음)
-function _ilboMonthMap(){
-  const mo={};
+function _normPname(s){ return String(s||'').replace(/[\s\[\]()\/]/g,'').toLowerCase(); }
+// 일매출일보 미반영분 — 소모품/제품 분류 후 월별 금액 맵(2026). 카테고리 명시 우선, 없으면 소모품 제품명 목록과 대조
+function _ilboMonthMaps(){
+  var consSet={};
+  Object.keys(CONS.products2026||{}).forEach(function(k){consSet[_normPname(k)]=1;});
+  Object.keys(CONS.products2025||{}).forEach(function(k){consSet[_normPname(k)]=1;});
+  var consMo={}, devMo={};
   (ILBO_PEND||[]).forEach(function(r){
     var d=String(r.expectedDate||''); if(d.slice(0,4)!=='2026') return;
     var m=parseInt(d.slice(5,7),10); if(!m) return;
-    mo[m]=(mo[m]||0)+(Number(r.amount)||0);
+    var amt=Number(r.amount)||0;
+    var rc=String(r.category||r.cat||r.gubun||'');
+    var isCons = rc.indexOf('소모')>=0 ? true : (rc.indexOf('제품')>=0||rc.indexOf('장비')>=0) ? false : !!consSet[_normPname(r.product)];
+    if(isCons) consMo[m]=(consMo[m]||0)+amt; else devMo[m]=(devMo[m]||0)+amt;
   });
-  return mo;
+  return {consMo:consMo, devMo:devMo};
 }
 
 // ── 페이지 전환 ──────────────────────────────────────────────────────
@@ -1819,14 +1826,15 @@ function renderSalesOverview() {
   const incPend = yr===2026;
   const pend = incPend ? _pendingView(yr).agg : null;
   const consPendMo = pend?pend.consMonthly:{}, devPendMo = pend?pend.devMonthly:{};
-  const ilboMo = incPend ? _ilboMonthMap() : {};
-  const ilboPendYtd = YTD.reduce((s,m)=>s+(ilboMo[m]||0),0);
+  const ilboMo = incPend ? _ilboMonthMaps() : {consMo:{},devMo:{}};
 
-  // 회계반영(C) / 미반영포함(I)
+  // 회계반영(C) / 미반영포함(I). 미반영 = pending_sales + 일매출일보(소/제 분류)
   const consYtdC = YTD.reduce((s,m)=>s+(consCurMo[m]||0),0);
   const devYtdC  = YTD.reduce((s,m)=>s+(devCurMo[m]||0),0);
-  const consPendYtd = YTD.reduce((s,m)=>s+(consPendMo[m]||0),0);
-  const devPendYtd  = YTD.reduce((s,m)=>s+(devPendMo[m]||0),0);
+  const _consPendM = m => (consPendMo[m]||0)+(ilboMo.consMo[m]||0);
+  const _devPendM  = m => (devPendMo[m]||0)+(ilboMo.devMo[m]||0);
+  const consPendYtd = YTD.reduce((s,m)=>s+_consPendM(m),0);
+  const devPendYtd  = YTD.reduce((s,m)=>s+_devPendM(m),0);
   const consYtdI = consYtdC+consPendYtd, devYtdI = devYtdC+devPendYtd;
   const consPrev = YTD.reduce((s,m)=>s+(consPrMo[m]||0),0);
   const devPrev  = YTD.reduce((s,m)=>s+(devPrMo[m]||0),0);
@@ -1843,25 +1851,24 @@ function renderSalesOverview() {
   const badge = v => v===null?'':'<span style="font-size:11px;font-weight:700;color:'+(v>=0?'#16a34a':'#dc2626')+'">'+(v>=0?'▲':'▼')+Math.abs(v).toFixed(1)+'%</span>';
   const periodLbl = fromM===toM ? fromM+'월' : fromM+'~'+toM+'월';
   const _kpiHead = c => '<div class="kpi-label"><i class="bi '+c.icon+' me-1" style="color:'+c.col+'"></i>'+c.label+(c.click?' <i class="bi bi-search" style="font-size:9px;color:#cbd5e1"></i>':'')+'</div>';
-  const _kpiDual = c => '<div class="col-6 col-md-3"><div class="kpi-card"'+(c.click?' onclick="'+c.click+'" style="cursor:pointer" title="클릭하면 전체 품목 랭킹 조회"':'')+'>'+_kpiHead(c)
+  const _kpiDual = c => '<div class="col-12 col-md-4"><div class="kpi-card"'+(c.click?' onclick="'+c.click+'" style="cursor:pointer" title="클릭하면 전체 품목 랭킹 조회"':'')+'>'+_kpiHead(c)
     +'<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px">'
       +'<div><div style="font-size:10px;color:#9ca3af;margin-bottom:1px;font-weight:600">회계반영</div><div class="kpi-value" style="color:'+c.col+';font-size:1.4rem;line-height:1.1">'+c.mainVal+'</div><div class="kpi-sub" style="margin-top:3px">'+c.mainSub+'</div></div>'
-      +'<div style="text-align:right;border-left:1px solid #eef2f7;padding-left:11px"><div style="font-size:10px;color:#7c3aed;margin-bottom:1px;font-weight:600">미반영 포함</div><div style="font-size:1.32rem;font-weight:800;color:#374151;line-height:1.1">'+c.rightVal+'</div><div style="font-size:10px;color:#9ca3af;margin-top:3px">예정 +'+c.pendStr+'</div></div>'
+      +'<div style="text-align:right;border-left:1px solid #eef2f7;padding-left:11px"><div style="font-size:10px;color:#7c3aed;margin-bottom:1px;font-weight:600">미반영 포함</div><div style="font-size:1.32rem;font-weight:800;color:#374151;line-height:1.1">'+c.rightVal+'</div><div style="font-size:10px;color:#9ca3af;margin-top:3px">+ '+c.pendStr+'</div></div>'
     +'</div></div></div>';
   const _kpiSingle = c => '<div class="col-6 col-md-3"><div class="kpi-card">'+_kpiHead(c)+'<div class="kpi-value" style="color:'+c.col+';font-size:1.45rem">'+c.mainVal+'</div><div class="kpi-sub">'+c.mainSub+'</div></div></div>';
   const kpis = [
-    {dual:incPend, label:'합계 YTD ('+periodLbl+')', icon:'bi-currency-won', col:'#111827', mainVal:fmtW(totalC), mainSub:'국내 소모품+제품 '+badge(yoy), rightVal:fmtW(totalI+ilboPendYtd), pendStr:fmtW(totalPend+ilboPendYtd)},
-    {dual:incPend, label:'소모품 YTD', icon:'bi-capsule', col:'#2563eb', click:"openOvCategory('cons')", mainVal:fmtW(consYtdC), mainSub:'전년 '+fmtW(consPrev)+' '+badge(consYoy), rightVal:fmtW(consYtdI), pendStr:fmtW(consPendYtd)},
-    {dual:incPend, label:'제품 YTD', icon:'bi-box-seam', col:'#16a34a', click:"openOvCategory('dev')", mainVal:fmtW(devYtdC), mainSub:'전년 '+fmtW(devPrev)+' '+badge(devYoy), rightVal:fmtW(devYtdI), pendStr:fmtW(devPendYtd)},
-    {dual:false, label:'YoY 성장률', icon:'bi-graph-up', col:yoy===null?'#6b7280':yoy>=0?'#16a34a':'#dc2626', mainVal:yoy===null?'-':((yoy>=0?'▲':'▼')+Math.abs(yoy).toFixed(1)+'%'), mainSub:'전년 동기 회계 대비'},
+    {dual:incPend, label:'합계 ('+periodLbl+')', icon:'bi-currency-won', col:'#111827', mainVal:fmtW(totalC), mainSub:'전년 '+fmtW(totalPrev)+' '+badge(yoy), rightVal:fmtW(totalI), pendStr:fmtW(totalPend)},
+    {dual:incPend, label:'제품', icon:'bi-box-seam', col:'#16a34a', click:"openOvCategory('dev')", mainVal:fmtW(devYtdC), mainSub:'전년 '+fmtW(devPrev)+' '+badge(devYoy), rightVal:fmtW(devYtdI), pendStr:fmtW(devPendYtd)},
+    {dual:incPend, label:'소모품', icon:'bi-capsule', col:'#2563eb', click:"openOvCategory('cons')", mainVal:fmtW(consYtdC), mainSub:'전년 '+fmtW(consPrev)+' '+badge(consYoy), rightVal:fmtW(consYtdI), pendStr:fmtW(consPendYtd)},
   ];
-  document.getElementById('ov-kpi').innerHTML = kpis.map(c=>c.dual?_kpiDual(c):_kpiSingle(c)).join('');
+  document.getElementById('ov-kpi').innerHTML = kpis.map(c=>_kpiDual(c)).join('');
 
   const months12 = Array.from({length:12},(_,i)=>i+1);
   const _eok = v => Math.round((v||0)/1e6)/100;   // 억(소수 2자리)
   const consVals   = months12.map(m=>_eok(consCurMo[m]));
   const devVals    = months12.map(m=>_eok(devCurMo[m]));
-  const pendVals    = months12.map(m=>_eok((consPendMo[m]||0)+(devPendMo[m]||0)+(ilboMo[m]||0)));
+  const pendVals    = months12.map(m=>_eok(_consPendM(m)+_devPendM(m)));
   const prevTotVals = months12.map(m=>_eok((consPrMo[m]||0)+(devPrMo[m]||0)));
   if (_ovChart) { _ovChart.destroy(); _ovChart=null; }
   const ctx = document.getElementById('ov-chart-monthly');
@@ -1889,7 +1896,7 @@ function renderSalesOverview() {
   if (_mt) {
     let rows='', tC=0,tD=0,tP=0,tPr=0;
     YTD.forEach(m=>{
-      const c=consCurMo[m]||0, dv=devCurMo[m]||0, pe=(consPendMo[m]||0)+(devPendMo[m]||0)+(ilboMo[m]||0), pr=(consPrMo[m]||0)+(devPrMo[m]||0);
+      const c=consCurMo[m]||0, dv=devCurMo[m]||0, pe=_consPendM(m)+_devPendM(m), pr=(consPrMo[m]||0)+(devPrMo[m]||0);
       tC+=c;tD+=dv;tP+=pe;tPr+=pr; const sum=c+dv+pe, chg=pr>0?(((c+dv)/pr-1)*100):null;
       rows+='<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:5px 8px">'+m+'월</td><td style="text-align:right;color:#2563eb">'+fmtW(c)+'</td><td style="text-align:right;color:#16a34a">'+fmtW(dv)+'</td><td style="text-align:right;color:#7c3aed">'+(pe?fmtW(pe):'-')+'</td><td style="text-align:right;font-weight:700">'+fmtW(sum)+'</td><td style="text-align:right;color:#9ca3af">'+(pr?fmtW(pr):'-')+'</td><td style="text-align:right;padding-right:8px">'+(chg===null?'-':'<span style="color:'+(chg>=0?'#16a34a':'#dc2626')+'">'+(chg>=0?'▲':'▼')+Math.abs(chg).toFixed(0)+'%</span>')+'</td></tr>';
     });
