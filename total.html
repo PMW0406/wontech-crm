@@ -102,6 +102,69 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;background:#f0f4f8;color
 #login-screen{position:fixed;inset:0;background:#0f172a;display:none;align-items:center;justify-content:center;z-index:200}
 .login-box{background:#fff;border-radius:16px;padding:34px 30px;width:340px;box-shadow:0 10px 40px rgba(0,0,0,.3)}
 @media(max-width:820px){.sidebar{display:none}.main{margin-left:0;padding:14px}}
+/* ── 임원 리포트 공통 ── */
+.muted{color:#94a3b8}
+/* P1 목표 달성률 */
+#page-goals .g-hero{display:flex;justify-content:space-between;align-items:center;gap:16px;background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;border-radius:14px;padding:18px 22px;margin-bottom:14px}
+#page-goals .g-hl{font-size:13px;color:#cbd5e1;font-weight:700}
+#page-goals .g-hr{font-size:2.6rem;font-weight:800;line-height:1.05;margin:4px 0}
+#page-goals .g-hs{font-size:12px;color:#94a3b8}
+#page-goals .g-hero-r{text-align:right}
+#page-goals .g-hrr{font-size:11px;color:#94a3b8;font-weight:700}
+#page-goals .g-hrv{font-size:1.5rem;font-weight:800}
+#page-goals .g-twin{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+#page-goals .g-mini{background:#f8fafc;border:1px solid #eef2f7;border-radius:12px;padding:13px 16px}
+#page-goals .g-ml{font-size:12px;color:#64748b;font-weight:700}
+#page-goals .g-mr{font-size:1.6rem;font-weight:800;line-height:1.1;margin:2px 0}
+#page-goals .g-sec{font-size:12px;font-weight:800;color:#334155;margin:14px 0 7px;padding-left:8px;border-left:3px solid #4f46e5}
+#page-goals .g-row{display:flex;align-items:center;gap:10px;padding:5px 0;font-size:12.5px}
+#page-goals .g-rl{width:92px;flex-shrink:0;font-weight:600;color:#334155}
+#page-goals .g-rb{flex:1;height:14px;background:#f1f5f9;border-radius:7px;overflow:hidden;display:flex;min-width:50px}
+#page-goals .g-rf{height:100%}
+#page-goals .g-rg{height:100%;background:repeating-linear-gradient(45deg,#cbd5e1,#cbd5e1 3px,#e2e8f0 3px,#e2e8f0 6px);opacity:.75}
+#page-goals .g-rv{width:160px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums;font-weight:600}
+#page-goals .g-rp{width:44px;text-align:right;flex-shrink:0;font-weight:800}
+/* P2 출고 대수 */
+.u-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.u-kpi{background:#fff;border:1px solid #eef2f7;border-radius:14px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.u-kl{font-size:12px;color:#64748b;font-weight:700}
+.u-kv{font-size:2.1rem;font-weight:800;line-height:1.05;margin:6px 0 2px;color:#7c3aed}
+.u-ku{font-size:1rem;font-weight:700;margin-left:3px;color:#94a3b8}
+.u-ks{font-size:11.5px;color:#64748b}
+.u-kasp{font-size:11.5px;color:#7c3aed;font-weight:700;margin-top:4px}
+.up-row{display:flex;align-items:center;gap:10px;padding:5px 0;font-size:12.5px}
+.up-n{width:150px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.up-bar{flex:1;height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden}
+.up-v{width:62px;text-align:right;flex-shrink:0;font-weight:700;font-variant-numeric:tabular-nums}
+/* P3 분기 */
+.q-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.q-card{background:#fff;border:1px solid #eef2f7;border-radius:14px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.q-card.hi{background:linear-gradient(180deg,#eef2ff,#fff);border-color:#c7d2fe}
+.q-lbl{font-size:12.5px;color:#64748b;font-weight:700}
+.q-val{font-size:1.8rem;font-weight:800;margin:4px 0 2px;color:#0f172a}
+.q-yoy{font-size:11.5px;color:#64748b;margin-bottom:8px}
+.q-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-top:1px solid #f1f5f9}
+.q-seg{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:13px}
+.q-seg-l{flex:1;font-weight:600}
+.q-seg-v{width:96px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.q-seg-y{width:64px;text-align:right}
+/* P4 리더보드 */
+.lb-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.lb-table th{background:#f1f5f9;color:#475569;font-weight:700;padding:7px 8px;text-align:left;font-size:11.5px}
+.lb-table th.r,.lb-table td.r{text-align:right}
+.lb-table td{padding:6px 8px;border-bottom:1px solid #f1f5f9;font-variant-numeric:tabular-nums}
+.lb-table tr:hover td{background:#f8fafc}
+/* P5 거래처 */
+.cust-cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.cust-card{background:#fff;border:1px solid #eef2f7;border-radius:12px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.cc-l{font-size:11.5px;color:#64748b;font-weight:700}
+.cc-v{font-size:1.5rem;font-weight:800;margin:5px 0 3px}
+.cc-s{font-size:10.5px;color:#94a3b8;line-height:1.4}
+.cn-row{display:flex;justify-content:space-between;padding:8px 0;font-size:13px;border-top:1px solid #f1f5f9}
+.cn-l{color:#475569}
+.ccl-h{font-size:13px;font-weight:800;margin-bottom:8px;color:#dc2626}
+.ccl-row{display:flex;gap:10px;padding:5px 0;border-bottom:1px solid #f1f5f9;font-size:12.5px}
+@media(max-width:1100px){.u-kpis,.q-cards{grid-template-columns:1fr}.cust-cards{grid-template-columns:repeat(2,1fr)}#page-goals .g-twin{grid-template-columns:1fr}}
 /* ── 수출의 탑 ── */
 #page-export .ex-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
 #page-export .ex-kpi{background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.08);position:relative;overflow:hidden;border:1px solid #eef2f7}
@@ -197,6 +260,12 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;background:#f0f4f8;color
     <a class="nav-link" id="nav-query" onclick="showPage('query',this)"><i class="bi bi-zoom-in"></i>상세 조회</a>
     <a class="nav-link" id="nav-report" onclick="showPage('report',this)"><i class="bi bi-table"></i>글로벌영업 매출현황</a>
     <a class="nav-link" id="nav-export" onclick="showPage('export',this)"><i class="bi bi-trophy"></i>수출의 탑</a>
+    <div class="nav-label" style="margin-top:12px">임원 리포트</div>
+    <a class="nav-link" id="nav-goals" onclick="showPage('goals',this)"><i class="bi bi-speedometer2"></i>목표 달성률</a>
+    <a class="nav-link" id="nav-quarters" onclick="showPage('quarters',this)"><i class="bi bi-calendar3"></i>분기·반기 요약</a>
+    <a class="nav-link" id="nav-units" onclick="showPage('units',this)"><i class="bi bi-box-seam"></i>장비 출고 대수</a>
+    <a class="nav-link" id="nav-leaderboard" onclick="showPage('leaderboard',this)"><i class="bi bi-trophy-fill"></i>담당자 리더보드</a>
+    <a class="nav-link" id="nav-customers" onclick="showPage('customers',this)"><i class="bi bi-people"></i>거래처 분석</a>
   </div>
   <div class="sidebar-foot">
     <div class="user-box">
@@ -358,6 +427,42 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;background:#f0f4f8;color
     <div class="card p-3">
       <div style="font-size:13.5px;font-weight:800;margin-bottom:10px"><i class="bi bi-globe2 me-1" style="color:#0d9488"></i>최근 3개년 해외 실적 <span style="font-weight:500;font-size:11.5px;color:#94a3b8">· KITA 한국무역협회 기준</span></div>
       <div class="ex-kita" id="ex-kita"></div>
+    </div>
+  </div>
+
+  <!-- ===== 목표 달성률 ===== -->
+  <div id="page-goals" class="page">
+    <div class="card p-3" id="goals-body"></div>
+  </div>
+
+  <!-- ===== 분기·반기 요약 ===== -->
+  <div id="page-quarters" class="page">
+    <div class="q-cards" id="q-cards"></div>
+    <div class="card p-3 mt-2"><div style="font-size:13.5px;font-weight:800;margin-bottom:10px"><i class="bi bi-bar-chart-steps me-1" style="color:#0d9488"></i>상반기 채널·카테고리 분해 (전년 대비)</div><div id="q-seg"></div></div>
+  </div>
+
+  <!-- ===== 장비 출고 대수 ===== -->
+  <div id="page-units" class="page">
+    <div class="u-kpis" id="units-kpi"></div>
+    <div class="card p-3 mt-2"><div style="font-size:13.5px;font-weight:800;margin-bottom:8px"><i class="bi bi-bar-chart me-1" style="color:#7c3aed"></i>월별 출고 대수 (국내·해외 + 전년)</div><div style="position:relative;height:240px"><canvas id="units-chart"></canvas></div></div>
+    <div class="card p-3 mt-2"><div style="font-size:13.5px;font-weight:800;margin-bottom:10px"><i class="bi bi-card-list me-1" style="color:#7c3aed"></i>모델별 출고 대수 Top</div><div id="units-prods"></div></div>
+  </div>
+
+  <!-- ===== 담당자 리더보드 ===== -->
+  <div id="page-leaderboard" class="page">
+    <div class="row g-3">
+      <div class="col-lg-7"><div class="card p-3"><div style="font-size:13.5px;font-weight:800;margin-bottom:8px"><i class="bi bi-person-badge me-1" style="color:#7c3aed"></i>국내 제품 담당자</div><div id="lb-dom"></div></div></div>
+      <div class="col-lg-5"><div class="card p-3"><div style="font-size:13.5px;font-weight:800;margin-bottom:8px"><i class="bi bi-globe-americas me-1" style="color:#0d9488"></i>해외 담당자</div><div id="lb-intl"></div></div></div>
+    </div>
+    <div class="muted" style="font-size:11px;margin-top:8px">매출=1~당월 누적(국내 제품+해외). 대수는 국내 제품 기준. ※국내 소모품 담당자 데이터는 회계에 담당자 매핑이 없어 제외.</div>
+  </div>
+
+  <!-- ===== 거래처 분석 ===== -->
+  <div id="page-customers" class="page">
+    <div class="cust-cards" id="cust-cards"></div>
+    <div class="row g-3 mt-1">
+      <div class="col-lg-5"><div class="card p-3"><div style="font-size:13.5px;font-weight:800;margin-bottom:10px"><i class="bi bi-arrow-left-right me-1" style="color:#4f46e5"></i>고객 순증감 (국내)</div><div id="cust-net"></div></div></div>
+      <div class="col-lg-7"><div class="card p-3" id="cust-churn"></div></div>
     </div>
   </div>
 
@@ -579,10 +684,16 @@ function showPage(name,el){
   document.getElementById('page-'+name).classList.add('on');
   document.querySelectorAll('.nav-link').forEach(n=>n.classList.remove('active'));
   if(el) el.classList.add('active');
-  document.getElementById('page-title').textContent= name==='query'?'전사 상세 조회':(name==='report'?'글로벌영업 매출현황':(name==='export'?'수출의 탑 진행현황':'전사 종합 경영현황'));
+  const _titles={query:'전사 상세 조회',report:'글로벌영업 매출현황',export:'수출의 탑 진행현황',goals:'목표 달성률 종합',quarters:'분기·반기 요약',units:'장비 출고 대수 현황',leaderboard:'담당자·팀 실적 리더보드',customers:'거래처 신규·이탈 분석'};
+  document.getElementById('page-title').textContent=_titles[name]||'전사 종합 경영현황';
   if(name==='query') renderQuery();
   if(name==='report') renderReport();
   if(name==='export') renderExport();
+  if(name==='goals') renderGoals();
+  if(name==='quarters') renderQuarters();
+  if(name==='units') renderUnits();
+  if(name==='leaderboard') renderLeaderboard();
+  if(name==='customers') renderCustomers();
 }
 
 // ── 전사 종합 ────────────────────────────────────────────
@@ -1068,6 +1179,164 @@ function _mergeProds(dst,src){ if(!src) return; for(const k in src) dst[k]=(dst[
 
 function miniBar(label,v,max,col){
   return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;font-size:12px"><span style="width:90px;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+label+'">'+label+'</span><div style="flex:1;height:7px;background:#eef2f7;border-radius:4px;overflow:hidden"><div style="width:'+(max>0?v/max*100:0).toFixed(1)+'%;height:100%;background:'+col+'"></div></div><span style="width:62px;text-align:right;font-weight:600">'+fmtW(v)+'</span></div>';
+}
+
+// ════════ 임원용 대시보드 (목표달성·출고대수·분기요약·리더보드·거래처) ════════
+const EXEC_REGS=['동남아','중화','중동','유럽','미주','태국법인','미국법인','일본법인'];
+function _execT(){ return _curMonth(); }
+const _achCol=r=> r==null?'#94a3b8' : r>=100?'#16a34a' : r>=80?'#0d9488' : r>=60?'#f59e0b':'#dc2626';
+const _num=v=>Math.round(Number(v)||0).toLocaleString();
+
+// ── P1 목표 달성률 종합 ──
+function renderGoals(){
+  const f=1,t=_execT(), pend=_pendingAgg(2026), regMo=_intlRegionMonthly(INTL), ipend=(_pendForReport().intl)||{};
+  const items=[];
+  items.push({label:'국내 제품',g:'국내',act:sumMo(DEVICE.monthly2026,f,t),pnd:sumMo(pend.devMonthly,f,t),tgt:_tgt('국내영업','제품',f,t)});
+  items.push({label:'국내 소모품',g:'국내',act:sumMo(CONS.monthly2026,f,t),pnd:sumMo(pend.consMonthly,f,t),tgt:_tgt('국내영업','소모품',f,t)});
+  EXEC_REGS.forEach(rg=>items.push({label:'해외 '+rg,g:'해외',act:sumMo(regMo[rg],f,t),pnd:sumMo(ipend[rg],f,t),tgt:_tgt('해외영업',rg,f,t)}));
+  const dom=items.filter(x=>x.g==='국내'), intl=items.filter(x=>x.g==='해외');
+  const S=(arr,k)=>arr.reduce((s,x)=>s+x[k],0);
+  const totAct=S(items,'act'), totPnd=S(items,'pnd'), totTgt=S(items,'tgt');
+  const achC=totTgt>0?totAct/totTgt*100:null, achP=totTgt>0?(totAct+totPnd)/totTgt*100:null;
+  let h='<div class="g-hero"><div><div class="g-hl">전사 목표 달성률 <span style="font-weight:500;color:#94a3b8">· 1~'+t+'월 누적</span></div>'+
+    '<div class="g-hr" style="color:'+_achCol(achC)+'">'+(achC==null?'-':achC.toFixed(0)+'%')+'</div>'+
+    '<div class="g-hs">실적 '+fmtW(totAct)+' / 목표 '+fmtW(totTgt)+'</div></div>'+
+    '<div class="g-hero-r"><div class="g-hrr">예정분 포함 전망</div><div class="g-hrv" style="color:'+_achCol(achP)+'">'+(achP==null?'-':achP.toFixed(0)+'%')+'</div><div class="g-hs">+예정 '+fmtW(totPnd)+'</div></div></div>';
+  h+='<div class="g-twin">'+_goalMini('국내 합계',S(dom,'act')+S(dom,'pnd'),S(dom,'tgt'))+_goalMini('해외 합계',S(intl,'act')+S(intl,'pnd'),S(intl,'tgt'))+'</div>';
+  const bar=x=>{ const a=x.act+x.pnd, r=x.tgt>0?a/x.tgt*100:null, rc=x.tgt>0?Math.min(x.act/x.tgt*100,100):0, rg=x.tgt>0?Math.min(Math.max(a/x.tgt*100-x.act/x.tgt*100,0),100-rc):0;
+    return '<div class="g-row"><div class="g-rl">'+x.label+'</div>'+
+      '<div class="g-rb"><div class="g-rf" style="width:'+rc+'%;background:'+_achCol(r)+'"></div><div class="g-rg" style="width:'+rg+'%"></div></div>'+
+      '<div class="g-rv">'+fmtW(a)+' <span class="muted">/ '+fmtW(x.tgt)+'</span></div>'+
+      '<div class="g-rp" style="color:'+_achCol(r)+'">'+(r==null?'-':r.toFixed(0)+'%')+'</div></div>'; };
+  h+='<div class="g-sec">국내 영업</div>'+dom.map(bar).join('');
+  h+='<div class="g-sec">해외 영업 (지역·법인)</div>'+intl.slice().sort((a,b)=>(b.act+b.pnd)-(a.act+a.pnd)).map(bar).join('');
+  h+='<div class="muted" style="font-size:11px;margin-top:10px">막대=확정 달성률, 옅은 연장=예정분 포함 전망. 목표 미설정 항목은 ‘-’. 달성률 색: <span style="color:#dc2626">60%↓</span> · <span style="color:#f59e0b">60~80</span> · <span style="color:#0d9488">80~100</span> · <span style="color:#16a34a">100%↑</span></div>';
+  document.getElementById('goals-body').innerHTML=h;
+}
+function _goalMini(label,act,tgt){ const r=tgt>0?act/tgt*100:null; return '<div class="g-mini"><div class="g-ml">'+label+'</div><div class="g-mr" style="color:'+_achCol(r)+'">'+(r==null?'-':r.toFixed(0)+'%')+'</div><div class="muted" style="font-size:11px">'+fmtW(act)+' / '+fmtW(tgt)+'</div></div>'; }
+
+// ── P2 장비 출고 대수 보드 ──
+let _unitChart=null;
+function _intlDevSet(src){ // 대당단가 100만원↑ = 장비(소모품 팁 제외). prodMo/prodMoQty는 전 제품 포함
+  const pm=src.prodMo||{}, pmq=src.prodMoQty||{}, set=[];
+  for(const p in pmq){ const a=sumVals(pm[p]), q=sumVals(pmq[p]); if(q>0 && a/q>=1000000) set.push(p); } return set; }
+function _intlDevQtyMo(){ const pmq=INTL.prodMoQty||{}, out={}; _intlDevSet(INTL).forEach(p=>{const mm=pmq[p]||{};for(const m in mm)out[m]=(out[m]||0)+Number(mm[m]||0);}); return out; }
+function _intlDevQtyMo25(){ const i25=INTL.data2025||{}, pmq=i25.prodMoQty||{}, out={}; _intlDevSet(i25).forEach(p=>{const mm=pmq[p]||{};for(const m in mm)out[m]=(out[m]||0)+Number(mm[m]||0);}); return out; }
+function renderUnits(){
+  const f=1,t=_execT();
+  const domMo=DEVICE.monthlyQty2026||{}, domMo25=DEVICE.monthlyQty2025||{};
+  const intlMo=_intlDevQtyMo(), intlMo25=_intlDevQtyMo25();
+  const domU=sumMo(domMo,f,t), domU25=sumMo(domMo25,f,t), intlU=sumMo(intlMo,f,t), intlU25=sumMo(intlMo25,f,t);
+  const totU=domU+intlU, totU25=domU25+intlU25;
+  const domAmt=sumMo(DEVICE.monthly2026,f,t), intlAmt=_intlDevAmt(f,t);
+  // KPI
+  const kpi=(lbl,u,u25,amt)=>{ const y=pct(u,u25); const asp=u>0?amt/u:0;
+    return '<div class="u-kpi"><div class="u-kl">'+lbl+'</div><div class="u-kv">'+_num(u)+'<span class="u-ku">대</span></div>'+
+      '<div class="u-ks">전년 '+_num(u25)+'대 '+(y===null?'':badge(y))+'</div>'+(amt?'<div class="u-kasp">대당 '+fmtW(asp)+'</div>':'')+'</div>'; };
+  document.getElementById('units-kpi').innerHTML=kpi('전사 출고',totU,totU25,domAmt+intlAmt)+kpi('국내',domU,domU25,domAmt)+kpi('해외',intlU,intlU25,intlAmt);
+  // 월별 차트
+  const labels=[]; for(let m=1;m<=12;m++) labels.push(m+'월');
+  const dd=[],ii=[],pp=[]; for(let m=1;m<=12;m++){ dd.push(Number(domMo[m]||0)); ii.push(Number(intlMo[m]||0)); pp.push(Number(domMo25[m]||0)+Number(intlMo25[m]||0)); }
+  if(_unitChart) _unitChart.destroy();
+  _unitChart=new Chart(document.getElementById('units-chart'),{type:'bar',
+    data:{labels,datasets:[
+      {label:'국내',data:dd,backgroundColor:'#7c3aed',stack:'s',borderRadius:2,maxBarThickness:26},
+      {label:'해외',data:ii,backgroundColor:'#0d9488',stack:'s',borderRadius:2,maxBarThickness:26},
+      {type:'line',label:'전년 합계',data:pp,borderColor:'#94a3b8',borderWidth:2,borderDash:[5,4],pointRadius:2,tension:0}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:10}}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+_num(c.parsed.y)+'대'}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,grid:{color:'#f3f4f6'},ticks:{callback:v=>v+'대',font:{size:10}}}}}});
+  // 제품별 대수 Top (국내+해외)
+  const pm={}; const addp=(o,sc)=>{ for(const p in (o||{})) pm[p]=(pm[p]||0)+Number(o[p]||0)*sc; };
+  const dsc=_scale(DEVICE.monthlyQty2026,f,t); addp(DEVICE.prodQty2026,dsc);
+  _intlDevSet(INTL).forEach(p=>{ const mm=(INTL.prodMoQty||{})[p]||{}; pm[p]=(pm[p]||0)+sumMo(mm,f,t); });
+  const arr=Object.entries(pm).map(([n,v])=>({n,v:Math.round(v)})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v).slice(0,12);
+  const mx=arr.length?arr[0].v:1;
+  document.getElementById('units-prods').innerHTML=arr.map(x=>'<div class="up-row"><span class="up-n">'+x.n+'</span><div class="up-bar"><div style="width:'+(x.v/mx*100).toFixed(1)+'%;height:100%;background:#7c3aed;border-radius:3px"></div></div><span class="up-v">'+_num(x.v)+'대</span></div>').join('')||'<div class="muted">데이터 없음</div>';
+}
+function _intlDevAmt(f,t){ let s=0; const pm=INTL.prodMo||{}; _intlDevSet(INTL).forEach(p=>{ s+=sumMo(pm[p]||{},f,t); }); return s; }
+
+// ── P3 분기·반기 요약 ──
+function renderQuarters(){
+  const totMo=m=>({a:(Number((CONS.monthly2026||{})[m]||0)+Number((DEVICE.monthly2026||{})[m]||0)+Number((INTL.monthly||{})[m]||0)),
+                   p:(Number((CONS.monthly2025||{})[m]||0)+Number((DEVICE.monthly2025||{})[m]||0)+Number(((INTL.data2025||{}).monthly||{})[m]||0))});
+  const sumP=(f,t)=>{let a=0,p=0;for(let m=f;m<=t;m++){const x=totMo(m);a+=x.a;p+=x.p;}return {a,p};};
+  const allTgt=(f,t)=>{ let s=0; (SALEST||[]).forEach(r=>{ if(+r.year===2026&&+r.month>=f&&+r.month<=t) s+=Number(r.amount||0); }); return s; };
+  const pend=_pendingAgg(2026); const pendP=(f,t)=>sumMo(pend.consMonthly,f,t)+sumMo(pend.devMonthly,f,t)+sumMo(pend.intlMonthly,f,t);
+  const cur=_execT();
+  const periods=[{k:'1Q',f:1,t:3,lbl:'1분기 (1~3월)'},{k:'2Q',f:4,t:6,lbl:'2분기 (4~6월)'},{k:'H1',f:1,t:6,lbl:'상반기 (1~6월)'}];
+  let h='';
+  periods.forEach(pr=>{
+    const done=cur>=pr.t; const x=sumP(pr.f,Math.min(pr.t,cur)); const tg=allTgt(pr.f,pr.t); const pn=pendP(pr.f,Math.min(pr.t,cur));
+    const yoy=pct(x.a,x.p); const ach=tg>0?(x.a)/tg*100:null; const achF=tg>0?(x.a+pn)/tg*100:null;
+    h+='<div class="q-card'+(pr.k==='H1'?' hi':'')+'"><div class="q-lbl">'+pr.lbl+(done?'':' <span class="muted" style="font-size:10px">진행중</span>')+'</div>'+
+      '<div class="q-val">'+fmtW(x.a)+'</div>'+
+      '<div class="q-yoy">전년 '+fmtW(x.p)+' '+(yoy===null?'':badge(yoy))+'</div>'+
+      '<div class="q-row"><span>목표</span><span>'+fmtW(tg)+'</span></div>'+
+      '<div class="q-row"><span>달성률</span><span style="color:'+_achCol(ach)+';font-weight:800">'+(ach==null?'-':ach.toFixed(0)+'%')+(pn>0&&achF!=null?' <span class="muted" style="font-weight:500">(전망 '+achF.toFixed(0)+'%)</span>':'')+'</span></div></div>';
+  });
+  document.getElementById('q-cards').innerHTML=h;
+  // 채널×카테고리 분해 (상반기)
+  const seg=(lbl,a,p,col)=>{ const y=pct(a,p); return '<div class="q-seg"><div class="q-seg-l"><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+col+';margin-right:6px"></span>'+lbl+'</div><div class="q-seg-v">'+fmtW(a)+'</div><div class="q-seg-y">'+(y===null?'-':badge(y))+'</div></div>'; };
+  const T=Math.min(6,cur);
+  document.getElementById('q-seg').innerHTML=
+    seg('국내 제품',sumMo(DEVICE.monthly2026,1,T),sumMo(DEVICE.monthly2025,1,T),'#7c3aed')+
+    seg('국내 소모품',sumMo(CONS.monthly2026,1,T),sumMo(CONS.monthly2025,1,T),'#0891b2')+
+    seg('해외',sumMo(INTL.monthly,1,T),sumMo((INTL.data2025||{}).monthly,1,T),'#0d9488');
+}
+
+// ── P4 담당자·팀 리더보드 ──
+function renderLeaderboard(){
+  const f=1,t=_execT();
+  const rowsD=Object.entries(DEVICE.reps||{}).map(([n,r])=>{
+    const v=sumMo(r.m2026,f,t)||r.y2026||0, pv=sumMo(r.m2025,f,t)||r.y2025||0;
+    const tp=Object.entries(r.prods2026||{}).sort((a,b)=>b[1]-a[1])[0];
+    return {n,team:'국내제품',v,yoy:pct(v,pv),cust:r.cust2026||0,qty:r.qty2026||0,top:tp?tp[0]:''};
+  });
+  const rowsI=Object.entries(INTL.reps||{}).map(([n,r])=>{
+    const v=sumMo(r.m,f,t)||r.total||0; const i25=(INTL.data2025||{}).reps||{}; const pr=i25[n]; const pv=pr?(sumMo(pr.m,f,t)||pr.total||0):0;
+    const tp=Object.entries(r.prods||{}).sort((a,b)=>b[1]-a[1])[0];
+    return {n,team:'해외',v,yoy:pct(v,pv),cust:r.clients||0,qty:null,top:tp?tp[0]:'',ctry:r.countries||0};
+  });
+  const mk=(rows,hasQty)=>{ rows=rows.filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
+    const head='<tr><th>#</th><th>담당자</th><th class="r">매출</th><th class="r">전년比</th><th class="r">거래처</th>'+(hasQty?'<th class="r">대수</th>':'<th class="r">담당국가</th>')+'<th>주력제품</th></tr>';
+    const body=rows.map((x,i)=>'<tr><td class="muted">'+(i+1)+'</td><td style="font-weight:700">'+x.n+'</td><td class="r" style="font-weight:700">'+fmtW(x.v)+'</td>'+
+      '<td class="r">'+(x.yoy===null?'-':badge(x.yoy))+'</td><td class="r">'+x.cust+'개</td>'+
+      (hasQty?'<td class="r">'+_num(x.qty)+'대</td>':'<td class="r">'+(x.ctry||0)+'개국</td>')+'<td class="muted" style="font-size:11px">'+(x.top||'')+'</td></tr>').join('');
+    return '<table class="lb-table">'+head+body+'</table>'; };
+  document.getElementById('lb-dom').innerHTML=mk(rowsD,true);
+  document.getElementById('lb-intl').innerHTML=mk(rowsI,false);
+}
+
+// ── P5 거래처 신규·이탈·집중도 ──
+function renderCustomers(){
+  // 국내: hospitals(CONS+DEVICE) 합산
+  const H={};
+  const acc=hs=>{ for(const nm in (hs||{})){ const h=hs[nm]; if(!H[nm]) H[nm]={y26:0,y25:0}; H[nm].y26+=Number(h.y2026||0); H[nm].y25+=Number(h.y2025||0); } };
+  acc(CONS.hospitals); acc(DEVICE.hospitals);
+  let active=0,nw=0,nwAmt=0,churn=0,churnAmt=0,keep=0; const names=[];
+  for(const nm in H){ const h=H[nm]; const a=h.y26>0,b=h.y25>0;
+    if(a){active++; names.push({nm,v:h.y26});} if(a&&!b){nw++;nwAmt+=h.y26;} if(!a&&b){churn++;churnAmt+=h.y25;} if(a&&b)keep++; }
+  names.sort((a,b)=>b.v-a.v); const totAmt=names.reduce((s,x)=>s+x.v,0)||1;
+  const top10=names.slice(0,10).reduce((s,x)=>s+x.v,0), conc=top10/totAmt*100;
+  // 해외 거래처수
+  let intlActive=0; const cs=INTL.countries||{}; for(const c in cs) intlActive+=(cs[c].clients||0);
+  const card=(lbl,big,sub,col)=>'<div class="cust-card"><div class="cc-l">'+lbl+'</div><div class="cc-v" style="color:'+(col||'#0f172a')+'">'+big+'</div><div class="cc-s">'+sub+'</div></div>';
+  document.getElementById('cust-cards').innerHTML=
+    card('국내 활성 거래처','<b>'+active+'</b>개','전년에도 거래 '+keep+' · 올해 신규 '+nw)+
+    card('신규 거래처','<b style="color:#16a34a">+'+nw+'</b>개',fmtW(nwAmt)+' 신규 매출','#16a34a')+
+    card('이탈 거래처','<b style="color:#dc2626">'+churn+'</b>개','전년 매출 '+fmtW(churnAmt)+' 손실','#dc2626')+
+    card('상위10 집중도',conc.toFixed(0)+'%','상위 10개사 = 국내매출 '+conc.toFixed(0)+'%')+
+    card('해외 거래처','<b>'+intlActive+'</b>개','국가별 디스트리뷰터/거래처 합');
+  // 순증감 + 상위/이탈위험 리스트
+  const net=nw-churn;
+  document.getElementById('cust-net').innerHTML='<div class="cn-row"><span class="cn-l">신규 유입</span><span style="color:#16a34a;font-weight:800">+'+nw+'개 ('+fmtW(nwAmt)+')</span></div>'+
+    '<div class="cn-row"><span class="cn-l">이탈</span><span style="color:#dc2626;font-weight:800">-'+churn+'개 ('+fmtW(churnAmt)+')</span></div>'+
+    '<div class="cn-row" style="border-top:2px solid #e2e8f0;font-weight:800"><span class="cn-l">순증감</span><span style="color:'+(net>=0?'#16a34a':'#dc2626')+'">'+(net>=0?'+':'')+net+'개사</span></div>';
+  // 이탈위험 Top (전년 매출 큰 이탈 거래처)
+  const churnList=[]; for(const nm in H){ if(!(H[nm].y26>0)&&H[nm].y25>0) churnList.push({nm,v:H[nm].y25}); }
+  churnList.sort((a,b)=>b.v-a.v);
+  document.getElementById('cust-churn').innerHTML='<div class="ccl-h">이탈 위험 상위 (전년 거래·올해 미구매)</div>'+
+    (churnList.slice(0,8).map(x=>'<div class="ccl-row"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+x.nm+'</span><span style="color:#dc2626;font-weight:700">'+fmtW(x.v)+'</span></div>').join('')||'<div class="muted" style="font-size:12px;padding:8px">이탈 거래처 없음</div>');
 }
 
 // ── 수출의 탑 ──────────────────────────────────────────────
