@@ -141,6 +141,20 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;background:#f0f4f8;color
 #page-export .ex-kita .k .y{font-size:12px;color:#64748b;font-weight:700}
 #page-export .ex-kita .k .v{font-size:1.35rem;font-weight:800;margin-top:4px;color:#0f172a}
 #page-export .ex-kita .k .d{font-size:11.5px;margin-top:3px;font-weight:700}
+#page-export .ex-ycard-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
+#page-export .ex-ytitle{font-size:15px;font-weight:800;color:#1e293b;display:flex;align-items:center;gap:8px}
+#page-export .ex-ytitle::before{content:'';width:5px;height:18px;background:#e2483d;border-radius:1px;display:inline-block}
+#page-export .ex-ymeta{font-size:11px;color:#94a3b8;text-align:right;line-height:1.55;white-space:nowrap}
+#page-export .ex-ybars{display:flex;align-items:flex-end;justify-content:space-around;height:200px;gap:10px;padding:22px 4px 0;border-bottom:1px solid #e6ebf1}
+#page-export .ex-ybar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+#page-export .ex-ybar .v{font-size:12.5px;font-weight:700;color:#334155;margin-bottom:5px;font-variant-numeric:tabular-nums}
+#page-export .ex-ybar .bar{width:60%;min-height:2px;border-radius:3px 3px 0 0;transition:height .5s}
+#page-export .ex-yx{display:flex;justify-content:space-around;gap:10px;margin-top:7px}
+#page-export .ex-yx span{flex:1;text-align:center;font-size:11.5px;color:#475569}
+#page-export .ex-yleg{text-align:center;font-size:11.5px;color:#475569;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:6px}
+#page-export .ex-yleg i{width:10px;height:10px;border-radius:2px;display:inline-block}
+#page-export .ex-insight{background:#fdeee7;border-radius:10px;padding:11px 16px;font-size:12.5px;color:#7c2d12;line-height:1.55;margin-bottom:16px}
+#page-export .ex-insight b{color:#e2483d;font-weight:800;margin-right:6px}
 #ex-edit-modal{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:flex-start;justify-content:center;z-index:1500;overflow-y:auto;padding:40px 16px}
 #ex-edit-modal .mc{background:#fff;border-radius:14px;width:min(860px,100%);padding:20px 22px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
 #ex-edit-modal .ex-mgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px 10px}
@@ -322,9 +336,19 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;background:#f0f4f8;color
 
     <div class="ex-kpis" id="ex-kpis"></div>
 
+    <div class="row g-3 mb-2">
+      <div class="col-lg-6"><div class="card p-3">
+        <div class="ex-ycard-head"><div class="ex-ytitle">회계실적 기준</div><div class="ex-ymeta">단위 : 만 $<br>기간 : 회계연도</div></div>
+        <div id="ex-yacc"></div>
+      </div></div>
+      <div class="col-lg-6"><div class="card p-3">
+        <div class="ex-ycard-head"><div class="ex-ytitle">수출실적 기준</div><div class="ex-ymeta">단위 : 만 $<br>기간 : 전년 7월~당해 6월 집계</div></div>
+        <div id="ex-yexp"></div>
+      </div></div>
+    </div>
+    <div class="ex-insight" id="ex-insight"></div>
     <div class="row g-3 mb-3">
-      <div class="col-lg-7"><div class="card p-3"><div style="font-size:13.5px;font-weight:800;margin-bottom:8px"><i class="bi bi-graph-up-arrow me-1" style="color:#0d9488"></i>현 차수 진척 — 누적 실적 vs 목표·필요 페이스</div><div style="position:relative;height:230px"><canvas id="ex-ch-cum"></canvas></div></div></div>
-      <div class="col-lg-5"><div class="card p-3"><div style="font-size:13.5px;font-weight:800;margin-bottom:8px"><i class="bi bi-bar-chart me-1" style="color:#0d9488"></i>월별 실적 (전년 동월 대비)</div><div style="position:relative;height:230px"><canvas id="ex-ch-mon"></canvas></div></div></div>
+      <div class="col-12"><div class="card p-3"><div style="font-size:13.5px;font-weight:800;margin-bottom:8px"><i class="bi bi-bar-chart me-1" style="color:#0d9488"></i>월별 실적 (전년 동월 대비)</div><div style="position:relative;height:230px"><canvas id="ex-ch-mon"></canvas></div></div></div>
     </div>
 
     <div class="card p-3 mb-3">
@@ -1047,7 +1071,8 @@ const EXPORT_DEFAULT={
     {id:'c2026_70',target:70000000,label:'7천만불',title:'2026년 수출의 탑',start:'2025-07',months:{}},
     {id:'c2026_100',target:100000000,label:'1억불',title:'2027년 수출의 탑',start:'2026-07',months:{}}
   ],
-  kita:[{year:'2024',amount:53670859},{year:'2025',amount:74055678},{year:'2026',amount:31604896}]
+  kita:[{year:'2024',amount:53670859},{year:'2025',amount:74055678},{year:'2026',amount:31604896}],
+  yearly:{labels:['2022년','2023년','2024년','2025년','2026년'],acc:[3050,4363,5367,7405,3979],exp:[2768,3520,5045,6342,7729],insight:'회계기준은 2026년 하반기 미집계로 인해 일시 하락처럼 보이나, 수출실적 기준에서는 5년 연속 성장(CAGR +28.8%)이 확인'}
 };
 const exUsd=v=>'$'+Math.round(Number(v)||0).toLocaleString();
 function exLoadData(saved){
@@ -1055,6 +1080,7 @@ function exLoadData(saved){
   if(saved){
     if(saved.rate!=null) base.rate=saved.rate;
     if(Array.isArray(saved.kita)) base.kita=saved.kita;
+    if(saved.yearly) base.yearly=saved.yearly;
     if(Array.isArray(saved.cycles)) saved.cycles.forEach(sc=>{ const bc=base.cycles.find(c=>c.id===sc.id); if(bc&&sc.months) bc.months=sc.months; });
   }
   EXPORT=base;
@@ -1081,7 +1107,7 @@ function renderExport(){
   const cyc=EXPORT.cycles.find(c=>c.id===CUR_CYCLE);
   document.getElementById('ex-cyc-name').textContent=cyc.title+' ('+cyc.label+')';
   document.getElementById('ex-prov-month').textContent=exMonLabel(exCurKey());
-  exUpdProv(); exRenderKPI(); exRenderTables(); exRenderKITA(); exRenderCharts();
+  exUpdProv(); exRenderKPI(); exRenderYearly(); exRenderTables(); exRenderKITA(); exRenderCharts();
 }
 function exUpdProv(){
   document.getElementById('ex-prov-usd').textContent=exUsd(exProvUSD());
@@ -1146,21 +1172,16 @@ function exRenderKITA(){
     if(prev){ const g=k.amount-prev.amount,up=g>=0; d='<div class="d '+(up?'ex-up':'ex-down')+'">'+(up?'▲':'▼')+' '+exUsd(Math.abs(g))+' ('+(k.amount/prev.amount*100-100).toFixed(0)+'%)</div>'; }
     el.insertAdjacentHTML('beforeend','<div class="k"><div class="y">'+k.year+'년 무역실적</div><div class="v">'+exUsd(k.amount)+'</div>'+d+'</div>'); });
 }
+function exRenderYearly(){
+  const y=EXPORT.yearly||{}, labels=y.labels||[], acc=y.acc||[], exp=y.exp||[];
+  const draw=(elId,vals,color)=>{ const el=document.getElementById(elId); if(!el) return; const max=Math.max.apply(null,vals.concat([1]));
+    el.innerHTML='<div class="ex-ybars">'+vals.map(v=>'<div class="ex-ybar"><div class="v">'+Number(v).toLocaleString()+'</div><div class="bar" style="height:'+Math.max(v/max*100,1).toFixed(1)+'%;background:'+color+'"></div></div>').join('')+'</div><div class="ex-yx">'+labels.map(l=>'<span>'+l+'</span>').join('')+'</div><div class="ex-yleg"><i style="background:'+color+'"></i>수출액 (USD)</div>'; };
+  draw('ex-yacc',acc,'#f0a868'); draw('ex-yexp',exp,'#2a8a8a');
+  const ins=document.getElementById('ex-insight'); if(ins) ins.innerHTML=y.insight?('<b>Insight</b>'+y.insight):'';
+}
 function exRenderCharts(){
   const cur=EXPORT.cycles.find(c=>c.id===CUR_CYCLE), prev=EXPORT.cycles.find(c=>c.id==='c2025');
   const keys=exCycleMonths(cur.start), labels=keys.map(exMonLabel);
-  let acc=0; const cum=keys.map(k=>{acc+=exMonVal(cur,k);return Math.round(acc);});
-  const lastIdx=keys.reduce((li,k,idx)=>exMonVal(cur,k)>0?idx:li,-1);
-  const cumLine=cum.map((v,idx)=>idx<=lastIdx?v:null);
-  const target=cur.target, pace=keys.map((_,idx)=>Math.round(target*(idx+1)/12));
-  if(_exChCum) _exChCum.destroy();
-  _exChCum=new Chart(document.getElementById('ex-ch-cum'),{type:'line',
-    data:{labels,datasets:[
-      {label:'누적 실적',data:cumLine,borderColor:'#0d9488',backgroundColor:'rgba(13,148,136,.12)',fill:true,tension:.25,pointRadius:2,spanGaps:false},
-      {label:'목표 페이스(균등)',data:pace,borderColor:'#94a3b8',borderDash:[5,4],pointRadius:0,fill:false},
-      {label:cur.label+' 목표',data:keys.map(()=>target),borderColor:'#dc2626',borderDash:[7,4],pointRadius:0,fill:false}
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{font:{size:10.5},boxWidth:12}},tooltip:{callbacks:{label:c=>c.dataset.label+': $'+(Number(c.parsed.y)||0).toLocaleString()}}},scales:{y:{ticks:{callback:v=>'$'+(v/1e6)+'M',font:{size:10}}},x:{ticks:{font:{size:9},maxRotation:0,autoSkip:true,maxTicksLimit:12}}}}});
   if(_exChMon) _exChMon.destroy();
   _exChMon=new Chart(document.getElementById('ex-ch-mon'),{type:'bar',
     data:{labels,datasets:[
