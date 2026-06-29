@@ -681,6 +681,8 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
       </div>
       <div id="pipe-summary" class="mb-3"></div>
       <div class="pipeline-board" id="kanban-board" style="align-items:stretch"></div>
+      <div id="deal-drawer-bg" onclick="closeDealDrawer()" style="position:fixed;inset:0;background:rgba(15,23,42,.4);display:none;z-index:1059"></div>
+      <div id="deal-drawer" style="position:fixed;top:0;right:0;bottom:0;width:560px;max-width:96vw;background:#fff;box-shadow:-12px 0 40px rgba(0,0,0,.2);transform:translateX(100%);transition:transform .25s;z-index:1060;display:flex;flex-direction:column"></div>
     </div>
     <!-- 실적 분석 탭 -->
     <div id="sales-tab-analysis" style="display:none">
@@ -3854,6 +3856,66 @@ async function dropDeal(e, newStage) {
   showToast(`저장 완료`);
 }
 
+// ── 수주 딜 상세 드로어 ──────────────────────────────────────────────
+let _dealDrawerId=null;
+function openDealDrawer(id){
+  const d=DB.d.pipeline.find(x=>x.id===id); if(!d)return;
+  _dealDrawerId=id;
+  document.getElementById('deal-drawer').innerHTML=dealDrawerHtml(d);
+  document.getElementById('deal-drawer-bg').style.display='block';
+  document.getElementById('deal-drawer').style.transform='none';
+}
+function closeDealDrawer(){
+  const dw=document.getElementById('deal-drawer'); if(dw)dw.style.transform='translateX(100%)';
+  const bg=document.getElementById('deal-drawer-bg'); if(bg)bg.style.display='none';
+  _dealDrawerId=null;
+}
+async function setDealStage(id,stage){
+  const idx=DB.d.pipeline.findIndex(d=>d.id===id); if(idx<0)return;
+  const prev=DB.d.pipeline[idx]; if(prev.stage===stage)return;
+  DB.d.pipeline[idx]={...prev,stage,stageUpdatedAt:new Date().toISOString(),prob:stage==='계약완료'?100:prev.prob};
+  renderPipeline();
+  document.getElementById('deal-drawer').innerHTML=dealDrawerHtml(DB.d.pipeline[idx]);
+  showToast(`${prev.custName||'딜'} → ${stage} 저장 중...`);
+  await DB.save('pipeline'); showToast('저장 완료');
+}
+function dealDrawerHtml(d){
+  const esc=s=>(s==null?'':String(s)).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const cust=DB.d.customers.find(c=>c.name===d.custName)||{};
+  const logs=DB.d.logs.filter(l=>l.custName===d.custName).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const days=d.stageUpdatedAt?Math.floor((Date.now()-new Date(d.stageUpdatedAt))/864e5):null;
+  const stageBtns=STAGES.map(s=>`<button onclick="setDealStage('${d.id}','${s}')" style="flex:1;min-width:0;padding:7px 3px;border-radius:7px;border:1px solid ${d.stage===s?SC[s]:'#e5e7eb'};background:${d.stage===s?SC[s]:'#fff'};color:${d.stage===s?'#fff':'#6b7280'};font-size:11px;font-weight:700;cursor:pointer">${s}</button>`).join('');
+  const info=[['제품',esc(d.model)||'-'],['예상 금액',fmtAmt(Number(d.amount||0))],['성공확률',(d.prob||0)+'%'],['담당',esc(d.sales)||'-'],['마감 예정',d.expectedDate?fmtDate(d.expectedDate):'-'],['단계 경과',days!=null?days+'일째':'-']];
+  const acts=logs.length?logs.map(l=>`<div style="position:relative;padding:0 0 14px 18px">
+      <div style="position:absolute;left:0;top:3px;width:9px;height:9px;border-radius:50%;background:#2563eb;border:2px solid #fff;box-shadow:0 0 0 1px #2563eb"></div>
+      <div style="font-size:11px;color:#9ca3af">${fmtDate(l.date)}${l.sales?' · '+esc(l.sales):''}${l.type?' · '+esc(l.type):''}</div>
+      <div style="font-size:13px;margin-top:1px;color:#374151">${esc(l.content)||'-'}</div>
+      ${l.nextAction?`<div style="font-size:11px;color:#059669;margin-top:2px">다음: ${esc(l.nextAction)}${l.nextDate?' ('+fmtDate(l.nextDate)+')':''}</div>`:''}
+    </div>`).join(''):'<div style="text-align:center;color:#9ca3af;padding:16px;font-size:13px">상담 기록 없음</div>';
+  const custLine=[cust.doctor&&('원장 '+esc(cust.doctor)),esc(cust.region),esc(cust.contact)].filter(Boolean).join(' · ')||'-';
+  return `<div style="padding:18px 22px;border-bottom:1px solid #e5e7eb">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div><div style="font-size:11px;font-weight:700;color:#2563eb;letter-spacing:.05em">수주 · 딜</div>
+        <div style="font-size:19px;font-weight:800;color:#111827;margin-top:4px">${esc(d.custName)||'-'}</div>
+        <div style="font-size:22px;font-weight:800;color:#1d4ed8;margin-top:6px">${fmtAmt(Number(d.amount||0))} <span style="font-size:12px;font-weight:700;color:#fff;background:${probColor(d.prob)};border-radius:6px;padding:2px 8px;margin-left:4px">${d.prob||0}%</span></div></div>
+      <button onclick="closeDealDrawer()" style="border:0;background:transparent;font-size:24px;color:#9ca3af;cursor:pointer;line-height:1">&times;</button></div></div>
+    <div style="padding:18px 22px;overflow:auto;flex:1;background:#fafbfc">
+      <div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:8px">단계 (클릭하여 이동)</div>
+      <div style="display:flex;gap:5px;margin-bottom:18px">${stageBtns}</div>
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px">${info.map(([k,v])=>`<div><div style="font-size:11px;color:#9ca3af">${k}</div><div style="font-size:13px;font-weight:600;color:#111827;margin-top:2px">${v}</div></div>`).join('')}</div>
+        ${d.nextAction?`<div style="margin-top:13px;background:#ecfdf5;border-radius:8px;padding:8px 10px;font-size:12px;color:#059669"><i class="bi bi-arrow-right-circle-fill"></i> 다음 액션: ${esc(d.nextAction)}${d.nextDate?' · '+fmtDate(d.nextDate):''}</div>`:''}
+        ${d.note?`<div style="margin-top:13px;font-size:13px;color:#374151;white-space:pre-wrap">${esc(d.note)}</div>`:''}</div>
+      ${cust.name?`<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div style="font-size:13px;font-weight:700">🏥 거래처</div><span onclick="closeDealDrawer();showHospitalDetail('${esc(cust.name).replace(/'/g,"&#39;")}')" style="font-size:12px;color:#2563eb;cursor:pointer;font-weight:600">거래처 상세 ↗</span></div>
+        <div style="font-size:12px;color:#6b7280">${custLine}</div></div>`:''}
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px">🕑 상담 활동 <span style="color:#9ca3af;font-weight:400">${logs.length}건</span></div>${acts}</div></div>
+    <div style="padding:14px 22px;border-top:1px solid #e5e7eb;display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="closeDealDrawer()" style="border:1px solid #e5e7eb;background:#fff;border-radius:9px;padding:8px 14px;font-weight:600;font-size:13px;cursor:pointer">닫기</button>
+      <button onclick="closeDealDrawer();editPipeline('${d.id}')" style="border:0;background:#2563eb;color:#fff;border-radius:9px;padding:8px 14px;font-weight:600;font-size:13px;cursor:pointer"><i class="bi bi-pencil"></i> 정보 수정</button></div>`;
+}
+
 // ── 전체 통합검색 ────────────────────────────────────────────────────
 let _searchIdx = -1;
 function openSearch() {
@@ -4057,7 +4119,7 @@ function renderPipeline() {
         const daysBadge=daysInStage!==null?`<span style="background:${staleDanger?'#dc2626':staleWarn?'#f59e0b':'#e5e7eb'};color:${staleDanger||staleWarn?'#fff':'#6b7280'};border-radius:6px;padding:1px 6px;font-size:10px;font-weight:700">${daysInStage}일째</span>`:'';
         const isClosingThis=d.expectedDate&&d.expectedDate.startsWith(thisYm)&&!isWon;
         const isOverdue=d.expectedDate&&d.expectedDate<today&&!isWon;
-        return`<div class="deal-card" draggable="true" ondragstart="dragStart(event,'${d.id}')" onclick='editPipeline("${d.id}")' style="border-left:3px solid ${SC[d.stage]||'#4f8ef7'}${isClosingThis?';box-shadow:0 0 0 2px #f59e0b40':isOverdue?';box-shadow:0 0 0 2px #dc262640':''}">
+        return`<div class="deal-card" draggable="true" ondragstart="dragStart(event,'${d.id}')" onclick='openDealDrawer("${d.id}")' style="border-left:3px solid ${SC[d.stage]||'#4f8ef7'}${isClosingThis?';box-shadow:0 0 0 2px #f59e0b40':isOverdue?';box-shadow:0 0 0 2px #dc262640':''}">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:4px">
             <div style="font-size:13px;font-weight:600;flex:1;line-height:1.3">${d.custName||''}</div>
             ${daysBadge}
