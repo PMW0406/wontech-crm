@@ -1578,17 +1578,18 @@ async function _showLauncherOrApp(user) {
             <div style="margin-top:16px;display:flex;align-items:center;gap:4px;font-size:11px;color:#818cf8;font-weight:600">입장하기 <i class="bi bi-arrow-right" style="font-size:10px"></i></div>
           </div>
         </div>` : '',
-      // ▼▼ 신규 사이트 자리 — 준비되면 이 placeholder를 새 카드로 교체 (수출의 탑은 전사 종합 export 탭으로 이전됨) ▼▼
+      // ▼▼ 상품기획 PM 대시보드 (pm-planner) — 6번째 슬롯. 수출의 탑은 전사 종합 export 탭으로 이전됨 ▼▼
       `
-        <div style="${cardStyle};cursor:default;opacity:.4" title="신규 시스템 예정">
-          <div style="height:5px;background:linear-gradient(90deg,#475569,#64748b)"></div>
+        <div onclick="location.href='https://wt-management.github.io/pm-planner/'"
+          style="${cardStyle}" onmouseover="${cardHover}" onmouseout="${cardOut}">
+          <div style="height:5px;background:linear-gradient(90deg,#8b5cf6,#ec4899)"></div>
           <div style="padding:28px 24px">
-            <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#475569,#64748b);display:flex;align-items:center;justify-content:center;margin-bottom:16px">
-              <i class="bi bi-plus-lg" style="font-size:22px;color:#fff"></i>
+            <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#8b5cf6,#ec4899);display:flex;align-items:center;justify-content:center;margin-bottom:16px;box-shadow:0 8px 20px rgba(139,92,246,.35)">
+              <i class="bi bi-kanban-fill" style="font-size:22px;color:#fff"></i>
             </div>
-            <div style="font-size:15px;font-weight:800;color:#cbd5e1;margin-bottom:6px;letter-spacing:-.3px">준비 중</div>
-            <div style="font-size:11px;color:#64748b;line-height:1.6">신규 시스템<br>예정</div>
-            <div style="margin-top:16px;font-size:11px;color:#64748b;font-weight:600">Coming soon</div>
+            <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:6px;letter-spacing:-.3px">상품기획 PM</div>
+            <div style="font-size:11px;color:#64748b;line-height:1.6">제품 파이프라인<br>업무 · 아이디어</div>
+            <div style="margin-top:16px;display:flex;align-items:center;gap:4px;font-size:11px;color:#c084fc;font-weight:600">입장하기 <i class="bi bi-arrow-right" style="font-size:10px"></i></div>
           </div>
         </div>`,
     ].join('');
@@ -5114,17 +5115,18 @@ function _renderLauncherCards(access) {
             <div style="margin-top:16px;display:flex;align-items:center;gap:4px;font-size:11px;color:#818cf8;font-weight:600">입장하기 <i class="bi bi-arrow-right" style="font-size:10px"></i></div>
           </div>
         </div>` : '',
-      // ▼▼ 신규 사이트 자리 — 준비되면 이 placeholder를 새 카드로 교체 (수출의 탑은 전사 종합 export 탭으로 이전됨) ▼▼
+      // ▼▼ 상품기획 PM 대시보드 (pm-planner) — 6번째 슬롯. 수출의 탑은 전사 종합 export 탭으로 이전됨 ▼▼
       `
-        <div style="${cardStyle};cursor:default;opacity:.4" title="신규 시스템 예정">
-          <div style="height:5px;background:linear-gradient(90deg,#475569,#64748b)"></div>
+        <div onclick="location.href='https://wt-management.github.io/pm-planner/'"
+          style="${cardStyle}" onmouseover="${cardHover}" onmouseout="${cardOut}">
+          <div style="height:5px;background:linear-gradient(90deg,#8b5cf6,#ec4899)"></div>
           <div style="padding:28px 24px">
-            <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#475569,#64748b);display:flex;align-items:center;justify-content:center;margin-bottom:16px">
-              <i class="bi bi-plus-lg" style="font-size:22px;color:#fff"></i>
+            <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#8b5cf6,#ec4899);display:flex;align-items:center;justify-content:center;margin-bottom:16px;box-shadow:0 8px 20px rgba(139,92,246,.35)">
+              <i class="bi bi-kanban-fill" style="font-size:22px;color:#fff"></i>
             </div>
-            <div style="font-size:15px;font-weight:800;color:#cbd5e1;margin-bottom:6px;letter-spacing:-.3px">준비 중</div>
-            <div style="font-size:11px;color:#64748b;line-height:1.6">신규 시스템<br>예정</div>
-            <div style="margin-top:16px;font-size:11px;color:#64748b;font-weight:600">Coming soon</div>
+            <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:6px;letter-spacing:-.3px">상품기획 PM</div>
+            <div style="font-size:11px;color:#64748b;line-height:1.6">제품 파이프라인<br>업무 · 아이디어</div>
+            <div style="margin-top:16px;display:flex;align-items:center;gap:4px;font-size:11px;color:#c084fc;font-weight:600">입장하기 <i class="bi bi-arrow-right" style="font-size:10px"></i></div>
           </div>
         </div>`,
   ].join('');
