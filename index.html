@@ -5379,7 +5379,7 @@ function renderDeviceSales() {
       options:{responsive:true, maintainAspectRatio:false,
         plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}},
           tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.parsed.y?.toLocaleString()+'만원'}}},
-        scales:{y:{ticks:{callback:v=>v.toLocaleString()+'만'},grid:{color:'#f3f4f6'}}}
+        scales:{y:{ticks:{callback:v=>v>=10000?(v/10000).toFixed(1)+'억':v.toLocaleString()+'만'},grid:{color:'#f3f4f6'}}}
       }
     });
   }
@@ -5669,7 +5669,7 @@ function showDevRepDetail(repName) {
       options:{responsive:true,maintainAspectRatio:false,
         plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:10}}},
           tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y?.toLocaleString()+'만원'}}},
-        scales:{y:{ticks:{callback:v=>v+'만'},grid:{color:'#f3f4f6'}}}
+        scales:{y:{ticks:{callback:v=>v>=10000?(v/10000).toFixed(1)+'억':v+'만'},grid:{color:'#f3f4f6'}}}
       }
     });
   });
