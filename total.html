@@ -368,6 +368,7 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;background:#f0f4f8;color
       </div>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
         <button class="btn btn-sm btn-outline-secondary" style="font-size:11.5px" onclick="exFillFromAcc()"><i class="bi bi-magic me-1"></i>빈 칸을 회계 USD로 채우기</button>
+        <button class="btn btn-sm btn-outline-secondary" style="font-size:11.5px" onclick="exAddCycle()"><i class="bi bi-plus-lg me-1"></i>다음 차수 추가</button>
         <span style="font-size:11px;color:#94a3b8">회색 placeholder = 회계 USD(자동). 값을 입력하면 그 달은 확정(무역협회 신고치)으로 고정됩니다.</span>
       </div>
       <div id="ex-edit-body"></div>
@@ -1060,7 +1061,21 @@ function miniBar(label,v,max,col){
 
 // ── 수출의 탑 ──────────────────────────────────────────────
 let EXPORT=null, _exChCum=null, _exChMon=null;
-const CUR_CYCLE='c2026_70';
+// 현재 차수 = 오늘 날짜가 속한 차수(7월에 자동 전환). 모든 차수 종료 후엔 가장 최근 차수.
+function exCurCycleId(){
+  if(!EXPORT||!EXPORT.cycles||!EXPORT.cycles.length) return null;
+  var now=exCurKey(), cur=null;
+  EXPORT.cycles.forEach(function(c){ if(exCycleMonths(c.start).indexOf(now)>=0) cur=c.id; });
+  if(cur) return cur;
+  var s=EXPORT.cycles.slice().sort(function(a,b){return a.start<b.start?-1:1;});
+  return now<s[0].start ? s[0].id : s[s.length-1].id;
+}
+function exPrevCycleId(id){
+  var s=EXPORT.cycles.slice().sort(function(a,b){return a.start<b.start?-1:1;});
+  for(var i=0;i<s.length;i++){ if(s[i].id===id) return i>0?s[i-1].id:null; }
+  return null;
+}
+function exTargetLabel(t){ t=Number(t)||0; if(t>=100000000){ var e=t/100000000; return (e%1===0?String(e):e.toFixed(1))+'억불'; } return Math.round(t/10000000)+'천만불'; }
 const EXPORT_DEFAULT={
   rate:1380,
   cycles:[
@@ -1078,7 +1093,8 @@ function exLoadData(saved){
     if(saved.rate!=null) base.rate=saved.rate;
     if(Array.isArray(saved.kita)) base.kita=saved.kita;
     if(saved.yearly) base.yearly=saved.yearly;
-    if(Array.isArray(saved.cycles)) saved.cycles.forEach(sc=>{ const bc=base.cycles.find(c=>c.id===sc.id); if(bc&&sc.months) bc.months=sc.months; });
+    if(Array.isArray(saved.cycles)) saved.cycles.forEach(sc=>{ const bc=base.cycles.find(c=>c.id===sc.id); if(bc){ if(sc.months) bc.months=sc.months; } else { base.cycles.push(sc); } });
+    base.cycles.sort(function(a,b){return a.start<b.start?-1:1;});
   }
   EXPORT=base;
 }
@@ -1095,14 +1111,14 @@ function exPendUSD(){ const cur=exCurKey(); let krw=0;
 function exMonVal(cyc,key){ const ov=cyc.months[key]; if(ov!=null&&ov!=='') return Number(ov); const acc=exAccUSD(key); let v=acc!=null?acc:0; if(key===exCurKey()) v+=exPendUSD(); return v; }
 function exIsProv(cyc,key){ const ov=cyc.months[key]; return (ov==null||ov==='')&&key===exCurKey()&&exMonVal(cyc,key)>0; }
 function exCycleTotal(cyc){ return exCycleMonths(cyc.start).reduce((s,k)=>s+exMonVal(cyc,k),0); }
-function exProvUSD(){ const c=EXPORT.cycles.find(x=>x.id===CUR_CYCLE); return exMonVal(c,exCurKey()); }
+function exProvUSD(){ const c=EXPORT.cycles.find(x=>x.id===exCurCycleId()); return c?exMonVal(c,exCurKey()):0; }
 function exPct(v,p){ return p>0?(v/p-1)*100:null; }
 
 function renderExport(){
   if(!EXPORT) exLoadData(null);
   document.getElementById('ex-rate').value=EXPORT.rate;
-  const cyc=EXPORT.cycles.find(c=>c.id===CUR_CYCLE);
-  document.getElementById('ex-cyc-name').textContent=cyc.title+' ('+cyc.label+')';
+  const cyc=EXPORT.cycles.find(c=>c.id===exCurCycleId());
+  document.getElementById('ex-cyc-name').textContent=cyc?(cyc.title+' ('+cyc.label+')'):'-';
   document.getElementById('ex-prov-month').textContent=exMonLabel(exCurKey());
   exUpdProv(); exRenderKPI(); exRenderYearly(); exRenderTables(); exRenderKITA();
 }
@@ -1115,11 +1131,13 @@ function exOnRate(){ EXPORT.rate=Number(document.getElementById('ex-rate').value
 
 function exRenderKPI(){
   const el=document.getElementById('ex-kpis'); el.innerHTML='';
-  const colors=['#0891b2','#0d9488','#6366f1'];
+  const colors=['#0891b2','#0d9488','#6366f1','#db2777','#ca8a04'];
+  const curId=exCurCycleId();
   EXPORT.cycles.forEach((cyc,i)=>{
+    const col=colors[i%colors.length];
     const tot=exCycleTotal(cyc), rate=cyc.target>0?tot/cyc.target*100:0, diff=tot-cyc.target, done=diff>=0, empty=tot<=0;
     const keys=exCycleMonths(cyc.start), startLbl=exMonLabel(keys[0]);
-    const isCur=(cyc.id===CUR_CYCLE), elapsed=exElapsed(cyc), pacePos=Math.min(elapsed/12*100,100);
+    const isCur=(cyc.id===curId), elapsed=exElapsed(cyc), pacePos=Math.min(elapsed/12*100,100);
     const remain=Math.max(12-elapsed,0), needAvg=remain>0?(cyc.target-tot)/remain:0;
     let foot='';
     if(empty) foot='';
@@ -1129,10 +1147,10 @@ function exRenderKPI(){
     el.insertAdjacentHTML('beforeend',
       '<div class="ex-kpi '+(isCur?'cur':'')+' '+(done&&!empty?'done':'')+'">'+
         '<div><span class="tag">'+cyc.title+'</span><span class="tgt">'+cyc.label+'</span>'+(isCur?' <span style="font-size:10px;background:#0d9488;color:#fff;padding:1px 6px;border-radius:8px;font-weight:700">진행중</span>':'')+'</div>'+
-        '<div class="rate" style="color:'+(empty?'#94a3b8':done?'#dc2626':colors[i])+'">'+(empty?'—':rate.toFixed(0)+'<span style="font-size:1.05rem">%</span>')+'</div>'+
+        '<div class="rate" style="color:'+(empty?'#94a3b8':done?'#dc2626':col)+'">'+(empty?'—':rate.toFixed(0)+'<span style="font-size:1.05rem">%</span>')+'</div>'+
         '<div class="amt">실적 '+exUsd(tot)+' / 목표 '+exUsd(cyc.target)+'</div>'+
         '<div class="sub" style="color:'+(empty?'#94a3b8':done?'#dc2626':'#2563eb')+'">'+(empty?(startLbl+' 시작 예정'):(done?'초과 '+exUsd(diff):'잔여 '+exUsd(Math.abs(diff))))+'</div>'+
-        '<div class="ex-gauge"><div class="fill" style="width:'+(empty?0:Math.min(rate,100))+'%;background:'+(done?'#dc2626':colors[i])+'"></div>'+((!empty&&!done&&elapsed<12)?'<div class="pace" style="left:'+pacePos+'%" title="현재 경과 페이스"></div>':'')+'</div>'+
+        '<div class="ex-gauge"><div class="fill" style="width:'+(empty?0:Math.min(rate,100))+'%;background:'+(done?'#dc2626':col)+'"></div>'+((!empty&&!done&&elapsed<12)?'<div class="pace" style="left:'+pacePos+'%" title="현재 경과 페이스"></div>':'')+'</div>'+
         (foot?'<div class="ex-pace-lbl">'+foot+'</div>':'')+
       '</div>');
   });
@@ -1140,21 +1158,21 @@ function exRenderKPI(){
 function exYoyCells(amt,p){ const up=amt>=0,cls=up?'ex-up':'ex-down',ar=up?'▲':'▼'; const pc=p===null?'-':ar+Math.abs(p).toFixed(0)+'%'; return '<td class="'+cls+'">'+ar+' '+Math.abs(Math.round(amt)).toLocaleString()+'</td><td class="'+cls+'">'+pc+'</td>'; }
 function exRenderTables(){
   const el=document.getElementById('ex-tbls'); el.innerHTML='';
-  const yoyPrev=EXPORT.cycles.find(c=>c.id==='c2025');
+  const curId=exCurCycleId(), yoyPrev=EXPORT.cycles.find(c=>c.id===exPrevCycleId(curId));
   EXPORT.cycles.forEach(cyc=>{
     const keys=exCycleMonths(cyc.start);
     const h1=keys.slice(0,6).reduce((s,k)=>s+exMonVal(cyc,k),0);
     const h2=keys.slice(6).reduce((s,k)=>s+exMonVal(cyc,k),0);
-    const tot=h1+h2, diff=tot-cyc.target, done=diff>=0, showYoY=(cyc.id==='c2026_70');
+    const tot=h1+h2, diff=tot-cyc.target, done=diff>=0, showYoY=(cyc.id===curId && !!yoyPrev);
     let rows='';
     const rowFor=k=>{ const prov=exIsProv(cyc,k); let yoy=''; if(showYoY){ const pv=exMonVal(yoyPrev,exPrevYearKey(k)); yoy=exYoyCells(exMonVal(cyc,k)-pv,exPct(exMonVal(cyc,k),pv)); }
       return '<tr class="'+(prov?'prov':'')+'"><td class="mon">'+exMonLabel(k)+(prov?' <span style="font-size:9px">잠정</span>':'')+'</td><td>'+exUsd(exMonVal(cyc,k))+'</td>'+(showYoY?yoy:'')+'</tr>'; };
     const subRow=(label,val,prevVal)=>{ let yoy=''; if(showYoY) yoy=exYoyCells(val-prevVal,exPct(val,prevVal)); return '<tr class="sub"><td class="mon">'+label+'</td><td>'+exUsd(val)+'</td>'+(showYoY?yoy:'')+'</tr>'; };
     keys.slice(0,6).forEach(k=>rows+=rowFor(k));
-    const p1=exCycleMonths(yoyPrev.start).slice(0,6).reduce((s,k)=>s+exMonVal(yoyPrev,k),0);
+    const p1=yoyPrev?exCycleMonths(yoyPrev.start).slice(0,6).reduce((s,k)=>s+exMonVal(yoyPrev,k),0):0;
     rows+=subRow(exMonLabel(keys[0]).slice(0,3)+'하반기 소계',h1,p1);
     keys.slice(6).forEach(k=>rows+=rowFor(k));
-    const p2=exCycleMonths(yoyPrev.start).slice(6).reduce((s,k)=>s+exMonVal(yoyPrev,k),0);
+    const p2=yoyPrev?exCycleMonths(yoyPrev.start).slice(6).reduce((s,k)=>s+exMonVal(yoyPrev,k),0):0;
     rows+=subRow(exMonLabel(keys[6]).slice(0,3)+'상반기 소계',h2,p2);
     const ptot=p1+p2;
     rows+='<tr class="tot"><td class="mon">총계</td><td>'+exUsd(tot)+'</td>'+(showYoY?exYoyCells(tot-ptot,exPct(tot,ptot)):'')+'</tr>';
@@ -1181,17 +1199,32 @@ function exOpenEdit(){
   EXPORT.cycles.forEach(cyc=>{
     const keys=exCycleMonths(cyc.start); let inputs='';
     keys.forEach(k=>{ const v=cyc.months[k], has=(v!==undefined&&v!==null&&v!==''); const acc=exAccUSD(k); const ph=acc!=null?Math.round(acc).toLocaleString():'미확정';
-      inputs+='<div class="mi '+(has?'ovr':'')+'"><label>'+exMonLabel(k)+'</label><input data-cyc="'+cyc.id+'" data-k="'+k+'" type="number" value="'+(has?v:'')+'" placeholder="'+ph+'"><div class="hint">'+(acc!=null?'회계 '+exUsd(acc):'')+'</div></div>'; });
+      inputs+='<div class="mi '+(has?'ovr':'')+'"><label>'+exMonLabel(k)+'</label><input data-cyc="'+cyc.id+'" data-k="'+k+'" type="text" inputmode="numeric" value="'+(has?Number(v).toLocaleString():'')+'" placeholder="'+ph+'" oninput="exFmtInput(this)"><div class="hint">'+(acc!=null?'회계 '+exUsd(acc):'')+'</div></div>'; });
     body.insertAdjacentHTML('beforeend','<div style="font-size:13px;font-weight:800;margin:12px 0 7px;color:#0d9488">'+cyc.title+' ('+cyc.label+') · 목표 '+exUsd(cyc.target)+'</div><div class="ex-mgrid">'+inputs+'</div>');
   });
   document.getElementById('ex-edit-modal').style.display='flex';
 }
 function exCloseEdit(){ document.getElementById('ex-edit-modal').style.display='none'; }
+function exFmtInput(inp){ var r=String(inp.value).replace(/[^0-9]/g,''); inp.value=r===''?'':Number(r).toLocaleString(); }
 function exFillFromAcc(){
-  document.querySelectorAll('#ex-edit-body input').forEach(inp=>{ if(inp.value.trim()!=='') return; const acc=exAccUSD(inp.dataset.k); if(acc!=null&&acc>0){ inp.value=Math.round(acc); inp.closest('.mi').classList.add('ovr'); } });
+  document.querySelectorAll('#ex-edit-body input').forEach(inp=>{ if(inp.value.trim()!=='') return; const acc=exAccUSD(inp.dataset.k); if(acc!=null&&acc>0){ inp.value=Math.round(acc).toLocaleString(); inp.closest('.mi').classList.add('ovr'); } });
+}
+function exAddCycle(){
+  var s=EXPORT.cycles.slice().sort(function(a,b){return a.start<b.start?-1:1;});
+  var last=s[s.length-1], p=last.start.split('-');
+  var ns=(Number(p[0])+1)+'-'+p[1];                       // 다음 차수 시작 = 다음 해 같은 달(7월)
+  var raw=prompt('새 차수(' + ((Number(ns.split('-')[0])+1)) + '년 수출의 탑) 목표액을 USD 숫자로 입력하세요.\n예) 1.2억불 → 120000000', '');
+  if(raw===null) return;
+  var tgt=Number(String(raw).replace(/[^0-9]/g,''))||0;
+  if(tgt<1000000){ alert('목표액(USD)을 정확히 입력해주세요.'); return; }
+  var id='c'+ns.split('-')[0]+'_'+Math.round(tgt/1000000);
+  if(EXPORT.cycles.some(function(c){return c.id===id;})){ alert('이미 존재하는 차수입니다.'); return; }
+  EXPORT.cycles.push({id:id,target:tgt,label:exTargetLabel(tgt),title:(Number(ns.split('-')[0])+1)+'년 수출의 탑',start:ns,months:{}});
+  EXPORT.cycles.sort(function(a,b){return a.start<b.start?-1:1;});
+  exPersist(); renderExport(); exOpenEdit();
 }
 function exSaveEdit(){
-  document.querySelectorAll('#ex-edit-body input').forEach(inp=>{ const cyc=EXPORT.cycles.find(c=>c.id===inp.dataset.cyc), k=inp.dataset.k, val=inp.value.trim(); if(val==='') delete cyc.months[k]; else cyc.months[k]=Number(val); });
+  document.querySelectorAll('#ex-edit-body input').forEach(inp=>{ const cyc=EXPORT.cycles.find(c=>c.id===inp.dataset.cyc); if(!cyc) return; const k=inp.dataset.k, val=String(inp.value).replace(/[^0-9.\-]/g,''); if(val==='') delete cyc.months[k]; else cyc.months[k]=Number(val); });
   exCloseEdit(); renderExport(); exPersist();
 }
 async function exPersist(){
