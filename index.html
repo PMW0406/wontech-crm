@@ -758,7 +758,9 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
     <!-- 보기 선택 카드 -->
     <div class="row g-2 mb-3" id="cust-view-cards"></div>
     <div class="d-flex gap-2 mb-2 flex-wrap align-items-center">
-      <input type="text" id="search-cust" class="form-control form-control-sm" style="max-width:320px" placeholder="병원명·지역·담당 검색..." oninput="renderCustomers()">
+      <input type="text" id="search-cust" class="form-control form-control-sm" style="max-width:280px" placeholder="병원명·지역·담당 검색..." oninput="renderCustomers()">
+      <select id="cust-sales-filter" class="form-select form-select-sm" style="max-width:170px" onchange="renderCustomers()"><option value="">담당자 전체</option></select>
+      <button id="cust-mine-btn" class="btn btn-sm btn-outline-primary" style="font-size:12px" onclick="_custMine()"><i class="bi bi-person-check me-1"></i>내 거래처</button>
       <span id="cust-count" class="text-muted" style="font-size:12px"></span>
     </div>
     <div id="cust-body"></div>
@@ -4827,14 +4829,33 @@ function renderCustomers(){
     {v:'new',ic:'bi-stars',c:'#d97706',lab:'신규·이탈',sub:'신규 '+nw+' · 이탈 '+lost},
   ];
   document.getElementById('cust-view-cards').innerHTML=cards.map(c=>'<div class="col-6 col-md-3"><div onclick="setCustView(\''+c.v+'\')" style="cursor:pointer;border:2px solid '+(_custView===c.v?c.c:'#e5e7eb')+';background:'+(_custView===c.v?c.c+'0d':'#fff')+';border-radius:12px;padding:12px 14px"><div style="display:flex;align-items:center;gap:8px"><i class="bi '+c.ic+'" style="color:'+c.c+';font-size:18px"></i><span style="font-weight:700;font-size:14px;color:'+(_custView===c.v?c.c:'#374151')+'">'+c.lab+'</span></div><div style="font-size:11px;color:#6b7280;margin-top:4px">'+c.sub+'</div></div></div>').join('');
+  // 담당자 드롭다운 채우기(1회)
+  const salesSel=document.getElementById('cust-sales-filter');
+  if(salesSel && !salesSel.dataset.filled){
+    const names=[...new Set(all.map(h=>h.sales).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ko'));
+    salesSel.insertAdjacentHTML('beforeend', names.map(n=>'<option value="'+_custEsc(n)+'">'+_custEsc(n)+'</option>').join(''));
+    salesSel.dataset.filled='1';
+  }
+  const salesF=(salesSel&&salesSel.value)||'';
   const q=(document.getElementById('search-cust').value||'').toLowerCase();
-  const f=all.filter(h=>!q||h.name.toLowerCase().includes(q)||h.sido.includes(q)||h.gugun.includes(q)||(h.sales||'').toLowerCase().includes(q)||(h.topProd||'').toLowerCase().includes(q));
-  document.getElementById('cust-count').textContent=f.filter(h=>h.y2026>0||h.y2025>0).length+'개 거래처';
+  let f=all.filter(h=>!q||h.name.toLowerCase().includes(q)||h.sido.includes(q)||h.gugun.includes(q)||(h.sales||'').toLowerCase().includes(q)||(h.topProd||'').toLowerCase().includes(q));
+  if(salesF) f=f.filter(h=>(h.sales||'')===salesF);
+  document.getElementById('cust-count').textContent=f.filter(h=>h.y2026>0||h.y2025>0).length+'개 거래처'+(salesF?' · '+_custEsc(salesF):'');
   const body=document.getElementById('cust-body');
   if(_custView==='sales') body.innerHTML=_custSalesView(f);
   else if(_custView==='region') body.innerHTML=_custRegionView(f);
   else if(_custView==='grade') body.innerHTML=_custGradeView(f);
   else body.innerHTML=_custNewView(f);
+}
+// "내 거래처" — 로그인한 담당자 이름이 포함된 옵션 자동 선택
+function _custMine(){
+  const sel=document.getElementById('cust-sales-filter'); if(!sel) return;
+  const me=(typeof currentUserName==='function'?currentUserName():(_meName||'')).trim();
+  if(!me){ alert('로그인 정보가 없습니다.'); return; }
+  let hit='';
+  for(const o of sel.options){ if(o.value && (o.value.includes(me)||me.includes(o.value.replace(/^[0-9]+\./,'')))){ hit=o.value; break; } }
+  if(!hit){ alert('"'+me+'" 담당으로 등록된 거래처를 찾지 못했어요. 담당자명이 데이터와 다를 수 있습니다.'); return; }
+  sel.value=hit; renderCustomers();
 }
 function openHospDetail(name){
   const h=_custHosps().find(x=>x.name===name); if(!h) return;
@@ -5070,11 +5091,12 @@ function showHospitalDetail(name){
     let filtered = txns.filter(t=>t[2] && !EXCL_PROD_DETAIL.includes(t[2]));
     if(filterType==='mo') filtered = filtered.filter(t=>t[0]===filterVal);
     if(filterType==='prod') filtered = filtered.filter(t=>t[2]===filterVal);
+    filtered = filtered.slice().sort((a,b)=>(b[1]||'').localeCompare(a[1]||''));  // 날짜 내림차순(최근 위)
     const total = filtered.reduce((s,t)=>s+t[3],0);
     const rows = filtered.map(t=>`<tr>
       <td style="font-size:11px;white-space:nowrap">${t[1]}</td>
       <td style="font-size:11px">${t[2]||'(미분류)'}</td>
-      <td class="text-end fw-bold" style="font-size:11px">${fmtMl(t[3])}</td>
+      <td class="text-end fw-bold" style="font-size:11px;color:${t[3]<0?'#dc2626':'#111827'}">${t[3]<0?'−':''}${fmtMl(Math.abs(t[3]))}${t[3]<0?' <span style="font-size:9px;font-weight:600">보상</span>':''}</td>
     </tr>`).join('');
     const label = filterType==='mo' ? `${filterVal}월` : filterType==='all' ? '전체' : filterVal||'전체';
     document.getElementById('hosp-txn-detail').innerHTML = `
@@ -6057,7 +6079,7 @@ function showDevTxnModal(prod, rngStr) {
       });
     });
   });
-  txns.sort((a,b)=>b.amt-a.amt);
+  txns.sort((a,b)=>(b.date||'').localeCompare(a.date||'') || (b.amt-a.amt));  // 날짜 내림차순(최근 위), 동일날짜는 금액순
 
   const totalAmt = txns.reduce((s,t)=>s+t.amt,0);
   const totalQty = txns.reduce((s,t)=>s+t.qty,0);
@@ -6090,8 +6112,8 @@ function showDevTxnModal(prod, rngStr) {
           <td style="font-size:12px;white-space:nowrap;color:#6b7280">${t.date||t.mo+'월'}</td>
           <td style="font-size:12px;font-weight:500">${t.name}</td>
           <td style="font-size:11px;color:#6b7280">${t.sales}</td>
-          <td class="text-end" style="font-size:12px;font-weight:600">${t.qty}대</td>
-          <td class="text-end" style="font-size:12px;font-weight:700;color:#1d4ed8">${fmtW(t.amt)}</td>
+          <td class="text-end" style="font-size:12px;font-weight:600">${t.qty?t.qty+'대':''}</td>
+          <td class="text-end" style="font-size:12px;font-weight:700;color:${t.amt<0?'#dc2626':'#1d4ed8'}">${t.amt<0?'−':''}${fmtW(Math.abs(t.amt))}${t.amt<0?' <span style=\"font-size:10px;font-weight:600\">보상</span>':''}</td>
         </tr>`).join('')}</tbody>
       </table>` : '<div class="text-center text-muted py-4">거래 내역 없음</div>'}
     </div>
