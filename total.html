@@ -1474,7 +1474,6 @@ function exRenderTables(){
     const h2=keys.slice(6).reduce((s,k)=>s+exMonVal(cyc,k),0);
     const carry=exCarryBase(cyc), tot=h1+h2+carry, diff=tot-cyc.target, done=diff>=0, showYoY=(cyc.id===curId && !!yoyPrev);
     let rows='';
-    if(carry>0) rows+='<tr class="sub"><td class="mon">전 차수 이월</td><td>'+exUsd(carry)+'</td>'+(showYoY?'<td></td><td></td>':'')+'</tr>';
     const rowFor=k=>{ const prov=exIsProv(cyc,k); const vv=exMonVal(cyc,k); const fut=(k>exCurKey()&&vv===0); let yoy=''; if(showYoY){ const pv=exMonVal(yoyPrev,exPrevYearKey(k)); yoy=exYoyCells(vv-pv,exPct(vv,pv)); }
       return '<tr class="'+(prov?'prov':'')+'"><td class="mon">'+exMonLabel(k)+(prov?' <span style="font-size:9px">잠정</span>':'')+'</td><td>'+(fut?'<span class="muted">-</span>':exUsd(vv))+'</td>'+(showYoY?yoy:'')+'</tr>'; };
     const subRow=(label,val,prevVal)=>{ let yoy=''; if(showYoY) yoy=exYoyCells(val-prevVal,exPct(val,prevVal)); return '<tr class="sub"><td class="mon">'+label+'</td><td>'+exUsd(val)+'</td>'+(showYoY?yoy:'')+'</tr>'; };
