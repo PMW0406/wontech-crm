@@ -10,6 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="wtu_engine.js"></script>
+<script src="portfolio_engine.js"></script>
 <style>
   body{font-family:'Noto Sans KR',sans-serif;background:#f4f6fa;color:#1f2937;}
   .wrap{max-width:840px;margin:0 auto;padding:28px 16px 60px;}
@@ -72,7 +73,7 @@
         <div class="monrow"><b>해외 월별</b> <span id="mIntl"></span></div>
       </div>
       <div class="alert alert-warning" style="margin:16px 0 0;font-size:13px;padding:10px 12px">
-        <i class="bi bi-exclamation-triangle me-1"></i> 확정하면 <b>라이브 cons_cache(main·device·intl)</b>가 즉시 교체됩니다. 모든 사이트(한국·해외·종합)에 반영됩니다. 2025(전년)는 보존됩니다.
+        <i class="bi bi-exclamation-triangle me-1"></i> 확정하면 <b>라이브 cons_cache(main·device·intl·sales_portfolio)</b>가 즉시 교체됩니다. 모든 사이트(한국·해외·종합·Sales Portfolio)에 반영됩니다. 2025(전년)는 보존됩니다.
       </div>
       <button id="confirmBtn" class="btn btn-success w-100 btn-confirm mt-3" onclick="doWrite()"><i class="bi bi-database-check me-1"></i> cons_cache에 적재 (확정)</button>
     </div>
@@ -127,11 +128,19 @@ async function handleFile(file){
     const sheets=wb.SheetNames.map(sn=>({name:sn,rows:XLSX.utils.sheet_to_json(wb.Sheets[sn],{defval:null})}));
     log('시트: '+wb.SheetNames.join(', '));
     log('기존 cons_cache 조회(2025 머지·분류 기준)...');
-    const [main,device,intl]=await Promise.all(['main','device','intl'].map(async k=>{
+    const [main,device,intl,sp]=await Promise.all(['main','device','intl','sales_portfolio'].map(async k=>{
       const {data}=await _sb.from('cons_cache').select('data').eq('key',k).maybeSingle(); return data?data.data:{};
     }));
     log('변환·집계 중...');
     BUILT=WTU.build(sheets,{main,device,intl});
+    // Sales Portfolio 집계(회계분) — 2025는 기존 blob 유지, 미반영은 사이트에서 live 가산
+    try{
+      const rows26=WTU.transformRaw(sheets, WTU.buildCatMap(main,device,intl));
+      BUILT.sp=WTPF.buildPortfolio(rows26, sp, BUILT.summary.updatedAt);
+      const g=(BUILT.sp.amount['전체']||[]).find(r=>r.item==='총합계');
+      BUILT.summary.portfolio26 = g?Math.round(g.t26/100*10)/10:0;   // 억
+      log('포트폴리오 집계 OK (회계 2026 '+BUILT.summary.portfolio26+'억)');
+    }catch(e){ log('포트폴리오 집계 경고: '+e.message); BUILT.sp=null; }
     fi.textContent='📄 '+file.name+' — 변환 완료';
     renderPreview(BUILT.summary);
     log('완료. 검증값 확인 후 확정하세요.');
@@ -146,6 +155,7 @@ function renderPreview(s){
     ['해외 (2026)', s.intl26+'억', s.intlCountries+'개국 · 미국 '+s.us+'억'],
     ['국내 합계', s.domestic+'억', ''],
     ['전사 합계', s.total+'억', ''],
+    ['Sales Portfolio (회계 2026)', (s.portfolio26!=null?s.portfolio26+'억':'-'), '제품 포트폴리오 자동집계 (미반영 별도)'],
   ];
   document.getElementById('sumBody').innerHTML=rows.map(r=>'<tr><td>'+r[0]+'</td><td class="mono">'+r[1]+(r[2]?' <span style="color:#94a3b8;font-weight:400">'+r[2]+'</span>':'')+'</td></tr>').join('');
   const dp=document.getElementById('dermakPill');
@@ -162,7 +172,9 @@ async function doWrite(){
   if(!BUILT){ log('빌드 결과 없음'); return; }
   const btn=document.getElementById('confirmBtn'); btn.disabled=true; btn.innerHTML='<span class="spinner-border spinner-border-sm me-1"></span>적재 중...';
   try{
-    for(const [k,data] of [['main',BUILT.main],['device',BUILT.device],['intl',BUILT.intl]]){
+    const writes=[['main',BUILT.main],['device',BUILT.device],['intl',BUILT.intl]];
+    if(BUILT.sp) writes.push(['sales_portfolio',BUILT.sp]);
+    for(const [k,data] of writes){
       await _sb.from('cons_cache').delete().eq('key',k);
       const {error}=await _sb.from('cons_cache').insert({key:k,data});
       if(error) throw new Error(k+' 기록 실패: '+error.message);
