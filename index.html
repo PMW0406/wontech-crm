@@ -5095,7 +5095,7 @@ function showHospitalDetail(name){
     let filtered = txns.filter(t=>t[2] && !EXCL_PROD_DETAIL.includes(t[2]));
     if(filterType==='mo') filtered = filtered.filter(t=>t[0]===filterVal);
     if(filterType==='prod') filtered = filtered.filter(t=>t[2]===filterVal);
-    filtered = filtered.slice().sort((a,b)=>(b[1]||'').localeCompare(a[1]||''));  // 날짜 내림차순(최근 위)
+    filtered = filtered.slice().sort((a,b)=>(b[1]||'').localeCompare(a[1]||'') || (a[2]||'').localeCompare(b[2]||'','ko') || (b[3]-a[3]));  // 날짜↓ → 같은 제품 묶기 → 매출 먼저·보상 뒤
     const total = filtered.reduce((s,t)=>s+t[3],0);
     const rows = filtered.map(t=>`<tr>
       <td style="font-size:11px;white-space:nowrap">${t[1]}</td>
@@ -6083,7 +6083,7 @@ function showDevTxnModal(prod, rngStr) {
       });
     });
   });
-  txns.sort((a,b)=>(b.date||'').localeCompare(a.date||'') || (b.amt-a.amt));  // 날짜 내림차순(최근 위), 동일날짜는 금액순
+  txns.sort((a,b)=>(b.date||'').localeCompare(a.date||'') || (a.name||'').localeCompare(b.name||'','ko') || (b.amt-a.amt));  // 날짜↓ → 같은 거래처 묶기 → 매출 먼저·보상 뒤
 
   const totalAmt = txns.reduce((s,t)=>s+t.amt,0);
   const totalQty = txns.reduce((s,t)=>s+t.qty,0);
