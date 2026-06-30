@@ -410,17 +410,12 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
     </div>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;padding:10px 14px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0">
       <span style="font-size:12px;font-weight:600;color:#374151;white-space:nowrap">📅 조회 기간</span>
-      <select id="ov-year-sel" class="form-select form-select-sm" style="width:84px" onchange="renderSalesOverview()">
-        <option value="2026" selected>2026년</option>
-        <option value="2025">2025년</option>
-      </select>
-      <select id="ov-from-sel" class="form-select form-select-sm" style="width:70px" onchange="_ovPeriodChange()">
-        <option value="1" selected>1월</option><option value="2">2월</option><option value="3">3월</option><option value="4">4월</option><option value="5">5월</option><option value="6">6월</option><option value="7">7월</option><option value="8">8월</option><option value="9">9월</option><option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
-      </select>
-      <span style="font-size:13px;color:#9ca3af">~</span>
-      <select id="ov-to-sel" class="form-select form-select-sm" style="width:70px" onchange="_ovPeriodChange()">
-        <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option><option value="4">4월</option><option value="5">5월</option><option value="6" selected>6월</option><option value="7">7월</option><option value="8">8월</option><option value="9">9월</option><option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
-      </select>
+      <span id="ov-simple" style="display:none">
+      <select id="ov-year-sel" class="form-select form-select-sm" style="width:84px"><option value="2026" selected>2026년</option><option value="2025">2025년</option></select>
+      <select id="ov-from-sel" class="form-select form-select-sm" style="width:70px"><option value="1" selected>1월</option></select>
+      <select id="ov-to-sel" class="form-select form-select-sm" style="width:70px"><option value="6" selected>6월</option></select>
+      </span>
+      <span id="ov-period-host"></span>
     </div>
     <!-- KPI 카드 -->
     <div class="row g-3 mb-3" id="ov-kpi"></div>
@@ -834,17 +829,12 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
     <!-- 기간 선택 필터 -->
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;padding:10px 14px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0">
       <span style="font-size:12px;font-weight:600;color:#374151;white-space:nowrap">📅 조회 기간</span>
-      <select id="cons-year-sel" class="form-select form-select-sm" style="width:84px" onchange="renderConsumables()">
-        <option value="2026" selected>2026년</option>
-        <option value="2025">2025년</option>
-      </select>
-      <select id="cons-from-sel" class="form-select form-select-sm" style="width:70px" onchange="_consPeriodChange()">
-        <option value="1" selected>1월</option><option value="2">2월</option><option value="3">3월</option><option value="4">4월</option><option value="5">5월</option><option value="6">6월</option><option value="7">7월</option><option value="8">8월</option><option value="9">9월</option><option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
-      </select>
-      <span style="font-size:13px;color:#9ca3af">~</span>
-      <select id="cons-to-sel" class="form-select form-select-sm" style="width:70px" onchange="_consPeriodChange()">
-        <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option><option value="4">4월</option><option value="5" selected>5월</option><option value="6">6월</option><option value="7">7월</option><option value="8">8월</option><option value="9">9월</option><option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
-      </select>
+      <span id="cons-simple" style="display:none">
+      <select id="cons-year-sel" class="form-select form-select-sm" style="width:84px"><option value="2026" selected>2026년</option><option value="2025">2025년</option></select>
+      <select id="cons-from-sel" class="form-select form-select-sm" style="width:70px"><option value="1" selected>1월</option></select>
+      <select id="cons-to-sel" class="form-select form-select-sm" style="width:70px"><option value="5" selected>5월</option></select>
+      </span>
+      <span id="cons-period-host"></span>
     </div>
 
     <!-- 업로드 비밀번호 모달 -->
@@ -1007,17 +997,12 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
     <!-- 기간 선택 필터 -->
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;padding:10px 14px;background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0">
       <span style="font-size:12px;font-weight:600;color:#374151;white-space:nowrap">📅 조회 기간</span>
-      <select id="hosp-year-sel" class="form-select form-select-sm" style="width:84px" onchange="renderConsHospitals()">
-        <option value="2026" selected>2026년</option>
-        <option value="2025">2025년</option>
-      </select>
-      <select id="hosp-from-sel" class="form-select form-select-sm" style="width:70px" onchange="_hospPeriodChange()">
-        <option value="1" selected>1월</option><option value="2">2월</option><option value="3">3월</option><option value="4">4월</option><option value="5">5월</option><option value="6">6월</option><option value="7">7월</option><option value="8">8월</option><option value="9">9월</option><option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
-      </select>
-      <span style="font-size:13px;color:#9ca3af">~</span>
-      <select id="hosp-to-sel" class="form-select form-select-sm" style="width:70px" onchange="_hospPeriodChange()">
-        <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option><option value="4">4월</option><option value="5" selected>5월</option><option value="6">6월</option><option value="7">7월</option><option value="8">8월</option><option value="9">9월</option><option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
-      </select>
+      <span id="hosp-simple" style="display:none">
+      <select id="hosp-year-sel" class="form-select form-select-sm" style="width:84px"><option value="2026" selected>2026년</option><option value="2025">2025년</option></select>
+      <select id="hosp-from-sel" class="form-select form-select-sm" style="width:70px"><option value="1" selected>1월</option></select>
+      <select id="hosp-to-sel" class="form-select form-select-sm" style="width:70px"><option value="5" selected>5월</option></select>
+      </span>
+      <span id="hosp-period-host"></span>
     </div>
 
 
@@ -1976,33 +1961,34 @@ function _ovPeriodChange() {
 let _ovChart = null;
 function renderSalesOverview() {
   const fmtW = v => v>=1e8?(v/1e8).toFixed(1)+'억':v>=1e4?Math.round(v/1e4).toLocaleString()+'만원':v.toLocaleString()+'원';
-  const yr    = parseInt(document.getElementById('ov-year-sel')?.value||'2026');
-  const fromM = parseInt(document.getElementById('ov-from-sel')?.value||'1');
-  const toM   = parseInt(document.getElementById('ov-to-sel')?.value||'6');
-  const YTD   = Array.from({length:toM-fromM+1},(_,i)=>fromM+i);
-  const prev  = yr-1;
+  _injectPeriodCtrl('ov');
+  const P=_getPeriod('ov'), spanMs=_spanMonths(P), prevMs=_spanMonths(_yoyShift(P));
+  const yr=P.ey, prev=yr-1, fromM=P.sm, toM=P.em;   // 차트는 yr 기준(연단위)
+  const _mCY=(src,y)=>y===2026?(src.monthly2026||{}):(y===2025?(src.monthly2025||{}):{});
+  const _spanS=(src,rng)=>rng.reduce((s,x)=>s+(_mCY(src,x.y)[x.m]||0),0);
 
   const consCurMo = yr===2026?CONS.monthly2026||{}:CONS.monthly2025||{};
   const consPrMo  = yr===2026?CONS.monthly2025||{}:{};
   const devCurMo  = yr===2026?DEVICE.monthly2026||{}:DEVICE.monthly2025||{};
   const devPrMo   = yr===2026?DEVICE.monthly2025||{}:{};
 
-  // 예정분(회계 미반영) — 2026만 존재. 토글 없이 KPI에 회계/미반영포함 2값으로 표시
-  const incPend = yr===2026;
-  const pend = incPend ? _pendingView(yr).agg : null;
+  // 예정분(회계 미반영) — 2026만 존재. span에 2026 포함 시 표시
+  const incPend = (P.sy===2026||P.ey===2026);
+  const pend = incPend ? _pendingView(2026).agg : null;
   const consPendMo = pend?pend.consMonthly:{}, devPendMo = pend?pend.devMonthly:{};
   const ilboMo = incPend ? _ilboMonthMaps() : {consMo:{},devMo:{}};
 
-  // 회계반영(C) / 미반영포함(I). 미반영 = pending_sales + 일매출일보(소/제 분류)
-  const consYtdC = YTD.reduce((s,m)=>s+(consCurMo[m]||0),0);
-  const devYtdC  = YTD.reduce((s,m)=>s+(devCurMo[m]||0),0);
+  // 회계반영(C) / 미반영포함(I). 미반영 = pending_sales + 일매출일보(2026 월만)
+  const consYtdC = _spanS(CONS,spanMs);
+  const devYtdC  = _spanS(DEVICE,spanMs);
   const _consPendM = m => (consPendMo[m]||0)+(ilboMo.consMo[m]||0);
   const _devPendM  = m => (devPendMo[m]||0)+(ilboMo.devMo[m]||0);
-  const consPendYtd = YTD.reduce((s,m)=>s+_consPendM(m),0);
-  const devPendYtd  = YTD.reduce((s,m)=>s+_devPendM(m),0);
+  const _spanPend = fn => spanMs.reduce((s,x)=>s+(x.y===2026?fn(x.m):0),0);
+  const consPendYtd = _spanPend(_consPendM);
+  const devPendYtd  = _spanPend(_devPendM);
   const consYtdI = consYtdC+consPendYtd, devYtdI = devYtdC+devPendYtd;
-  const consPrev = YTD.reduce((s,m)=>s+(consPrMo[m]||0),0);
-  const devPrev  = YTD.reduce((s,m)=>s+(devPrMo[m]||0),0);
+  const consPrev = _spanS(CONS,prevMs);
+  const devPrev  = _spanS(DEVICE,prevMs);
   const totalC = consYtdC+devYtdC, totalI = consYtdI+devYtdI, totalPend = consPendYtd+devPendYtd;
   const totalPrev = consPrev+devPrev;
   const yoy     = totalPrev>0?(totalC/totalPrev-1)*100:null;   // 회계 기준
@@ -2014,7 +2000,7 @@ function renderSalesOverview() {
   if (ovUpd) ovUpd.textContent = upd ? '기준일 '+upd : '';
 
   const badge = v => v===null?'':'<span style="font-size:11px;font-weight:700;color:'+(v>=0?'#16a34a':'#dc2626')+'">'+(v>=0?'▲':'▼')+Math.abs(v).toFixed(1)+'%</span>';
-  const periodLbl = fromM===toM ? fromM+'월' : fromM+'~'+toM+'월';
+  const periodLbl = P.label;
   const _kpiHead = c => '<div class="kpi-label"><i class="bi '+c.icon+' me-1" style="color:'+c.col+'"></i>'+c.label+(c.click?' <i class="bi bi-search" style="font-size:9px;color:#cbd5e1"></i>':'')+'</div>';
   const _kpiDual = c => '<div class="col-12 col-md-4"><div class="kpi-card"'+(c.click?' onclick="'+c.click+'" style="cursor:pointer" title="클릭하면 전체 품목 랭킹 조회"':'')+'>'+_kpiHead(c)
     +'<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px">'
@@ -2060,10 +2046,11 @@ function renderSalesOverview() {
   const _mt = document.getElementById('ov-month-table');
   if (_mt) {
     let rows='', tC=0,tD=0,tP=0,tPr=0;
-    YTD.forEach(m=>{
-      const c=consCurMo[m]||0, dv=devCurMo[m]||0, pe=_consPendM(m)+_devPendM(m), pr=(consPrMo[m]||0)+(devPrMo[m]||0);
+    spanMs.forEach(x=>{
+      const m=x.m, lbl=(P.cross?(String(x.y).slice(2)+'.'+m+'월'):(m+'월'));
+      const c=_mCY(CONS,x.y)[m]||0, dv=_mCY(DEVICE,x.y)[m]||0, pe=(x.y===2026?(_consPendM(m)+_devPendM(m)):0), pr=(_mCY(CONS,x.y-1)[m]||0)+(_mCY(DEVICE,x.y-1)[m]||0);
       tC+=c;tD+=dv;tP+=pe;tPr+=pr; const sum=c+dv+pe, chg=pr>0?(((c+dv)/pr-1)*100):null;
-      rows+='<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:5px 8px">'+m+'월</td><td style="text-align:right;color:#2563eb">'+fmtW(c)+'</td><td style="text-align:right;color:#16a34a">'+fmtW(dv)+'</td><td style="text-align:right;color:#7c3aed">'+(pe?fmtW(pe):'-')+'</td><td style="text-align:right;font-weight:700">'+fmtW(sum)+'</td><td style="text-align:right;color:#9ca3af">'+(pr?fmtW(pr):'-')+'</td><td style="text-align:right;padding-right:8px">'+(chg===null?'-':'<span style="color:'+(chg>=0?'#16a34a':'#dc2626')+'">'+(chg>=0?'▲':'▼')+Math.abs(chg).toFixed(0)+'%</span>')+'</td></tr>';
+      rows+='<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:5px 8px">'+lbl+'</td><td style="text-align:right;color:#2563eb">'+fmtW(c)+'</td><td style="text-align:right;color:#16a34a">'+fmtW(dv)+'</td><td style="text-align:right;color:#7c3aed">'+(pe?fmtW(pe):'-')+'</td><td style="text-align:right;font-weight:700">'+fmtW(sum)+'</td><td style="text-align:right;color:#9ca3af">'+(pr?fmtW(pr):'-')+'</td><td style="text-align:right;padding-right:8px">'+(chg===null?'-':'<span style="color:'+(chg>=0?'#16a34a':'#dc2626')+'">'+(chg>=0?'▲':'▼')+Math.abs(chg).toFixed(0)+'%</span>')+'</td></tr>';
     });
     const sumAll=tC+tD+tP, chgAll=tPr>0?(((tC+tD)/tPr-1)*100):null;
     rows+='<tr style="border-top:2px solid #e5e7eb;font-weight:700;background:#f8fafc"><td style="padding:6px 8px">합계</td><td style="text-align:right;color:#2563eb">'+fmtW(tC)+'</td><td style="text-align:right;color:#16a34a">'+fmtW(tD)+'</td><td style="text-align:right;color:#7c3aed">'+(tP?fmtW(tP):'-')+'</td><td style="text-align:right">'+fmtW(sumAll)+'</td><td style="text-align:right;color:#9ca3af">'+(tPr?fmtW(tPr):'-')+'</td><td style="text-align:right;padding-right:8px">'+(chgAll===null?'-':'<span style="color:'+(chgAll>=0?'#16a34a':'#dc2626')+'">'+(chgAll>=0?'▲':'▼')+Math.abs(chgAll).toFixed(0)+'%</span>')+'</td></tr>';
@@ -3285,23 +3272,21 @@ function renderConsumables() {
   const chgBadge = (chg, big) => chg===null?'':
     `<span style="font-size:${big?'13':'11'}px;font-weight:700;color:${chg>=0?'#16a34a':'#dc2626'}">${chg>=0?'▲':'▼'} ${Math.abs(chg).toFixed(1)}%</span>`;
 
-  // 기간 필터 읽기
-  const _consYr = parseInt(document.getElementById('cons-year-sel')?.value||'2026');
-  const _consPrevYr = _consYr - 1;
-  const _allMs = Object.keys(_consYr===2026?CONS.monthly2026:CONS.monthly2025||{}).map(Number).filter(m=>m>=1&&m<=12).sort((a,b)=>a-b);
-  const _defToM = _allMs.length ? _allMs[_allMs.length-1] : 5;
-  const _toSel = document.getElementById('cons-to-sel');
-  if(_toSel && !_toSel.dataset.init){ _toSel.value=_defToM; _toSel.dataset.init='1'; }
-  const _fromM = parseInt(document.getElementById('cons-from-sel')?.value||'1');
-  const _toM   = parseInt(_toSel?.value||_defToM);
-  const _moM   = _toM; // 당월 = 선택 범위 마지막 월
-  const YTD    = Array.from({length:_toM-_fromM+1},(_,i)=>_fromM+i);
-  const ytdMs  = YTD;
-  const ytdLabel = _fromM===_toM ? `${_fromM}월 기준` : `${_fromM}–${_toM}월 기준`;
+  // 기간 필터 (프리셋+직접설정, 연도경계) — 차트는 연단위 유지, KPI·제품표만 기간연동
+  _injectPeriodCtrl('cons');
+  const P=_getPeriod('cons'), spanMs=_spanMonths(P), prevMs=_spanMonths(_yoyShift(P));
+  const _consYr=P.ey, _consPrevYr=_consYr-1;
+  const _lastSpan=spanMs[spanMs.length-1]||{y:2026,m:_dataMaxMonth()};
+  const _moM=_lastSpan.m;
+  const _lastPrev=[{y:_lastSpan.y-1,m:_lastSpan.m}];
+  const ytdLabel = P.label+' 기준';
+  const moCY=y=>y===2026?(CONS.monthly2026||{}):(y===2025?(CONS.monthly2025||{}):{});
+  const spanMonthlySum=rng=>rng.reduce((s,x)=>s+(moCY(x.y)[x.m]||0),0);
+  const spanProdSum=(key,rng)=>rng.reduce((s,x)=>s+((x.y===2025||x.y===2026)?prodSum(x.y,key,[x.m]):0),0);  // prodSum=후방 hoist, 2025/26만(2024는 폴백오류 방지)
 
   const total2025    = Object.values(CONS.monthly2025).reduce((s,v)=>s+v,0);
-  const total2026ytd = YTD.reduce((s,m)=>s+(CONS.monthly2026[m]||0),0);
-  const total2025ytd = YTD.reduce((s,m)=>s+(CONS.monthly2025[m]||0),0);
+  const total2026ytd = spanMonthlySum(spanMs);
+  const total2025ytd = spanMonthlySum(prevMs);
   const yoy = total2025ytd>0?(total2026ytd/total2025ytd-1)*100:0;
   const oMo25 = CONS.oligioMo2025||{}, oMo26 = CONS.oligioMo2026||{};
   const OLIG = [
@@ -3313,10 +3298,11 @@ function renderConsumables() {
 
   // 그룹별 YTD 합계 — 트랜잭션(txns) 기준으로 계산 (oligioMo/products 캐시가 비어도 정확, 아래 당월/누계와 동일 소스)
   const grpSum=(yr,grp,months)=>OLIG.filter(p=>p.grp===grp).reduce((s,p)=>s+prodSum(yr,p.key,months),0);
-  const oligFe26 = grpSum(2026,'Oligio',ytdMs);
-  const oligFe25 = grpSum(2025,'Oligio',ytdMs);
-  const oligXm26 = grpSum(2026,'Oligio X/XM',ytdMs);
-  const oligXm25 = grpSum(2025,'Oligio X/XM',ytdMs);
+  const spanGrp=(grp,rng)=>rng.reduce((s,x)=>s+((x.y===2025||x.y===2026)?grpSum(x.y,grp,[x.m]):0),0);
+  const oligFe26 = spanGrp('Oligio',spanMs);
+  const oligFe25 = spanGrp('Oligio',prevMs);
+  const oligXm26 = spanGrp('Oligio X/XM',spanMs);
+  const oligXm25 = spanGrp('Oligio X/XM',prevMs);
   const oligTotal26 = oligFe26 + oligXm26;
   const oligTotal25 = oligFe25 + oligXm25;
 
@@ -3324,7 +3310,7 @@ function renderConsumables() {
   const cartV26 = CONS.groups2026['Cartridge']||0;
   const cartV25full = Object.entries(CONS.products2025).filter(([k])=>k.toLowerCase().startsWith('cartridge')).reduce((s,[,v])=>s+v,0);
   const totFull25 = Object.values(CONS.monthly2025||{}).reduce((s,v)=>s+v,0);
-  const totYtd25  = ytdMs.reduce((s,m)=>s+(CONS.monthly2025[m]||0),0);
+  const totYtd25  = spanMonthlySum(prevMs);
   const cartV25   = totFull25>0 ? Math.round(cartV25full * totYtd25 / totFull25) : 0;
 
   const kpiData = [
@@ -3410,11 +3396,12 @@ function renderConsumables() {
     {label:'Oligio X/XM 2026', data:d_xm26, borderColor:'#7c3aed', backgroundColor:'rgba(124,58,237,0.06)', borderWidth:3, pointRadius:4, pointBackgroundColor:'#7c3aed', tension:0.3, fill:true, spanGaps:false},
   ], consChartXm);
 
-  const ogYtd26=YTD.reduce((s,m)=>s+(mo26['Oligio']?.[m]||0)+(mo26['Oligio X/XM']?.[m]||0),0);
-  const ogYtd25=YTD.reduce((s,m)=>s+(mo25['Oligio']?.[m]||0)+(mo25['Oligio X/XM']?.[m]||0),0);
+  const oligMoY=y=>y===2026?mo26:(y===2025?mo25:{});
+  const ogYtd26=spanMs.reduce((s,x)=>{const M=oligMoY(x.y);return s+(M['Oligio']?.[x.m]||0)+(M['Oligio X/XM']?.[x.m]||0);},0);
+  const ogYtd25=prevMs.reduce((s,x)=>{const M=oligMoY(x.y);return s+(M['Oligio']?.[x.m]||0)+(M['Oligio X/XM']?.[x.m]||0);},0);
   const ogYoy=ogYtd25>0?(ogYtd26/ogYtd25-1)*100:0;
   document.getElementById('cons-trend-badge').innerHTML =
-    `<span style="display:inline-block;background:${ogYoy>=0?'#f0fdf4':'#fef2f2'};color:${ogYoy>=0?'#16a34a':'#dc2626'};font-weight:700;padding:4px 12px;border-radius:20px;font-size:12px">Oligio 전체 YoY ${ogYoy>=0?'+':''}${ogYoy.toFixed(1)}% (1–5월 기준)</span>`;
+    `<span style="display:inline-block;background:${ogYoy>=0?'#f0fdf4':'#fef2f2'};color:${ogYoy>=0?'#16a34a':'#dc2626'};font-weight:700;padding:4px 12px;border-radius:20px;font-size:12px">Oligio 전체 YoY ${ogYoy>=0?'+':''}${ogYoy.toFixed(1)}% (${P.label} 기준)</span>`;
 
   // 트랜잭션 기반 제품별 기간합계
   function prodSum(yr, prodKey, months) {
@@ -3427,8 +3414,8 @@ function renderConsumables() {
     return tot;
   }
 
-  function renderDetailCol(months) {
-    const data=OLIG.map(p=>({...p, v26:prodSum(_consYr,p.key,months), v25:prodSum(_consPrevYr,p.key,months)}));
+  function renderDetailCol(rng, prevRng) {
+    const data=OLIG.map(p=>({...p, v26:spanProdSum(p.key,rng), v25:spanProdSum(p.key,prevRng)}));
     const maxV=Math.max(...data.map(p=>p.v26))||1;
     const groups=[
       {name:'Oligio',      col:'#2563eb', items:data.filter(p=>p.grp==='Oligio')},
@@ -3473,12 +3460,12 @@ function renderConsumables() {
   }
 
   // 당월 (마지막 선택 월)
-  document.getElementById('cons-monthly-title').innerHTML=`<i class="bi bi-calendar3 me-1" style="color:#2563eb;font-size:12px"></i>당월 <span style="font-size:11px;font-weight:400;color:#9ca3af">${_moM}월</span>`;
-  document.getElementById('cons-detail-monthly').innerHTML=renderDetailCol([_moM]);
+  document.getElementById('cons-monthly-title').innerHTML=`<i class="bi bi-calendar3 me-1" style="color:#2563eb;font-size:12px"></i>최근월 <span style="font-size:11px;font-weight:400;color:#9ca3af">${_lastSpan.y}.${_moM}월</span>`;
+  document.getElementById('cons-detail-monthly').innerHTML=renderDetailCol([_lastSpan],_lastPrev);
 
   // 누계 (전체 선택 기간)
-  document.getElementById('cons-ytd-title').innerHTML=`<i class="bi bi-pie-chart-fill me-1" style="color:#ff4500;font-size:12px"></i>누계 <span style="font-size:11px;font-weight:400;color:#9ca3af">${_fromM===_toM?_fromM+'월':_fromM+'–'+_toM+'월'}</span>`;
-  document.getElementById('cons-detail-ytd').innerHTML=renderDetailCol(YTD);
+  document.getElementById('cons-ytd-title').innerHTML=`<i class="bi bi-pie-chart-fill me-1" style="color:#ff4500;font-size:12px"></i>누계 <span style="font-size:11px;font-weight:400;color:#9ca3af">${P.label}</span>`;
+  document.getElementById('cons-detail-ytd').innerHTML=renderDetailCol(spanMs,prevMs);
 
   if(consDonutChart){consDonutChart.destroy();consDonutChart=null;}
 }
@@ -3746,16 +3733,11 @@ function renderConsHospitals() {
     sl.forEach(s=>{ const o=document.createElement('option'); o.value=o.textContent=s; salesSel.appendChild(o); });
   }
 
-  const _hospYr   = parseInt(document.getElementById('hosp-year-sel')?.value||'2026');
-  const _allHMs   = Object.keys(CONS.monthly2026||{}).map(Number).filter(m=>m>=1&&m<=12).sort((a,b)=>a-b);
-  const _hDefToM  = _allHMs.length?_allHMs[_allHMs.length-1]:5;
-  const _hToSel   = document.getElementById('hosp-to-sel');
-  if(_hToSel&&!_hToSel.dataset.init){_hToSel.value=_hDefToM;_hToSel.dataset.init='1';}
-  const _hFromM   = parseInt(document.getElementById('hosp-from-sel')?.value||'1');
-  const _hToM     = parseInt(_hToSel?.value||_hDefToM);
-  const ytdMonths = Array.from({length:_hToM-_hFromM+1},(_,i)=>_hFromM+i);
-  const ytd25est  = h => ytdMonths.reduce((s,m)=>s+(h.m2025?.[m]||0),0);
-  const ytd26cur  = h => ytdMonths.reduce((s,m)=>s+(h.m2026?.[m]||0),0);
+  _injectPeriodCtrl('hosp');
+  const P=_getPeriod('hosp'), _hcur=_spanMonths(P), _hprev=_spanMonths(_yoyShift(P));
+  const _hmY=(h,y)=>y===2026?(h.m2026||{}):(y===2025?(h.m2025||{}):{});
+  const ytd26cur  = h => _hcur.reduce((s,x)=>s+(_hmY(h,x.y)[x.m]||0),0);
+  const ytd25est  = h => _hprev.reduce((s,x)=>s+(_hmY(h,x.y)[x.m]||0),0);
 
   const all = Object.entries(CONS.hospitals).filter(([n,h])=>{
     if(q && !n.toLowerCase().includes(q)) return false;
