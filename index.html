@@ -759,7 +759,7 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
     <div class="row g-2 mb-3" id="cust-view-cards"></div>
     <div class="d-flex gap-2 mb-2 flex-wrap align-items-center">
       <input type="text" id="search-cust" class="form-control form-control-sm" style="max-width:280px" placeholder="병원명·지역·담당 검색..." oninput="renderCustomers()">
-      <select id="cust-sales-filter" class="form-select form-select-sm" style="max-width:170px" onchange="renderCustomers()"><option value="">담당자 전체</option></select>
+      <select id="cust-sales-filter" class="form-select form-select-sm" style="max-width:180px" onchange="renderCustomers()" title="담당 영업사원으로 콜스케줄 필터"><option value="">담당영업 전체</option></select>
       <button id="cust-mine-btn" class="btn btn-sm btn-outline-primary" style="font-size:12px" onclick="_custMine()"><i class="bi bi-person-check me-1"></i>내 거래처</button>
       <span id="cust-count" class="text-muted" style="font-size:12px"></span>
     </div>
@@ -1350,6 +1350,8 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
     <div class="d-flex align-items-center mb-2"><i class="bi bi-pencil-square me-1" style="color:#2563eb"></i><b style="font-size:13px">병원 정보 (담당자 직접 수정)</b><span class="text-muted ms-2" style="font-size:11px">실제와 다르면 고쳐 주세요 · 모든 담당자에게 공유됩니다</span></div>
     <input type="hidden" id="cd-name">
     <div class="row g-2">
+      <div class="col-6"><label class="form-label" style="font-size:12px"><i class="bi bi-person-badge me-1" style="color:#2563eb"></i>담당 영업 <span class="text-muted">(콜스케줄)</span></label><input type="text" id="cd-mgr" class="form-control form-control-sm" placeholder="예: 조만식 / 공동"></div>
+      <div class="col-6"><label class="form-label" style="font-size:12px">거래 담당·대리점 <span class="text-muted">(거래내역 기준)</span></label><input type="text" id="cd-txnsales" class="form-control form-control-sm" disabled style="background:#f8fafc"></div>
       <div class="col-6"><label class="form-label" style="font-size:12px">원장명</label><input type="text" id="cd-doctor" class="form-control form-control-sm"></div>
       <div class="col-6"><label class="form-label" style="font-size:12px">전화</label><input type="text" id="cd-tel" class="form-control form-control-sm"></div>
       <div class="col-8"><label class="form-label" style="font-size:12px">주소</label><input type="text" id="cd-address" class="form-control form-control-sm"></div>
@@ -4769,7 +4771,7 @@ function _custHosps(){
     o.sido=(reg&&reg[0])?reg[0]:'미분류'; o.gugun=(reg&&reg[1])?reg[1]:'';
     o.grade=_custGrade(o.y2026);
     const sp=Object.entries(o.prods).sort((a,b)=>b[1]-a[1]); o.topProd=sp[0]?sp[0][0]:'';
-    o.doctor=info.doctor||''; o.tel=info.tel||''; o.address=info.address||''; o.note=info.note||''; o.tags=info.tags||[]; o.contact=info.contact||'';
+    o.doctor=info.doctor||''; o.tel=info.tel||''; o.address=info.address||''; o.note=info.note||''; o.tags=info.tags||[]; o.contact=info.contact||''; o.mgr=info.mgr||'';
     o.edited=!!(info.updatedAt);
     o.yoy=o.y2025>0?(o.y2026/o.y2025-1)*100:null;
     return o;
@@ -4783,7 +4785,7 @@ function _custRow(h,rank){
     (rank!=null?'<td class="text-center text-muted" style="font-size:12px">'+rank+'</td>':'')+
     '<td><strong>'+_custEsc(h.name)+'</strong>'+(h.edited?' <i class="bi bi-pencil-fill" style="font-size:9px;color:#9ca3af" title="정보 수정됨"></i>':'')+(h.tags&&h.tags.length?' '+h.tags.map(t=>'<span style="background:#eff6ff;color:#2563eb;border-radius:9px;padding:0 7px;font-size:10px;font-weight:600">'+_custEsc(t)+'</span>').join(' '):'')+'</td>'+
     '<td style="font-size:12px;color:#6b7280">'+(h.sido==='미분류'?'<span style="color:#d97706">미분류</span>':_custEsc((h.sido+' '+h.gugun).trim()))+'</td>'+
-    '<td style="font-size:12px">'+_custEsc(h.sales)+'</td>'+
+    '<td style="font-size:12px">'+(h.mgr?'<span style="font-weight:600"><i class="bi bi-person-badge" style="font-size:10px;color:#2563eb"></i> '+_custEsc(h.mgr)+'</span>'+(h.sales&&h.sales!==h.mgr?'<span style="color:#cbd5e1"> · </span><span style="color:#9ca3af;font-size:11px">'+_custEsc(h.sales)+'</span>':''):(h.sales?'<span style="color:#9ca3af">'+_custEsc(h.sales)+'</span>':'<span style="color:#d1d5db">미배정</span>'))+'</td>'+
     '<td style="font-size:12px;color:#6b7280">'+_custEsc(h.topProd)+'</td>'+
     '<td class="text-end" style="font-weight:700">'+_custFmt(h.y2026)+'</td>'+
     '<td class="text-end">'+_yoyBadge(h)+'</td>'+
@@ -4829,43 +4831,45 @@ function renderCustomers(){
     {v:'new',ic:'bi-stars',c:'#d97706',lab:'신규·이탈',sub:'신규 '+nw+' · 이탈 '+lost},
   ];
   document.getElementById('cust-view-cards').innerHTML=cards.map(c=>'<div class="col-6 col-md-3"><div onclick="setCustView(\''+c.v+'\')" style="cursor:pointer;border:2px solid '+(_custView===c.v?c.c:'#e5e7eb')+';background:'+(_custView===c.v?c.c+'0d':'#fff')+';border-radius:12px;padding:12px 14px"><div style="display:flex;align-items:center;gap:8px"><i class="bi '+c.ic+'" style="color:'+c.c+';font-size:18px"></i><span style="font-weight:700;font-size:14px;color:'+(_custView===c.v?c.c:'#374151')+'">'+c.lab+'</span></div><div style="font-size:11px;color:#6b7280;margin-top:4px">'+c.sub+'</div></div></div>').join('');
-  // 담당자 드롭다운 채우기(1회)
+  // 담당영업 드롭다운 채우기(1회) — 콜스케줄용(엑셀 담당영업 기준)
   const salesSel=document.getElementById('cust-sales-filter');
   if(salesSel && !salesSel.dataset.filled){
-    const names=[...new Set(all.map(h=>h.sales).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ko'));
-    salesSel.insertAdjacentHTML('beforeend', names.map(n=>'<option value="'+_custEsc(n)+'">'+_custEsc(n)+'</option>').join(''));
+    const names=[...new Set(all.map(h=>h.mgr).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ko'));
+    salesSel.insertAdjacentHTML('beforeend', names.map(n=>'<option value="'+_custEsc(n)+'">'+_custEsc(n)+'</option>').join('')+'<option value="__none__">— 미배정 —</option>');
     salesSel.dataset.filled='1';
   }
   const salesF=(salesSel&&salesSel.value)||'';
   const q=(document.getElementById('search-cust').value||'').toLowerCase();
-  let f=all.filter(h=>!q||h.name.toLowerCase().includes(q)||h.sido.includes(q)||h.gugun.includes(q)||(h.sales||'').toLowerCase().includes(q)||(h.topProd||'').toLowerCase().includes(q));
-  if(salesF) f=f.filter(h=>(h.sales||'')===salesF);
-  document.getElementById('cust-count').textContent=f.filter(h=>h.y2026>0||h.y2025>0).length+'개 거래처'+(salesF?' · '+_custEsc(salesF):'');
+  let f=all.filter(h=>!q||h.name.toLowerCase().includes(q)||h.sido.includes(q)||h.gugun.includes(q)||(h.sales||'').toLowerCase().includes(q)||(h.mgr||'').toLowerCase().includes(q)||(h.topProd||'').toLowerCase().includes(q));
+  if(salesF==='__none__') f=f.filter(h=>!h.mgr);
+  else if(salesF) f=f.filter(h=>(h.mgr||'')===salesF);
+  document.getElementById('cust-count').textContent=f.filter(h=>h.y2026>0||h.y2025>0).length+'개 거래처'+(salesF?' · 담당 '+_custEsc(salesF==='__none__'?'미배정':salesF):'');
   const body=document.getElementById('cust-body');
   if(_custView==='sales') body.innerHTML=_custSalesView(f);
   else if(_custView==='region') body.innerHTML=_custRegionView(f);
   else if(_custView==='grade') body.innerHTML=_custGradeView(f);
   else body.innerHTML=_custNewView(f);
 }
-// "내 거래처" — 로그인한 담당자 이름이 포함된 옵션 자동 선택
+// "내 거래처" — 로그인한 담당영업 이름이 포함된 옵션 자동 선택
 function _custMine(){
   const sel=document.getElementById('cust-sales-filter'); if(!sel) return;
   const me=(typeof currentUserName==='function'?currentUserName():(_meName||'')).trim();
   if(!me){ alert('로그인 정보가 없습니다.'); return; }
   let hit='';
-  for(const o of sel.options){ if(o.value && (o.value.includes(me)||me.includes(o.value.replace(/^[0-9]+\./,'')))){ hit=o.value; break; } }
-  if(!hit){ alert('"'+me+'" 담당으로 등록된 거래처를 찾지 못했어요. 담당자명이 데이터와 다를 수 있습니다.'); return; }
+  for(const o of sel.options){ if(o.value && o.value!=='__none__' && (o.value.includes(me)||me.includes(o.value))){ hit=o.value; break; } }
+  if(!hit){ alert('"'+me+'" 담당으로 등록된 거래처를 찾지 못했어요. 담당영업명이 데이터와 다를 수 있습니다.'); return; }
   sel.value=hit; renderCustomers();
 }
 function openHospDetail(name){
   const h=_custHosps().find(x=>x.name===name); if(!h) return;
   const info=HOSP_INFO[name]||{};
   document.getElementById('cd-title').innerHTML=_custEsc(name)+' '+_gpill(h.grade);
-  document.getElementById('cd-meta').innerHTML='지역 <b>'+(h.sido==='미분류'?'미분류':_custEsc((h.sido+' '+h.gugun).trim()))+'</b> · 담당 <b>'+(_custEsc(h.sales)||'-')+'</b> · 2026 <b>'+_custFmt(h.y2026)+'</b> <span style="color:#9ca3af">(전년 '+_custFmt(h.y2025)+(h.yoy!=null?' '+(h.yoy>=0?'▲':'▼')+Math.abs(h.yoy).toFixed(0)+'%':'')+')</span>';
+  document.getElementById('cd-meta').innerHTML='지역 <b>'+(h.sido==='미분류'?'미분류':_custEsc((h.sido+' '+h.gugun).trim()))+'</b> · 담당영업 <b>'+(_custEsc(h.mgr)||'<span style=\"color:#d1d5db\">미배정</span>')+'</b> · 2026 <b>'+_custFmt(h.y2026)+'</b> <span style="color:#9ca3af">(전년 '+_custFmt(h.y2025)+(h.yoy!=null?' '+(h.yoy>=0?'▲':'▼')+Math.abs(h.yoy).toFixed(0)+'%':'')+')</span>';
   const sp=Object.entries(h.prods).sort((a,b)=>b[1]-a[1]).slice(0,5);
   document.getElementById('cd-prods').innerHTML=sp.length?('<b>주력제품</b> '+sp.map(p=>_custEsc(p[0])+' '+_custFmt(p[1])).join(' · ')):'';
   document.getElementById('cd-name').value=name;
-  ['doctor','tel','address','contact','note'].forEach(k=>document.getElementById('cd-'+k).value=info[k]||'');
+  ['doctor','tel','address','contact','note','mgr'].forEach(k=>document.getElementById('cd-'+k).value=info[k]||'');
+  document.getElementById('cd-txnsales').value=h.sales||'(거래내역 없음)';
   document.getElementById('cd-region').value=(info.region&&info.region[0])?((info.region[0]+' '+(info.region[1]||'')).trim()):'';
   document.getElementById('cd-tags').value=(info.tags||[]).join(', ');
   document.getElementById('cd-editmeta').textContent=info.updatedAt?('최종수정: '+(info.updatedBy||'')+' · '+info.updatedAt):'아직 수정 이력 없음';
@@ -4888,7 +4892,7 @@ async function saveHospInfo(){
   const info=Object.assign({},HOSP_INFO[name]||{},{
     doctor:document.getElementById('cd-doctor').value.trim(), tel:document.getElementById('cd-tel').value.trim(),
     address:document.getElementById('cd-address').value.trim(), contact:document.getElementById('cd-contact').value.trim(),
-    note:document.getElementById('cd-note').value.trim(),
+    note:document.getElementById('cd-note').value.trim(), mgr:document.getElementById('cd-mgr').value.trim(),
     tags:tagsRaw?tagsRaw.split(',').map(t=>t.trim()).filter(Boolean):[], region:region,
     updatedBy:(typeof currentUserName==='function'?currentUserName():(_meName||'사용자')), updatedAt:new Date().toISOString().slice(0,10)});
   HOSP_INFO[name]=info;
