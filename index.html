@@ -1691,6 +1691,7 @@ function _hideLoading() {
 }
 
 async function _bootApp(access) {
+  document.title = 'wontech - 한국';
   await Promise.all([DB.load(), loadUserRole()]);
   // japan 권한 또는 관리자이면 사이트 전환 메뉴 표시
   if(access?.includes('japan') || access?.includes('intl') || access?.includes('korea') || _isAdmin) {
@@ -5478,6 +5479,7 @@ function _updateSidebarProfile(profile, email) {
 }
 
 function showAdminPanel() {
+  document.title = 'wontech - 관리자';
   document.getElementById('launcher-main').style.display = 'none';
   document.getElementById('launcher-admin').style.display = 'block';
   // 패널이 화면보다 길어도 위쪽이 잘리지 않도록 상단 정렬 + 맨 위로 스크롤
@@ -5487,6 +5489,7 @@ function showAdminPanel() {
 }
 
 function hideAdminPanel() {
+  document.title = 'wontech';
   sessionStorage.removeItem('wt_app');
   document.getElementById('launcher-admin').style.display = 'none';
   document.getElementById('launcher-main').style.display = 'flex';
