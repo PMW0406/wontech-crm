@@ -5515,11 +5515,13 @@ async function renderAdminUsers() {
   el.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:#64748b">불러오는 중...</td></tr>`;
   const {data: profiles} = await _sb.from('crm_profiles').select('*').order('dept').order('display_name');
   _allProfiles = profiles || [];
+  try { const {data:dp} = await _sb.from('dept_perms').select('*'); _deptPerms={}; (dp||[]).forEach(r=>{ _deptPerms[r.dept]={access:r.access||'',upload:r.upload||''}; }); } catch(e){ _deptPerms={}; }
   _paintUsers();
 }
 let _allProfiles = [];
 let _collapsedDepts = new Set();
 let _lastDeptOrder = [];
+let _deptPerms = {};
 const PERM_PRESETS = [
   {name:'없음',                  access:'',                            upload:''},
   {name:'한국영업',              access:'korea',                       upload:''},
@@ -5562,7 +5564,7 @@ function _paintUsers(){
   _lastDeptOrder = deptOrder;
   deptOrder.forEach(dept => {
     const collapsed = _collapsedDepts.has(dept);
-    rows.push(`<tr data-dept="${(dept||'').replace(/"/g,'&quot;')}" onclick="toggleDept(this)" style="cursor:pointer"><td colspan="7" style="padding:9px 16px 5px;background:rgba(255,255,255,.04);border-top:1px solid rgba(255,255,255,.1)"><span style="font-size:11px;font-weight:700;color:#0d9488;letter-spacing:.05em"><i class="bi bi-chevron-${collapsed?'right':'down'} me-1" style="font-size:9px;width:9px;display:inline-block"></i><i class="bi bi-building me-1"></i>${dept}</span><span style="font-size:10px;color:#475569;margin-left:6px">${groups[dept].length}명</span></td></tr>`);
+    rows.push(`<tr data-dept="${(dept||'').replace(/"/g,'&quot;')}" onclick="toggleDept(this)" style="cursor:pointer"><td colspan="7" style="padding:9px 16px 5px;background:rgba(255,255,255,.04);border-top:1px solid rgba(255,255,255,.1)"><span style="font-size:11px;font-weight:700;color:#0d9488;letter-spacing:.05em"><i class="bi bi-chevron-${collapsed?'right':'down'} me-1" style="font-size:9px;width:9px;display:inline-block"></i><i class="bi bi-building me-1"></i>${dept}</span><span style="font-size:10px;color:#475569;margin-left:6px">${groups[dept].length}명</span>${_deptCtl(dept)}</td></tr>`);
     groups[dept].forEach(p => rows.push(_adminUserRow(p, iS, collapsed)));
   });
   rows.push(`<tr><td colspan="7" style="padding:10px 16px;color:#475569;font-size:11px">총 ${list.length}명</td></tr>`);
@@ -5572,6 +5574,33 @@ function _paintUsers(){
 function toggleDept(el){ const d=el.dataset.dept; if(_collapsedDepts.has(d)) _collapsedDepts.delete(d); else _collapsedDepts.add(d); _paintUsers(); }
 function collapseAllDepts(){ _lastDeptOrder.forEach(d=>_collapsedDepts.add(d)); _paintUsers(); }
 function expandAllDepts(){ _collapsedDepts.clear(); _paintUsers(); }
+function _deptCtl(dept){
+  const dq=(dept||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  const cur=_deptPerms[dept]?_matchPreset(_deptPerms[dept]):'';
+  const opts=`<option value="">— 미설정 —</option>`+PERM_PRESETS.map(ps=>`<option ${ps.name===cur?'selected':''}>${ps.name}</option>`).join('');
+  return `<span style="float:right;display:inline-flex;gap:6px;align-items:center" onclick="event.stopPropagation()"><span style="font-size:10px;color:#64748b">기본권한</span><select onchange="setDeptDefault('${dq}',this.value)" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:5px;padding:2px 5px;font-size:10px;color:#cbd5e1">${opts}</select><button onclick="applyDeptToAll('${dq}')" style="background:rgba(13,148,136,.18);border:1px solid rgba(13,148,136,.3);color:#5eead4;padding:2px 8px;border-radius:5px;font-size:10px;cursor:pointer">전원적용</button></span>`;
+}
+async function setDeptDefault(dept, name){
+  const ps=PERM_PRESETS.find(x=>x.name===name);
+  const access=ps?ps.access:'', upload=ps?ps.upload:'';
+  try{
+    await _sb.from('dept_perms').upsert({dept, access, upload, updated_at:new Date().toISOString()}, {onConflict:'dept'});
+    _deptPerms[dept]={access, upload};
+    showToast('['+dept+'] 기본권한: '+(name||'미설정'), true);
+  }catch(e){ showToast('저장 실패 (dept_perms 테이블 SQL 필요): '+e.message, true, true); }
+}
+async function applyDeptToAll(dept){
+  const dp=_deptPerms[dept];
+  if(!dp || (!dp.access && !dp.upload)){ alert('먼저 이 부서의 기본권한을 설정하세요.'); return; }
+  const members=_allProfiles.filter(p=>((p.dept||'').trim()||'(부서 미지정)')===dept);
+  if(!confirm('['+dept+'] '+members.length+'명 전원에게 기본권한을 적용할까요?\n(각자 개별 설정이 덮어쓰여집니다)')) return;
+  for(const p of members){
+    await _sb.from('crm_profiles').update({access:dp.access, upload:dp.upload}).eq('id',p.id);
+    p.access=dp.access; p.upload=dp.upload;
+  }
+  showToast(dept+' 전원 적용 완료 ('+members.length+'명)', true);
+  _paintUsers();
+}
 
 const WT_SITES = [['korea','한국','#0891b2'],['intl','해외','#0d9488'],['japan','일본','#f59e0b'],['total','종합','#4f46e5'],['daily','일보','#16a34a'],['pm','상품PM','#a855f7'],['portfolio','SalesPF','#ec4899']];
 function _permDetail(p){
@@ -5746,6 +5775,7 @@ async function saveNewUser() {
   const userId = adminData.user?.id || adminData.id;
   if(userId) {
     await _sb.from('crm_profiles').upsert({id: userId, email, display_name: name||email.split('@')[0], dept, position, role, access, temp_pw: pw});
+    const _dp=_deptPerms[dept]; if(_dp && (_dp.access||_dp.upload)){ await _sb.from('crm_profiles').update({access:_dp.access, upload:_dp.upload}).eq('id',userId); }
   }
   bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
   showToast('사용자 추가됨!', true);
