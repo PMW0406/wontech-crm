@@ -3776,32 +3776,48 @@ function renderConsHospitals() {
 
   document.getElementById('hosp-risk-cnt').textContent=`(${risk.length})`;
 
-  // ── 이탈위험 ──
+  // ── 이탈위험 → 우선순위 점수(매출규모 × 재구매시점 × 미연락)로 '이번주 우선 관리' 선별 ──
   const fmtP = v=>v==null?'-':v+'일';
-  document.getElementById('hosp-risk-list').innerHTML=[...risk].sort((a,b)=>b[1].y2025-a[1].y2025).map(([name,h])=>{
+  const TODAY=Date.now();
+  const scored=risk.map(([name,h])=>{
     const lc=logCount(name), ld=lastLogDate(name);
+    const ldDays=ld?Math.floor((TODAY-new Date(ld))/864e5):null;
+    const pd=h.lastDate?Math.floor((TODAY-new Date(h.lastDate))/864e5):null;
     const p25=calcPat(h.txns2025||[]);
-    const ldDays=ld?Math.floor((Date.now()-new Date(ld))/864e5):null;
+    let mult=1; const reasons=[];
+    if(h.y2025>=3e7) reasons.push('고매출');
+    if(lc===0){ mult*=1.4; reasons.push('미연락'); }
+    if(pd!=null){ if(pd>=60&&pd<=240) mult*=1.3; else if(pd>365){ mult*=0.55; } else if(pd<60) mult*=0.8; }
+    if(p25&&p25.avgGap&&pd!=null&&pd>p25.avgGap*1.2){ mult*=1.2; reasons.push('재구매주기 도래'); }
+    return {name,h,lc,ldDays,pd,p25,score:(h.y2025||0)*mult,reason:reasons.slice(0,2).join(' · ')||'관리필요'};
+  }).sort((a,b)=>b.score-a.score);
+  const TOPN=20, top=scored.slice(0,TOPN), rest=scored.slice(TOPN);
+  const riskCard=(x,pri)=>{ const {name,h,lc,ldDays,pd,p25,reason}=x; const safeN=name.replace(/"/g,'&quot;');
     const ldStr=ldDays!=null?`상담 ${lc}회 · 마지막 ${ldDays}일전`:`<span style="color:#fca5a5">상담 이력 없음</span>`;
-    const lastPurch=h.lastDate?`마지막 구매 <strong>${Math.floor((Date.now()-new Date(h.lastDate))/864e5)}일전</strong>`:'구매이력없음';
-    const safeN=name.replace(/"/g,'&quot;');
-    return`<div style="padding:8px 0;border-bottom:1px solid #fecaca">
+    const lastPurch=pd!=null?`마지막 구매 <strong>${pd}일전</strong>`:'구매이력없음';
+    return`<div style="padding:8px 10px;border-bottom:1px solid #fecaca;${pri?'background:#fffbf7;border-left:3px solid #f97316':''}">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        ${pri?'<span style="flex-shrink:0;font-size:9px;font-weight:800;color:#c2410c;background:#ffedd5;border-radius:4px;padding:1px 5px">우선</span>':''}
         <div style="flex:1;min-width:0;cursor:pointer" data-name="${safeN}" onclick="showHospitalDetail(this.dataset.name)">
           <span style="font-size:12px;font-weight:700">${gradeBadge(h)}<span style="color:#dc2626;text-decoration:underline dotted">${name}</span>${h.sales?`<span style="font-size:10px;color:#9ca3af;margin-left:5px">${h.sales}</span>`:''}</span>
+          <span style="font-size:10px;color:#9a3412;margin-left:4px">· ${reason}</span>
         </div>
         <span style="font-size:12px;font-weight:800;color:#dc2626;flex-shrink:0">${fmtW(h.y2025)}</span>
-        <button class="btn btn-sm btn-outline-primary" style="font-size:10px;padding:1px 6px;flex-shrink:0" data-name="${safeN}" onclick="openLogFromHosp(this.dataset.name)"><i class="bi bi-journal-plus"></i></button>
+        <button class="btn btn-sm btn-outline-primary" style="font-size:10px;padding:1px 6px;flex-shrink:0" data-name="${safeN}" onclick="openLogFromHosp(this.dataset.name)" title="상담일지 작성"><i class="bi bi-journal-plus"></i></button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px">
-        <div style="background:#fff5f5;border-radius:4px;padding:3px 6px;font-size:10px;color:#6b7280"><div style="font-size:9px;color:#9ca3af;margin-bottom:1px">구매건수</div><strong style="color:#374151">${p25?p25.cnt+'건':'-'}</strong></div>
-        <div style="background:#fff5f5;border-radius:4px;padding:3px 6px;font-size:10px;color:#6b7280"><div style="font-size:9px;color:#9ca3af;margin-bottom:1px">평균간격</div><strong style="color:#374151">${fmtP(p25?.avgGap)}</strong></div>
-        <div style="background:#fff5f5;border-radius:4px;padding:3px 6px;font-size:10px;color:#6b7280"><div style="font-size:9px;color:#9ca3af;margin-bottom:1px">건당평균</div><strong style="color:#374151">${p25?fmtS(p25.avgAmt):'-'}</strong></div>
-        <div style="background:#fff5f5;border-radius:4px;padding:3px 6px;font-size:10px;color:#6b7280"><div style="font-size:9px;color:#9ca3af;margin-bottom:1px">마지막구매</div><strong style="color:#dc2626">${lastPurch}</strong></div>
+        <div style="background:#fff5f5;border-radius:4px;padding:3px 6px;font-size:10px"><div style="font-size:9px;color:#9ca3af;margin-bottom:1px">구매건수</div><strong style="color:#374151">${p25?p25.cnt+'건':'-'}</strong></div>
+        <div style="background:#fff5f5;border-radius:4px;padding:3px 6px;font-size:10px"><div style="font-size:9px;color:#9ca3af;margin-bottom:1px">평균간격</div><strong style="color:#374151">${fmtP(p25?.avgGap)}</strong></div>
+        <div style="background:#fff5f5;border-radius:4px;padding:3px 6px;font-size:10px"><div style="font-size:9px;color:#9ca3af;margin-bottom:1px">건당평균</div><strong style="color:#374151">${p25?fmtS(p25.avgAmt):'-'}</strong></div>
+        <div style="background:#fff5f5;border-radius:4px;padding:3px 6px;font-size:10px"><div style="font-size:9px;color:#9ca3af;margin-bottom:1px">마지막구매</div><strong style="color:#dc2626">${lastPurch}</strong></div>
       </div>
       <div style="font-size:10px;color:#9ca3af;margin-top:3px">${ldStr}</div>
-    </div>`;
-  }).join('') || '<div style="font-size:12px;color:#9ca3af;padding:16px 0;text-align:center">해당 병원 없음</div>';
+    </div>`; };
+  document.getElementById('hosp-risk-list').innerHTML = scored.length ? (
+    '<div style="font-size:11px;margin-bottom:8px;padding:8px 11px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;color:#9a3412">🎯 <b>이번주 우선 관리 '+top.length+'곳</b> <span style="color:#c2410c">— 이탈위험 '+scored.length+'곳 중 매출·재구매시점·미연락 기준 선별</span></div>'
+    + top.map(x=>riskCard(x,true)).join('')
+    + (rest.length?('<div style="margin-top:10px"><a onclick="var n=this.nextElementSibling;n.style.display=n.style.display===\'none\'?\'\':\'none\';this.querySelector(\'i\').className=n.style.display===\'none\'?\'bi bi-chevron-down\':\'bi bi-chevron-up\'" style="cursor:pointer;font-size:12px;color:#2563eb;font-weight:600;display:inline-flex;align-items:center;gap:4px">그 외 이탈위험 '+rest.length+'곳 <i class="bi bi-chevron-down"></i></a><div style="display:none;margin-top:6px">'+rest.map(x=>riskCard(x,false)).join('')+'</div></div>'):'')
+  ) : '<div style="font-size:12px;color:#9ca3af;padding:16px 0;text-align:center">해당 병원 없음</div>';
 
   // ── 감소 ──
   document.getElementById('hosp-decline-list').innerHTML=[...decline].sort((a,b)=>{
