@@ -1031,12 +1031,25 @@ function _rptBlank(n1,n2){
   return '<tr><td class="lbl dept" style="color:#cbd5e1">'+n1+'</td><td class="lbl sub" style="color:#cbd5e1">'+n2+'</td>'+
     '<td class="gsep rpt-na">—</td>'+d+d+d+'<td class="gsep rpt-na">—</td>'+d+d+d+'<td class="gsep rpt-na">—</td>'+d+d+'</tr>';
 }
+// 기타매출(ASR 제품·A/S소모품) 제외 — 한국영업 순매출 월별. which='제품'|'소모품'
+function _krCleanMo(which){
+  if(which==='제품'){
+    const e26=(DEVICE.prodMo2026&&DEVICE.prodMo2026['ASR'])||{}, e25=(DEVICE.prodMo2025&&DEVICE.prodMo2025['ASR'])||{};
+    const o26={},o25={}; for(let m=1;m<=12;m++){ o26[m]=(Number((DEVICE.monthly2026||{})[m])||0)-(Number(e26[m])||0); o25[m]=(Number((DEVICE.monthly2025||{})[m])||0)-(Number(e25[m])||0); }
+    return {y26:o26,y25:o25};
+  }
+  const as26=Number((CONS.products2026||{})['A/S소모품'])||0, as25=Number((CONS.products2025||{})['A/S소모품'])||0;
+  const t26=Object.values(CONS.monthly2026||{}).reduce((s,v)=>s+(Number(v)||0),0)||1, t25=Object.values(CONS.monthly2025||{}).reduce((s,v)=>s+(Number(v)||0),0)||1;
+  const o26={},o25={}; for(let m=1;m<=12;m++){ o26[m]=(Number((CONS.monthly2026||{})[m])||0)*(1-as26/t26); o25[m]=(Number((CONS.monthly2025||{})[m])||0)*(1-as25/t25); }
+  return {y26:o26,y25:o25};
+}
 function renderReport(){
   const tbl=document.getElementById('report-table');
   if(!SALEST.length){ tbl.innerHTML='<tbody><tr><td style="padding:16px;color:#94a3b8">목표(sales_targets) 데이터가 없습니다. SQL 적재를 확인하세요.</td></tr></tbody>'; return; }
   const reg26=_intlRegionMonthly(INTL), reg25=_intlRegionMonthly(INTL.data2025||{}), pend=_pendForReport();
-  const kProd=_rowVals(DEVICE.monthly2026,pend.kr['제품'],DEVICE.monthly2025,'국내영업','제품');
-  const kCons=_rowVals(CONS.monthly2026,pend.kr['소모품'],CONS.monthly2025,'국내영업','소모품');
+  const _kpC=_krCleanMo('제품'), _kcC=_krCleanMo('소모품');
+  const kProd=_rowVals(_kpC.y26,pend.kr['제품'],_kpC.y25,'국내영업','제품');
+  const kCons=_rowVals(_kcC.y26,pend.kr['소모품'],_kcC.y25,'국내영업','소모품');
   const kSum=_sumV([kProd,kCons]);
   const REGIONS=['동남아','중화','중동','유럽','미주'], CORPS=['태국법인','미국법인','일본법인'];
   const regRows=REGIONS.map(r=>({r,v:_rowVals(reg26[r],pend.intl[r],reg25[r],'해외영업',r)}));
