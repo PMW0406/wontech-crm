@@ -1506,7 +1506,7 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
       <button class="btn btn-outline-primary btn-sm" onclick="saveTemplate()"><i class="bi bi-bookmark-plus me-1"></i>현재 항목 저장</button>
       <button class="btn btn-outline-danger btn-sm" id="tmpl-del-btn" style="display:none" onclick="deleteTemplate()"><i class="bi bi-trash me-1"></i>삭제</button>
     </div>
-    <table class="table table-sm"><thead class="table-light"><tr><th style="width:38%">제품명</th><th style="width:10%">수량</th><th style="width:18%">단가</th><th style="width:12%">할인%</th><th style="width:16%">금액</th><th style="width:6%"></th></tr></thead><tbody id="q-items"></tbody></table>
+    <div class="table-responsive"><table class="table table-sm" style="min-width:720px"><thead class="table-light"><tr><th style="width:24%">제품명</th><th style="width:11%">규격</th><th style="width:8%">단위</th><th style="width:8%">수량</th><th style="width:14%">단가</th><th style="width:8%">할인%</th><th style="width:13%">금액</th><th style="width:9%">비고</th><th style="width:5%"></th></tr></thead><tbody id="q-items"></tbody></table></div>
     <button class="btn btn-outline-secondary btn-sm" onclick="addQItem()"><i class="bi bi-plus me-1"></i>항목 추가</button>
     <div class="row mt-3 justify-content-end"><div class="col-md-4">
       <table class="table table-sm mb-0">
@@ -1525,9 +1525,17 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
 <div class="modal fade" id="quotePrintModal" tabindex="-1"><div class="modal-dialog modal-xl"><div class="modal-content">
   <div class="modal-header">
     <h5 class="modal-title">견적서 미리보기</h5>
-    <div><button class="btn btn-primary btn-sm me-2" onclick="window.print()"><i class="bi bi-printer me-1"></i>인쇄</button><button type="button" class="btn-close ms-2" data-bs-dismiss="modal"></button></div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <div class="btn-group btn-group-sm" role="group" title="양식 선택">
+        <button id="qtmpl-premium" type="button" class="btn btn-outline-primary active" onclick="setQuoteTmpl('premium')"><i class="bi bi-stars me-1"></i>프리미엄</button>
+        <button id="qtmpl-classic" type="button" class="btn btn-outline-primary" onclick="setQuoteTmpl('classic')"><i class="bi bi-file-earmark-text me-1"></i>기존 양식</button>
+      </div>
+      <button class="btn btn-success btn-sm" onclick="quotePDF()"><i class="bi bi-file-earmark-pdf me-1"></i>PDF 다운로드</button>
+      <button class="btn btn-outline-secondary btn-sm" onclick="window.print()"><i class="bi bi-printer me-1"></i>인쇄</button>
+      <button type="button" class="btn-close ms-1" data-bs-dismiss="modal"></button>
+    </div>
   </div>
-  <div class="modal-body" id="print-content"></div>
+  <div class="modal-body" style="background:#e9edf3" id="print-content"></div>
 </div></div></div>
 
 <!-- 목표 모달 -->
@@ -4589,9 +4597,12 @@ function loadTemplate(idx) {
     const rows = tbody.querySelectorAll('tr');
     const r = rows[rows.length-1];
     r.querySelector('.qi-name').value = item.name||'';
+    if(r.querySelector('.qi-spec')) r.querySelector('.qi-spec').value = item.spec||'';
+    if(r.querySelector('.qi-unit')) r.querySelector('.qi-unit').value = item.unit||'EA';
     r.querySelector('.qi-qty').value = item.qty||1;
     r.querySelector('.qi-price').value = item.price||0;
     r.querySelector('.qi-disc').value = item.disc||0;
+    if(r.querySelector('.qi-note')) r.querySelector('.qi-note').value = item.note||'';
   });
   calcQ();
 }
@@ -4620,9 +4631,12 @@ function deleteTemplate() {
 function getQItems() {
   return [...document.querySelectorAll('#q-items tr')].map(r=>({
     name: r.querySelector('.qi-name')?.value||'',
+    spec: r.querySelector('.qi-spec')?.value||'',
+    unit: r.querySelector('.qi-unit')?.value||'',
     qty: Number(r.querySelector('.qi-qty')?.value||1),
     price: Number((r.querySelector('.qi-price')?.value||'0').replace(/,/g,'')),
-    disc: Number(r.querySelector('.qi-disc')?.value||0)
+    disc: Number(r.querySelector('.qi-disc')?.value||0),
+    note: r.querySelector('.qi-note')?.value||''
   })).filter(i=>i.name);
 }
 
@@ -4853,11 +4867,12 @@ function clearQuoteForm(){
   refreshTmplSelect();
 }
 
-function addQItem(name='',qty=1,price='',disc=0){
+function addQItem(name='',qty=1,price='',disc=0,spec='',unit='EA',note=''){
   qItemCount++;
   const idx=qItemCount;
+  const _a=s=>String(s==null?'':s).replace(/"/g,'&quot;');
   const tr=document.createElement('tr'); tr.id='qi-'+idx;
-  tr.innerHTML=`<td><input type="text" class="form-control form-control-sm qi-name" value="${name}" oninput="calcQ()"></td><td><input type="number" class="form-control form-control-sm qi-qty" value="${qty}" oninput="calcQ()"></td><td><input type="number" class="form-control form-control-sm qi-price" value="${price}" oninput="calcQ()"></td><td><input type="number" class="form-control form-control-sm qi-disc" value="${disc}" oninput="calcQ()"></td><td class="qi-amt text-end fw-bold" style="font-size:12px">0</td><td><button class="btn btn-sm btn-outline-danger" onclick="document.getElementById('qi-${idx}').remove();calcQ()"><i class="bi bi-trash"></i></button></td>`;
+  tr.innerHTML=`<td><input type="text" class="form-control form-control-sm qi-name" value="${_a(name)}" oninput="calcQ()"></td><td><input type="text" class="form-control form-control-sm qi-spec" value="${_a(spec)}"></td><td><input type="text" class="form-control form-control-sm qi-unit" value="${_a(unit)}"></td><td><input type="number" class="form-control form-control-sm qi-qty" value="${qty}" oninput="calcQ()"></td><td><input type="number" class="form-control form-control-sm qi-price" value="${price}" oninput="calcQ()"></td><td><input type="number" class="form-control form-control-sm qi-disc" value="${disc}" oninput="calcQ()"></td><td class="qi-amt text-end fw-bold" style="font-size:12px">0</td><td><input type="text" class="form-control form-control-sm qi-note" value="${_a(note)}"></td><td><button class="btn btn-sm btn-outline-danger" onclick="document.getElementById('qi-${idx}').remove();calcQ()"><i class="bi bi-trash"></i></button></td>`;
   document.getElementById('q-items').appendChild(tr);
   calcQ();
 }
@@ -4882,7 +4897,8 @@ function saveQuote(){
   document.querySelectorAll('#q-items tr').forEach(tr=>{
     const name=tr.querySelector('.qi-name')?.value||'';if(!name)return;
     const qty=Number(tr.querySelector('.qi-qty')?.value||1),price=Number(tr.querySelector('.qi-price')?.value||0),disc=Number(tr.querySelector('.qi-disc')?.value||0);
-    items.push({name,qty,price,discount:disc,amount:Math.round(qty*price*(1-disc/100))});
+    const spec=tr.querySelector('.qi-spec')?.value||'',unit=tr.querySelector('.qi-unit')?.value||'',note=tr.querySelector('.qi-note')?.value||'';
+    items.push({name,spec,unit,qty,price,discount:disc,amount:Math.round(qty*price*(1-disc/100)),note});
   });
   const discAmt=Number(gV('q-disc'))||0;
   const sub=items.reduce((s,i)=>s+i.amount,0);
@@ -4894,11 +4910,118 @@ function saveQuote(){
   DB.save('quotes').then(()=>{bootstrap.Modal.getInstance(document.getElementById('quoteModal')).hide();renderQuotes();});
 }
 
-function viewQuote(id){
-  const q=DB.d.quotes.find(x=>x.id===id);if(!q)return;
-  const rows=(q.items||[]).map((item,i)=>`<tr><td style="text-align:center;padding:8px;border-bottom:1px solid #eee">${i+1}</td><td style="padding:8px;border-bottom:1px solid #eee">${item.name}</td><td style="text-align:center;padding:8px;border-bottom:1px solid #eee">${item.qty}</td><td style="text-align:right;padding:8px;border-bottom:1px solid #eee">${Number(item.price||0).toLocaleString()}</td><td style="text-align:center;padding:8px;border-bottom:1px solid #eee">${item.discount||0}%</td><td style="text-align:right;padding:8px;border-bottom:1px solid #eee;font-weight:bold">${Number(item.amount||0).toLocaleString()}</td></tr>`).join('');
-  document.getElementById('print-content').innerHTML=`<div style="padding:30px;font-family:'Malgun Gothic',sans-serif"><div style="text-align:center;margin-bottom:30px"><h2 style="font-size:26px;font-weight:800;color:#1e2140">견 적 서</h2></div><div style="display:flex;justify-content:space-between;margin-bottom:24px"><div><table style="font-size:13px;border-collapse:collapse"><tr><td style="color:#888;padding:3px 16px 3px 0">수 신</td><td style="font-weight:700;font-size:15px">${q.custName}</td></tr><tr><td style="color:#888;padding:3px 16px 3px 0">견적번호</td><td>${q.id}</td></tr><tr><td style="color:#888;padding:3px 16px 3px 0">견적일자</td><td>${fmtDate(q.quoteDate)}</td></tr><tr><td style="color:#888;padding:3px 16px 3px 0">유효기간</td><td>${fmtDate(q.validUntil)||'-'}</td></tr></table></div><div style="text-align:right"><svg viewBox="0 0 310 205" xmlns="http://www.w3.org/2000/svg" fill="#ff4500" style="width:52px;height:34px;display:inline-block;vertical-align:middle;margin-bottom:4px"><rect x="0" y="0" width="95" height="95" rx="22"/><rect x="107" y="0" width="95" height="95" rx="22"/><rect x="215" y="0" width="95" height="95" rx="22"/><rect x="53" y="110" width="95" height="95" rx="22"/><rect x="161" y="110" width="95" height="95" rx="22"/></svg><span style="font-size:22px;font-weight:800;color:#ff4500;vertical-align:middle;margin-left:8px;letter-spacing:-1px">wontech</span><div style="font-size:12px;color:#888;margin-top:4px">담당: ${q.sales||''}</div><div style="margin-top:10px;font-size:13px;color:#555">합계금액</div><div style="font-size:24px;font-weight:800">₩ ${Number(q.total||0).toLocaleString()}</div><div style="font-size:11px;color:#888">(VAT 포함)</div></div></div><table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px"><thead><tr style="background:#1e2140;color:#fff"><th style="padding:10px;text-align:center;width:5%">No</th><th style="padding:10px;text-align:left;width:35%">제품명</th><th style="padding:10px;text-align:center;width:8%">수량</th><th style="padding:10px;text-align:right;width:18%">단가</th><th style="padding:10px;text-align:center;width:10%">할인율</th><th style="padding:10px;text-align:right;width:20%">금액</th></tr></thead><tbody>${rows}</tbody></table><div style="display:flex;justify-content:flex-end"><table style="font-size:13px;border-collapse:collapse;min-width:260px"><tr><td style="padding:6px 16px;color:#555;border-bottom:1px solid #eee">소 계</td><td style="padding:6px 16px;text-align:right;border-bottom:1px solid #eee">${Number(q.subtotal||0).toLocaleString()} 원</td></tr><tr><td style="padding:6px 16px;color:#555;border-bottom:1px solid #eee">추가 할인</td><td style="padding:6px 16px;text-align:right;border-bottom:1px solid #eee">- ${Number(q.discountAmt||0).toLocaleString()} 원</td></tr><tr><td style="padding:6px 16px;color:#555;border-bottom:1px solid #eee">부가세(10%)</td><td style="padding:6px 16px;text-align:right;border-bottom:1px solid #eee">${Number(q.vat||0).toLocaleString()} 원</td></tr><tr style="background:#f0f2f8"><td style="padding:10px 16px;font-weight:700;font-size:15px">합 계</td><td style="padding:10px 16px;text-align:right;font-weight:800;font-size:20px">₩ ${Number(q.total||0).toLocaleString()}</td></tr></table></div></div>`;
-  new bootstrap.Modal(document.getElementById('quotePrintModal')).show();
+// ── 견적서 출력(2종 템플릿 + 올바른 CI + 한글금액 + PDF) ──
+const WT_SUP={name:'원텍 주식회사',reg:'496-88-01552',ceo:'김종원, 김정현',addr:'대전광역시 유성구 테크노8로 64',tel:'042) 934-6800',fax:'070) 7882-8658',web:'www.wtlaser.com'};
+function _wtLogo(c,w){ return '<svg viewBox="0 0 518 207" width="'+w+'" style="height:auto;display:inline-block;vertical-align:middle" xmlns="http://www.w3.org/2000/svg" fill="'+c+'"><rect x="0" y="0" width="110" height="110" rx="28"/><rect x="204" y="0" width="110" height="110" rx="28"/><rect x="408" y="0" width="110" height="110" rx="28"/><rect x="102" y="97" width="110" height="110" rx="28"/><rect x="306" y="97" width="110" height="110" rx="28"/></svg>'; }
+function numKor(n){ n=Math.round(Math.abs(n||0)); if(n===0)return '영'; const D=['','일','이','삼','사','오','육','칠','팔','구'],U=['','십','백','천'],P=['','만','억','조','경']; let res='',g=0; while(n>0){ let part=n%10000,s=''; for(let i=0;i<4;i++){ const d=Math.floor(part/Math.pow(10,i))%10; if(d)s=D[d]+U[i]+s; } if(s)res=s+P[g]+res; n=Math.floor(n/10000); g++; } return res; }
+function _qEscH(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+let _qCur=null, _qTmpl='premium';
+function setQuoteTmpl(t){ _qTmpl=t; ['premium','classic'].forEach(x=>{const b=document.getElementById('qtmpl-'+x); if(b)b.classList.toggle('active',x===t);}); _qRender(); }
+function _qRender(){ const el=document.getElementById('print-content'); if(el&&_qCur) el.innerHTML='<div style="max-width:820px;margin:0 auto">'+QDOC(_qCur,_qTmpl)+'</div>'; }
+function viewQuote(id){ const q=DB.d.quotes.find(x=>x.id===id); if(!q)return; _qCur=q; setQuoteTmpl(_qTmpl); new bootstrap.Modal(document.getElementById('quotePrintModal')).show(); }
+function quotePDF(){ if(!_qCur)return; const w=window.open('','_blank'); if(!w){alert('팝업이 차단되었습니다. 팝업 허용 후 다시 시도하세요.');return;}
+  const fn='견적서_'+(_qCur.custName||'')+'_'+(_qCur.quoteDate||'').replace(/-/g,'');
+  w.document.write('<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>'+_qEscH(fn)+'</title><style>@page{size:A4;margin:12mm}body{margin:0;font-family:"Malgun Gothic",sans-serif;background:#fff}</style></head><body>'+QDOC(_qCur,_qTmpl)+'<script>window.onload=function(){setTimeout(function(){window.print();},250);};<\/script></body></html>');
+  w.document.close();
+}
+function QDOC(q,tmpl){
+  const items=q.items||[]; const won=v=>Number(v||0).toLocaleString('ko-KR');
+  const total=Number(q.total||0);
+  const rowsPremium=items.map((it,i)=>'<tr style="border-bottom:1px solid #f1f3f7">'
+    +'<td style="text-align:center;padding:9px 6px;color:#94a3b8">'+(i+1)+'</td>'
+    +'<td style="padding:9px 10px;font-weight:600;color:#1f2937">'+_qEscH(it.name)+(it.spec?' <span style="color:#94a3b8;font-weight:400;font-size:11px">'+_qEscH(it.spec)+'</span>':'')+'</td>'
+    +'<td style="text-align:center;padding:9px 6px;color:#64748b">'+_qEscH(it.unit||'EA')+'</td>'
+    +'<td style="text-align:center;padding:9px 6px">'+won(it.qty)+'</td>'
+    +'<td style="text-align:right;padding:9px 10px;color:#475569">'+won(it.price)+'</td>'
+    +'<td style="text-align:right;padding:9px 10px;font-weight:700;color:#0f172a">'+won(it.amount)+'</td>'
+    +'<td style="text-align:center;padding:9px 6px;font-size:11px;color:#94a3b8">'+_qEscH(it.note||'')+'</td></tr>').join('');
+  const termsList=['유효기간 : 견적 후 30일','납품기일 : 계약 후 3일 이내','결제조건 : 선입금','납품처 : 지정장소'];
+
+  if(tmpl==='classic'){
+    // 정식 見積書 양식 (영업사원 기존 엑셀 스타일)
+    const rowsC=items.map((it,i)=>'<tr>'
+      +'<td style="border:1px solid #cbd5e1;text-align:center;padding:5px 4px">'+(i+1)+'</td>'
+      +'<td style="border:1px solid #cbd5e1;padding:5px 8px">'+_qEscH(it.name)+'</td>'
+      +'<td style="border:1px solid #cbd5e1;text-align:center;padding:5px 4px">'+_qEscH(it.spec||'')+'</td>'
+      +'<td style="border:1px solid #cbd5e1;text-align:center;padding:5px 4px">'+_qEscH(it.unit||'EA')+'</td>'
+      +'<td style="border:1px solid #cbd5e1;text-align:center;padding:5px 4px">'+won(it.qty)+'</td>'
+      +'<td style="border:1px solid #cbd5e1;text-align:right;padding:5px 8px">'+won(it.price)+'</td>'
+      +'<td style="border:1px solid #cbd5e1;text-align:right;padding:5px 8px">'+won(it.amount)+'</td>'
+      +'<td style="border:1px solid #cbd5e1;text-align:center;padding:5px 4px;font-size:11px">'+_qEscH(it.note||'')+'</td></tr>').join('');
+    const sup='<table style="width:100%;border-collapse:collapse;font-size:11.5px">'
+      +'<tr><td rowspan="6" style="border:1px solid #94a3b8;text-align:center;width:22px;background:#f1f5f9;font-weight:700;letter-spacing:4px;padding:2px">공급자</td><td style="border:1px solid #cbd5e1;background:#f8fafc;padding:4px 7px;width:70px;color:#475569">회사명</td><td style="border:1px solid #cbd5e1;padding:4px 7px;font-weight:700">'+_qEscH(WT_SUP.name)+'</td></tr>'
+      +'<tr><td style="border:1px solid #cbd5e1;background:#f8fafc;padding:4px 7px;color:#475569">등록번호</td><td style="border:1px solid #cbd5e1;padding:4px 7px">'+WT_SUP.reg+'</td></tr>'
+      +'<tr><td style="border:1px solid #cbd5e1;background:#f8fafc;padding:4px 7px;color:#475569">대표이사</td><td style="border:1px solid #cbd5e1;padding:4px 7px">'+_qEscH(WT_SUP.ceo)+' (인)</td></tr>'
+      +'<tr><td style="border:1px solid #cbd5e1;background:#f8fafc;padding:4px 7px;color:#475569">주소</td><td style="border:1px solid #cbd5e1;padding:4px 7px">'+_qEscH(WT_SUP.addr)+'</td></tr>'
+      +'<tr><td style="border:1px solid #cbd5e1;background:#f8fafc;padding:4px 7px;color:#475569">전화 / 팩스</td><td style="border:1px solid #cbd5e1;padding:4px 7px">'+WT_SUP.tel+'  /  '+WT_SUP.fax+'</td></tr>'
+      +'<tr><td style="border:1px solid #cbd5e1;background:#f8fafc;padding:4px 7px;color:#475569">담당자</td><td style="border:1px solid #cbd5e1;padding:4px 7px">국내영업부  '+_qEscH(q.sales||'')+'</td></tr></table>';
+    return '<div style="background:#fff;padding:30px 34px;font-family:\'Malgun Gothic\',sans-serif;color:#1f2937;box-shadow:0 2px 12px rgba(15,23,42,.10)">'
+      +'<div style="text-align:center;margin-bottom:20px"><span style="font-size:30px;font-weight:800;letter-spacing:14px;border-bottom:3px double #334155;padding:0 20px 6px">견 적 서</span></div>'
+      +'<div style="display:flex;gap:16px;margin-bottom:14px">'
+        +'<table style="flex:1;width:50%;border-collapse:collapse;font-size:12px"><tr><td style="padding:3px 8px 3px 0;color:#64748b;width:66px">수　신</td><td style="font-weight:700;font-size:14px;border-bottom:1px solid #e2e8f0">'+_qEscH(q.custName||'')+' 귀하</td></tr>'
+          +'<tr><td style="padding:3px 8px 3px 0;color:#64748b">문서번호</td><td style="border-bottom:1px solid #f1f5f9">'+_qEscH(q.id||'')+'</td></tr>'
+          +'<tr><td style="padding:3px 8px 3px 0;color:#64748b">견적일자</td><td style="border-bottom:1px solid #f1f5f9">'+_qEscH(fmtDate(q.quoteDate)||'')+'</td></tr>'
+          +'<tr><td style="padding:3px 8px 3px 0;color:#64748b">유효기간</td><td style="border-bottom:1px solid #f1f5f9">'+(fmtDate(q.validUntil)||'견적 후 30일')+'</td></tr>'
+          +'<tr><td colspan="2" style="padding-top:8px;color:#334155">아래와 같이 견적하여 드립니다.</td></tr></table>'
+        +'<div style="width:50%">'+_wtLogo('#ff5a0a','96')+sup+'</div>'
+      +'</div>'
+      +'<table style="width:100%;border-collapse:collapse;margin:6px 0 12px"><tr>'
+        +'<td style="border:2px solid #334155;background:#f1f5f9;text-align:center;font-weight:800;padding:9px;width:120px;font-size:13px">견 적 금 액</td>'
+        +'<td style="border:2px solid #334155;padding:9px 14px;font-size:15px;font-weight:800">一金 '+numKor(total)+'원整 <span style="font-size:12px;font-weight:600;color:#475569">( ₩'+won(total)+' · V.A.T 포함 )</span></td></tr></table>'
+      +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
+        +'<thead><tr style="background:#334155;color:#fff">'
+        +'<th style="border:1px solid #334155;padding:6px 4px;width:34px">번호</th><th style="border:1px solid #334155;padding:6px">품　명</th><th style="border:1px solid #334155;padding:6px;width:70px">규격</th><th style="border:1px solid #334155;padding:6px;width:44px">단위</th><th style="border:1px solid #334155;padding:6px;width:50px">수량</th><th style="border:1px solid #334155;padding:6px;width:96px">단가</th><th style="border:1px solid #334155;padding:6px;width:110px">금액</th><th style="border:1px solid #334155;padding:6px;width:76px">비고</th></tr></thead>'
+        +'<tbody>'+rowsC+'</tbody>'
+        +'<tfoot>'
+          +'<tr><td colspan="6" style="border:1px solid #cbd5e1;text-align:center;background:#f8fafc;font-weight:700;padding:6px">소　계</td><td style="border:1px solid #cbd5e1;text-align:right;padding:6px 8px;font-weight:700">'+won(q.subtotal)+'</td><td style="border:1px solid #cbd5e1"></td></tr>'
+          +(Number(q.discountAmt)?'<tr><td colspan="6" style="border:1px solid #cbd5e1;text-align:center;background:#f8fafc;padding:6px;color:#dc2626">추가할인</td><td style="border:1px solid #cbd5e1;text-align:right;padding:6px 8px;color:#dc2626">- '+won(q.discountAmt)+'</td><td style="border:1px solid #cbd5e1"></td></tr>':'')
+          +'<tr><td colspan="6" style="border:1px solid #cbd5e1;text-align:center;background:#f8fafc;font-weight:700;padding:6px">부가가치세</td><td style="border:1px solid #cbd5e1;text-align:right;padding:6px 8px">'+won(q.vat)+'</td><td style="border:1px solid #cbd5e1"></td></tr>'
+          +'<tr><td colspan="6" style="border:2px solid #334155;text-align:center;background:#334155;color:#fff;font-weight:800;padding:8px">합　계</td><td style="border:2px solid #334155;text-align:right;padding:8px;font-weight:800;font-size:14px">'+won(total)+'</td><td style="border:2px solid #334155"></td></tr>'
+        +'</tfoot></table>'
+      +'<div style="margin-top:12px;font-size:11.5px;color:#334155;line-height:1.9">'+termsList.map((t,i)=>(i+1)+'. '+t).join('&nbsp;&nbsp;&nbsp;')+(q.note?'<div style="margin-top:6px;color:#475569">비고 : '+_qEscH(q.note)+'</div>':'')+'</div>'
+    +'</div>';
+  }
+
+  // 프리미엄 (모던 브랜드형)
+  return '<div style="background:#fff;font-family:\'Malgun Gothic\',sans-serif;color:#1f2937;box-shadow:0 4px 20px rgba(15,23,42,.12);border-radius:4px;overflow:hidden">'
+    +'<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:30px 36px 22px;border-bottom:3px solid #ff5a0a">'
+      +'<div><div>'+_wtLogo('#ff5a0a','120')+'</div>'
+        +'<div style="font-size:11px;font-weight:800;letter-spacing:3px;color:#ff5a0a;margin-top:10px">QUOTATION</div>'
+        +'<div style="font-size:26px;font-weight:800;letter-spacing:6px;color:#0f172a">견 적 서</div></div>'
+      +'<div style="text-align:right;font-size:12px;color:#64748b">'
+        +'<div>견적번호 <b style="color:#0f172a">'+_qEscH(q.id||'')+'</b></div>'
+        +'<div style="margin-top:3px">견적일 <b style="color:#334155">'+_qEscH(fmtDate(q.quoteDate)||'')+'</b></div>'
+        +'<div style="margin-top:3px">유효기간 <b style="color:#334155">'+(fmtDate(q.validUntil)||'견적 후 30일')+'</b></div></div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:22px 36px 6px">'
+      +'<div style="background:#f8fafc;border:1px solid #eef2f7;border-radius:12px;padding:15px 17px">'
+        +'<div style="font-size:10px;font-weight:800;letter-spacing:1px;color:#94a3b8">TO · 수신</div>'
+        +'<div style="font-size:17px;font-weight:800;color:#0f172a;margin:5px 0 2px">'+_qEscH(q.custName||'')+' <span style="font-size:12px;font-weight:600;color:#64748b">귀하</span></div>'
+        +'<div style="font-size:12px;color:#64748b;margin-top:8px">아래와 같이 견적하여 드립니다.</div></div>'
+      +'<div style="background:#0f172a;border-radius:12px;padding:15px 17px;color:#cbd5e1">'
+        +'<div style="font-size:10px;font-weight:800;letter-spacing:1px;color:#64748b">FROM · 공급자</div>'
+        +'<div style="font-size:15px;font-weight:800;color:#fff;margin:5px 0 6px">'+_qEscH(WT_SUP.name)+'</div>'
+        +'<div style="font-size:11px;line-height:1.7">사업자 '+WT_SUP.reg+' · 대표 '+_qEscH(WT_SUP.ceo)+'<br>'+_qEscH(WT_SUP.addr)+'<br>T '+WT_SUP.tel+' · F '+WT_SUP.fax+'<br>담당 <b style="color:#fff">국내영업부 '+_qEscH(q.sales||'')+'</b></div></div>'
+    +'</div>'
+    +'<div style="margin:14px 36px;background:linear-gradient(120deg,#fff7ed,#fffdf9);border:1px solid #fed7aa;border-radius:12px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
+      +'<div><div style="font-size:11px;font-weight:700;color:#c2410c">견적 합계금액 (VAT 포함)</div><div style="font-size:13px;color:#9a3412;margin-top:3px">一金 '+numKor(total)+'원整</div></div>'
+      +'<div style="font-size:30px;font-weight:900;color:#ea580c;letter-spacing:-.02em">₩ '+won(total)+'</div></div>'
+    +'<div style="padding:0 36px">'
+      +'<table style="width:100%;border-collapse:collapse;font-size:12.5px">'
+        +'<thead><tr style="background:#f1f5f9;color:#334155"><th style="padding:9px 6px;text-align:center;width:34px">No</th><th style="padding:9px 10px;text-align:left">품명</th><th style="padding:9px 6px;text-align:center;width:44px">단위</th><th style="padding:9px 6px;text-align:center;width:50px">수량</th><th style="padding:9px 10px;text-align:right;width:100px">단가</th><th style="padding:9px 10px;text-align:right;width:118px">금액</th><th style="padding:9px 6px;text-align:center;width:70px">비고</th></tr></thead>'
+        +'<tbody>'+rowsPremium+'</tbody></table>'
+    +'</div>'
+    +'<div style="display:flex;justify-content:flex-end;padding:14px 36px 6px">'
+      +'<table style="font-size:12.5px;min-width:280px">'
+        +'<tr><td style="padding:5px 14px;color:#64748b">소계</td><td style="padding:5px 0;text-align:right">'+won(q.subtotal)+' 원</td></tr>'
+        +(Number(q.discountAmt)?'<tr><td style="padding:5px 14px;color:#dc2626">추가할인</td><td style="padding:5px 0;text-align:right;color:#dc2626">- '+won(q.discountAmt)+' 원</td></tr>':'')
+        +'<tr><td style="padding:5px 14px;color:#64748b">부가세 (10%)</td><td style="padding:5px 0;text-align:right">'+won(q.vat)+' 원</td></tr>'
+        +'<tr style="border-top:2px solid #0f172a"><td style="padding:9px 14px;font-weight:800;font-size:15px">합계</td><td style="padding:9px 0;text-align:right;font-weight:900;font-size:19px;color:#ea580c">₩ '+won(total)+'</td></tr></table>'
+    +'</div>'
+    +'<div style="margin:8px 36px 30px;padding:14px 18px;background:#f8fafc;border-radius:12px;font-size:11.5px;color:#475569;line-height:1.9">'
+      +'<b style="color:#334155">거래 조건</b>&nbsp;&nbsp;'+termsList.map(t=>'· '+t).join('&nbsp;&nbsp;')+(q.note?'<div style="margin-top:6px"><b style="color:#334155">비고</b>&nbsp;&nbsp;'+_qEscH(q.note)+'</div>':'')
+      +'<div style="margin-top:10px;text-align:center;color:#94a3b8;font-size:10.5px">'+_qEscH(WT_SUP.name)+' · '+WT_SUP.web+' · 본 견적서는 발행일로부터 30일간 유효합니다.</div></div>'
+  +'</div>';
 }
 
 function delQuote(id){if(!confirm('삭제하시겠습니까?'))return;DB.d.quotes=DB.d.quotes.filter(x=>x.id!==id);DB.save('quotes').then(()=>renderQuotes());}
