@@ -57,7 +57,7 @@ function transformRaw(sheets, CM){
       var um=USD.exec(jeok); var usd=um?parseFloat(um[1].replace(/,/g,'')):0;
       out.push({'월':mo,'금액':net,'국내외':region,'구분#2':cat,'구분#4':prod,'구분#1':prod,
         '분기':mo?(Math.floor((mo-1)/3)+1):null,'거래처명':cust,'담당자':row['담당자2'],
-        '수량':row['수량'],'USD':usd,'날짜':dt});
+        '수량':row['수량'],'USD':usd,'날짜':dt,'사용부서':dept});
     });
   });
   return out;
@@ -237,8 +237,11 @@ function build(sheets, existing){
   existing=existing||{}; var exMain=existing.main||{}, exDev=existing.device||{}, exIntl=existing.intl||{};
   var CM=buildCatMap(exMain,exDev,exIntl);
   var rows26=transformRaw(sheets,CM);
-  var consR=rows26.filter(function(r){return r['구분#2']==='소모품'&&r['국내외']==='국내';});
-  var devR =rows26.filter(function(r){return r['구분#2']==='제품군'&&r['국내외']==='국내';});
+  // 국내영업 제외 부서: 서지컬·B2C·CS(고객만족)·비영업 지원부서
+  var EXCL_DEPT=/지컬|B2C|CS|연구|구매팀|인사|총무/;
+  var _incl=function(r){return !EXCL_DEPT.test(String(r['사용부서']||''));};
+  var consR=rows26.filter(function(r){return r['구분#2']==='소모품'&&r['국내외']==='국내'&&_incl(r);});
+  var devR =rows26.filter(function(r){return r['구분#2']==='제품군'&&r['국내외']==='국내'&&_incl(r);});
   var intlR=rows26.filter(function(r){return r['국내외']==='해외';});
   // updatedAt: 소모품 2026 날짜 max (없으면 전체 rows26 max)
   var dates=consR.map(function(r){return r['날짜'];}).filter(Boolean);
