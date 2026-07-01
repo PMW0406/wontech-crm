@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
 <title>회계 매출자료 업로드 — 원텍 통합</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%23475569'/><g transform='translate(13,36) scale(0.144)' fill='%23fff'><rect width='110' height='110' rx='28'/><rect x='204' width='110' height='110' rx='28'/><rect x='408' width='110' height='110' rx='28'/><rect x='102' y='97' width='110' height='110' rx='28'/><rect x='306' y='97' width='110' height='110' rx='28'/></g></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -14,6 +15,7 @@
 <script src="portfolio_engine.js"></script>
 <script src="ilbo_engine.js"></script>
 <style>
+  html{color-scheme:light}
   body{font-family:'Noto Sans KR',sans-serif;background:#f4f6fa;color:#1f2937;}
   .wrap{max-width:840px;margin:0 auto;padding:28px 16px 60px;}
   .card-box{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:22px;margin-bottom:18px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
@@ -32,6 +34,16 @@
   #log{font-size:12px;color:#64748b;white-space:pre-wrap;font-family:ui-monospace,monospace;max-height:160px;overflow:auto;}
   .btn-confirm{font-weight:700;padding:11px 0;}
   .monrow{font-size:12px;color:#475569;font-variant-numeric:tabular-nums;}
+  @media(max-width:820px){
+    body{overflow-x:hidden;}
+    .wrap{max-width:100%;width:100%;padding:18px 12px 48px;}
+    .card-box{max-width:100%;padding:16px;}
+    #loginBox{max-width:92vw;margin:32px auto;}
+    .drop{padding:24px 14px;}
+    table.sum{display:block;overflow-x:auto;}
+    input.form-control,.btn,.btn-confirm{width:100%;}
+    .btn,.btn-confirm{padding:12px 0;font-size:15px;}
+  }
 </style>
 </head>
 <body>
