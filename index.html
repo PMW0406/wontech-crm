@@ -1725,6 +1725,14 @@ async function _loadSalesTeam(){
   }catch(e){}
 }
 function _isKorSales(name){ return KOR_SALES_TEAM.indexOf(name)>=0; }
+// 담당자 필터 드롭다운을 명단(한국영업1/2파트 9명)으로 채움. 첫 '전체' 옵션·현재선택 유지. extra=추가 옵션 HTML.
+function _fillSalesFilter(sel, extra){
+  if(!sel) return;
+  const cur=sel.value;
+  const ph=sel.querySelector('option[value=""]'); const phHtml=ph?ph.outerHTML:'';
+  sel.innerHTML=phHtml + KOR_SALES_TEAM.map(n=>'<option value="'+n.replace(/"/g,'&quot;')+'">'+n.replace(/</g,'&lt;')+'</option>').join('') + (extra||'');
+  if([...sel.options].some(o=>o.value===cur)) sel.value=cur;
+}
 function _mergeRep(a,b){
   if(!a) return JSON.parse(JSON.stringify(b));
   ['total','y2025','y2026','qty2025','qty2026','cust2025','cust2026'].forEach(k=>a[k]=(a[k]||0)+(b[k]||0));
@@ -4105,12 +4113,8 @@ function renderConsHospitals() {
   const salesF = document.getElementById('hosp-sales-filter')?.value||'';
   const gradeF = document.getElementById('hosp-grade-filter')?.value||'';
 
-  // 담당자 목록 동적 생성 (최초 1회)
-  const salesSel = document.getElementById('hosp-sales-filter');
-  if(salesSel && salesSel.options.length<=1){
-    const sl=[...new Set(Object.values(CONS.hospitals).map(h=>h.sales).filter(Boolean))].sort();
-    sl.forEach(s=>{ const o=document.createElement('option'); o.value=o.textContent=s; salesSel.appendChild(o); });
-  }
+  // 담당자 목록 = 한국영업1/2파트 명단(담당영업 기준)
+  _fillSalesFilter(document.getElementById('hosp-sales-filter'));
 
   _injectPeriodCtrl('hosp');
   const P=_getPeriod('hosp'), _hcur=_spanMonths(P), _hprev=_spanMonths(_yoyShift(P));
@@ -4122,7 +4126,7 @@ function renderConsHospitals() {
 
   const all = Object.entries(CONS.hospitals).filter(([n,h])=>{
     if(q && !n.toLowerCase().includes(q)) return false;
-    if(salesF && h.sales!==salesF) return false;
+    if(salesF && (((HOSP_INFO[n]||{}).mgr)||h.sales)!==salesF) return false;
     if(gradeF && GRADE(h).g!==gradeF) return false;
     return true;
   });
@@ -4153,7 +4157,7 @@ function renderConsHospitals() {
   // 담당자별 조회 (담당영업 mgr 우선, 없으면 거래담당)
   const _riskDut=x=>((HOSP_INFO[x.name]||{}).mgr)||x.h.sales||'';
   const _rf=document.getElementById('risk-mgr-filter');
-  if(_rf && !_rf.dataset.filled){ const ns=[...new Set(scored.map(_riskDut).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ko')); _rf.insertAdjacentHTML('beforeend', ns.map(n=>'<option value="'+n.replace(/"/g,'&quot;')+'">'+n+'</option>').join('')); _rf.dataset.filled='1'; }
+  _fillSalesFilter(_rf);
   const _rfv=(_rf&&_rf.value)||'';
   const scoredF = _rfv ? scored.filter(x=>_riskDut(x)===_rfv) : scored;
   const _rfc=document.getElementById('risk-filter-cnt'); if(_rfc) _rfc.textContent=_rfv?('· '+_rfv+' '+scoredF.length+'곳'):'';
@@ -4190,7 +4194,7 @@ function renderConsHospitals() {
   // 감소 담당자별 조회 (담당영업 mgr 우선, 없으면 거래담당)
   const _decDut=e=>((HOSP_INFO[e[0]]||{}).mgr)||e[1].sales||'';
   const _df=document.getElementById('decline-mgr-filter');
-  if(_df && !_df.dataset.filled){ const dns=[...new Set(decline.map(_decDut).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ko')); _df.insertAdjacentHTML('beforeend', dns.map(n=>'<option value="'+n.replace(/"/g,'&quot;')+'">'+n+'</option>').join('')); _df.dataset.filled='1'; }
+  _fillSalesFilter(_df);
   const _dfv=(_df&&_df.value)||'';
   const declineF = _dfv ? decline.filter(e=>_decDut(e)===_dfv) : decline;
   const _dfc=document.getElementById('decline-filter-cnt'); if(_dfc) _dfc.textContent=_dfv?('· '+_dfv+' '+declineF.length+'곳'):'';
@@ -4687,12 +4691,8 @@ function renderPipeline() {
   const q=(document.getElementById('pipe-search')?.value||'').toLowerCase().trim();
   const salesF=document.getElementById('pipe-sales-filter')?.value||'';
 
-  // 담당자 필터 옵션 채우기
-  const salesSel=document.getElementById('pipe-sales-filter');
-  if(salesSel&&salesSel.options.length<=1){
-    const sl=[...new Set(DB.d.pipeline.map(d=>d.sales).filter(Boolean))].sort();
-    sl.forEach(s=>{const o=document.createElement('option');o.value=o.textContent=s;salesSel.appendChild(o);});
-  }
+  // 담당자 필터 = 한국영업1/2파트 명단
+  _fillSalesFilter(document.getElementById('pipe-sales-filter'));
 
   // 전체 데이터 기준 요약 (필터 전)
   const allRaw=DB.d.pipeline;
@@ -5365,11 +5365,7 @@ function renderCustomers(){
   document.getElementById('cust-view-cards').innerHTML=cards.map(c=>'<div class="col-6 col-md-3"><div onclick="setCustView(\''+c.v+'\')" style="cursor:pointer;border:2px solid '+(_custView===c.v?c.c:'#e5e7eb')+';background:'+(_custView===c.v?c.c+'0d':'#fff')+';border-radius:12px;padding:12px 14px"><div style="display:flex;align-items:center;gap:8px"><i class="bi '+c.ic+'" style="color:'+c.c+';font-size:18px"></i><span style="font-weight:700;font-size:14px;color:'+(_custView===c.v?c.c:'#374151')+'">'+c.lab+'</span></div><div style="font-size:11px;color:#6b7280;margin-top:4px">'+c.sub+'</div></div></div>').join('');
   // 담당영업 드롭다운 채우기(1회) — 콜스케줄용(엑셀 담당영업 기준)
   const salesSel=document.getElementById('cust-sales-filter');
-  if(salesSel && !salesSel.dataset.filled){
-    const names=[...new Set(all.map(h=>h.mgr).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ko'));
-    salesSel.insertAdjacentHTML('beforeend', names.map(n=>'<option value="'+_custEsc(n)+'">'+_custEsc(n)+'</option>').join('')+'<option value="__none__">— 미배정 —</option>');
-    salesSel.dataset.filled='1';
-  }
+  _fillSalesFilter(salesSel, '<option value="__none__">— 미배정 —</option>');
   const salesF=(salesSel&&salesSel.value)||'';
   const q=(document.getElementById('search-cust').value||'').toLowerCase();
   let f=all.filter(h=>!q||h.name.toLowerCase().includes(q)||h.sido.includes(q)||h.gugun.includes(q)||(h.sales||'').toLowerCase().includes(q)||(h.mgr||'').toLowerCase().includes(q)||(h.topProd||'').toLowerCase().includes(q));
@@ -6108,7 +6104,7 @@ function renderSchedule(){
   if(dl && !dl.dataset.filled){ const ns=[...new Set([].concat(Object.keys(CONS.hospitals||{}),Object.keys(DEVICE.hospitals||{})))].sort((a,b)=>a.localeCompare(b,'ko')); dl.innerHTML=ns.slice(0,2500).map(n=>'<option value="'+n.replace(/"/g,'&quot;')+'">').join(''); dl.dataset.filled='1'; }
   const all=_schItems();
   const sf=document.getElementById('sch-sales-filter');
-  if(sf && !sf.dataset.filled){ const sn=[...new Set(all.map(i=>i.sales).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ko')); sf.insertAdjacentHTML('beforeend', sn.map(n=>'<option value="'+n.replace(/"/g,'&quot;')+'">'+_schEsc(n)+'</option>').join('')); sf.dataset.filled='1'; }
+  _fillSalesFilter(sf);
   const sfv=(sf&&sf.value)||'';
   const items = sfv? all.filter(i=>i.sales===sfv) : all;
   const st=document.getElementById('sch-stats'); if(st) st.innerHTML=_schStatsBar(items);
