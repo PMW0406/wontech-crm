@@ -200,7 +200,8 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
     <div style="position:sticky;top:0;z-index:10;background:linear-gradient(135deg,#0f172a,#1e2140);padding:20px 32px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.08)">
       <button onclick="hideAdminPanel()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#94a3b8;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px"><i class="bi bi-arrow-left me-1"></i>돌아가기</button>
       <div style="font-size:18px;font-weight:700;color:#fff"><i class="bi bi-shield-lock me-2 text-warning"></i>사용자 관리</div>
-      <button onclick="openAddUserModal()" style="margin-left:auto;background:#ff4500;border:none;color:#fff;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600"><i class="bi bi-person-plus me-1"></i>사용자 추가</button>
+      <button id="admin-upload-btn" onclick="goUpload()" title="매일 재무팀 회계파일 1개 업로드 → 한국·해외·전사·포트폴리오·일보 전 사이트 자동 갱신 (마스터 전용)" style="display:none;margin-left:auto;background:#16a34a;border:none;color:#fff;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600"><i class="bi bi-cloud-arrow-up me-1"></i>회계파일 업로드 (전 사이트 갱신)</button>
+      <button onclick="openAddUserModal()" style="background:#ff4500;border:none;color:#fff;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600"><i class="bi bi-person-plus me-1"></i>사용자 추가</button>
     </div>
     <div style="max-width:1640px;margin:0 auto;padding:24px 28px 40px">
     <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
@@ -3144,6 +3145,13 @@ async function doLogin() {
   await _showLauncherOrApp(data.user);
 }
 
+// 일일 회계파일 업로드 페이지 열기(세션 토큰 전달 → 재로그인 불필요)
+async function goUpload(){
+  const {data:{session:s}}=await _sb.auth.getSession();
+  let u='https://wt-management.github.io/wontech/upload.html';
+  if(s) u+='#at='+encodeURIComponent(s.access_token)+'&rt='+encodeURIComponent(s.refresh_token);
+  location.href=u;
+}
 async function doLogout() {
   await _sb.auth.signOut();
   // Supabase 세션 localStorage 완전 삭제 (브라우저 재시작 후 자동 로그인 방지)
@@ -6036,6 +6044,7 @@ function showAdminPanel() {
   document.title = 'wontech - 관리자';
   document.getElementById('launcher-main').style.display = 'none';
   document.getElementById('launcher-admin').style.display = 'block';
+  { const ub=document.getElementById('admin-upload-btn'); if(ub) ub.style.display = (typeof _isMaster!=='undefined'&&_isMaster)?'':'none'; }  // 회계파일 업로드=마스터 전용
   // 패널이 화면보다 길어도 위쪽이 잘리지 않도록 상단 정렬 + 맨 위로 스크롤
   const ls = document.getElementById('launcher-screen');
   if(ls){ ls.style.justifyContent = 'flex-start'; ls.scrollTop = 0; }

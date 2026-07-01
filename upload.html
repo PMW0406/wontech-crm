@@ -114,14 +114,27 @@ async function init(){
     if(at&&rt){ await _sb.auth.setSession({access_token:decodeURIComponent(at),refresh_token:decodeURIComponent(rt)}); history.replaceState(null,'',location.pathname); } }catch(e){}
   const {data:{session}}=await _sb.auth.getSession();
   if(!session){ document.getElementById('loginBox').style.display='block'; return; }
-  showApp();
+  await showApp();
 }
-function showApp(){ document.getElementById('loginBox').style.display='none'; document.getElementById('appBox').style.display='block'; }
+// 업로드 권한 = 마스터(pmw0406) 전용 (당분간)
+async function _canUpload(user){
+  return user.email==='pmw0406@gmail.com';
+}
+async function showApp(){
+  const {data:{session}}=await _sb.auth.getSession();
+  if(!session){ document.getElementById('loginBox').style.display='block'; return; }
+  if(!(await _canUpload(session.user))){
+    await _sb.auth.signOut();
+    alert('업로드 권한이 없습니다. (영업전략팀·관리자 전용)');
+    location.href='https://wt-management.github.io/wontech/'; return;
+  }
+  document.getElementById('loginBox').style.display='none'; document.getElementById('appBox').style.display='block';
+}
 async function doLogin(){
   const email=document.getElementById('email').value.trim(), pw=document.getElementById('pw').value;
   const {error}=await _sb.auth.signInWithPassword({email,password:pw});
   if(error){ document.getElementById('loginErr').textContent=error.message; return; }
-  showApp();
+  await showApp();
 }
 
 // 파일 선택/드롭
