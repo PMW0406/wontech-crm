@@ -1677,7 +1677,7 @@ const DB = {
     await Promise.all(tables.map(async t => {
       try {
         const {data, error} = await _sb.from(t).select('id, data');
-        if(!error && data) this.d[t] = data.map(r => r.data);
+        if(!error && data) this.d[t] = data.map(r => r.data).filter(x => !(x && x.deleted));
       } catch(e) { console.warn(t, e); }
     }));
   },
@@ -5031,7 +5031,24 @@ function QDOC(q,tmpl){
   +'</div>';
 }
 
-function delQuote(id){if(!confirm('삭제하시겠습니까?'))return;DB.d.quotes=DB.d.quotes.filter(x=>x.id!==id);DB.save('quotes').then(()=>renderQuotes());}
+async function delQuote(id){
+  if(!confirm('견적서를 삭제하시겠습니까?'))return;
+  showToast('삭제 중...');
+  try{
+    let removed=false;
+    try{ await _sb.from('quotes').delete().eq('id',id);
+      const {data:chk}=await _sb.from('quotes').select('id').eq('id',id).maybeSingle();
+      removed=!chk;
+    }catch(e){}
+    if(!removed){
+      // 하드삭제 실패(권한/RLS 등) → 소프트삭제(숨김)로 확실히 제거
+      const q=DB.d.quotes.find(x=>x.id===id);
+      if(q){ q.deleted=true; await _sb.from('quotes').upsert({id:id,data:q}); }
+    }
+    DB.d.quotes=DB.d.quotes.filter(x=>x.id!==id);
+    renderQuotes(); showToast('삭제 완료', true);
+  }catch(e){ showToast('삭제 실패: '+(e.message||e), true, true); }
+}
 
 function copyQuoteLink(id){
   const url=`${location.origin}${location.pathname}?q=${id}`;
@@ -5959,12 +5976,13 @@ function confirmEquipExcel() {
 function statusBadge(s){if(s==='점검중')return'<span class="badge bg-warning text-dark">점검중</span>';if(s==='폐기')return'<span class="badge bg-danger">폐기</span>';return'<span class="badge bg-success">정상</span>';}
 
 // ── 일정 (방문·콜 스케줄) — logs 재사용(kind:'schedule') + 후속조치(nextDate) 병합 ──
-let _schView='week', _schMonth=null;
+let _schView=(function(){try{return sessionStorage.getItem('sch_view')||'week';}catch(e){return 'week';}})(), _schMonth=null;
 const _SCH_COL={'방문':'#2563eb','콜':'#0891b2','데모':'#7c3aed','A/S':'#ea580c','기타':'#64748b','후속':'#9ca3af'};
 function _schEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function _schTodayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function _schMe(){ return ((typeof _meName!=='undefined'&&_meName)||(typeof currentUserName==='function'?currentUserName():'')||'').trim(); }
-function setSchView(v,btn){ _schView=v; document.querySelectorAll('#page-schedule .btn-group .btn').forEach(b=>b.classList.remove('active')); if(btn)btn.classList.add('active'); renderSchedule(); }
+function setSchView(v,btn){ _schView=v; try{sessionStorage.setItem('sch_view',v);}catch(e){} document.querySelectorAll('#page-schedule .btn-group .btn').forEach(b=>b.classList.remove('active')); if(btn)btn.classList.add('active'); renderSchedule(); }
+function _schSyncViewBtn(){ const m={today:'sch-v-today',week:'sch-v-week',month:'sch-v-month'}; document.querySelectorAll('#page-schedule .btn-group .btn').forEach(b=>b.classList.remove('active')); const b=document.getElementById(m[_schView]); if(b)b.classList.add('active'); }
 function _schItems(){
   const out=[];
   (DB.d.logs||[]).forEach(l=>{
@@ -6065,6 +6083,7 @@ function _schMonthView(items){
 }
 function renderSchedule(){
   if(!document.getElementById('sch-body')) return;
+  _schSyncViewBtn();
   const dl=document.getElementById('sch-cust-list');
   if(dl && !dl.dataset.filled){ const ns=[...new Set([].concat(Object.keys(CONS.hospitals||{}),Object.keys(DEVICE.hospitals||{})))].sort((a,b)=>a.localeCompare(b,'ko')); dl.innerHTML=ns.slice(0,2500).map(n=>'<option value="'+n.replace(/"/g,'&quot;')+'">').join(''); dl.dataset.filled='1'; }
   const all=_schItems();
@@ -6118,10 +6137,19 @@ function _schToHosp(nm){
 function _schHospInfo(name){
   const box=document.getElementById('sch-hosp-info'); if(!box) return;
   name=(name||'').trim();
+  if(!name){ box.style.display='none'; box.innerHTML=''; return; }
   const hi=(typeof HOSP_INFO!=='undefined'&&HOSP_INFO[name])||null;
   const ch=(typeof CONS!=='undefined'&&CONS.hospitals&&CONS.hospitals[name])||null;
   const dh=(typeof DEVICE!=='undefined'&&DEVICE.hospitals&&DEVICE.hospitals[name])||null;
-  if(!hi&&!ch&&!dh){ box.style.display='none'; box.innerHTML=''; return; }
+  const nm0=_schEsc(name).replace(/&#39;/g,"\\x27");
+  if(!hi&&!ch&&!dh){
+    // 거래 데이터 없는 병원(신규/미등록) — 이름만이라도 표시
+    box.style.display='block';
+    box.innerHTML='<div style="background:#f8fafc;border:1px solid #eef2f7;border-radius:12px;padding:11px 14px;display:flex;justify-content:space-between;align-items:center">'
+      +'<span style="font-size:12.5px;color:#334155"><i class="bi bi-hospital me-1" style="color:#94a3b8"></i><b>'+_schEsc(name)+'</b> <span style="font-size:11px;color:#94a3b8;margin-left:4px">· 거래 이력 없음 (신규/미등록)</span></span>'
+      +'<span onclick="_schToHosp(\''+nm0+'\')" style="font-size:11px;color:#2563eb;cursor:pointer;font-weight:600">병원 상세 ↗</span></div>';
+    return;
+  }
   const reg=(typeof _hospRegion==='function')?_hospRegion(name):null;
   const regStr=(reg&&reg[0])?(reg[0]+' '+(reg[1]||'')).trim():'-';
   const mgr=(hi&&hi.mgr)||'-';
