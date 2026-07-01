@@ -1168,6 +1168,8 @@ function _krw(v){v=Number(v)||0;var w=v*USD_KRW;return w>=1e8?'₩'+(w/1e8).toFi
 function _docCount(d){var o=d.docs||{};return ['co','ci','pl','ip'].filter(function(k){return o[k];}).length;}
 function _isMasterIntl(){return !!(_currentUser&&(_currentUser.role==='admin'||_currentUser.email==='pmw0406@gmail.com'));}
 function _canEditIntl(owner){return !owner||owner===_meName||_isMasterIntl();}
+function _norm2(s){return String(s||'').replace(/^[가-힣A-Za-z]+\//,'').replace(/[\s()\[\].,_/-]/g,'').toLowerCase();}
+function _dealerActual(name){var dn=_norm2(name);if(!dn||dn.length<2)return {krw:0,who:''};var sum=0,who='';var I=(typeof INTL!=='undefined')?INTL:null;if(I&&I.countries){Object.keys(I.countries).forEach(function(c){var cd=(I.countries[c].clientData)||{};Object.keys(cd).forEach(function(k){var kn=_norm2(k);if(kn&&kn.length>=2&&(kn.indexOf(dn)>=0||dn.indexOf(kn)>=0)){sum+=Number(cd[k].total)||0;if(!who)who=k;}});});}return {krw:sum,who:who};}
 function _actFromDeal(){var d=_dealEdit||{};closeDeal();openAct();var g=function(k,v){var e=document.getElementById(k);if(e)e.value=v||'';};g('a-country',d.country);g('a-dealer',d.dealer);g('a-product',d.product);}
 function _alertStripHTML(){var today=_today();var t7=new Date(Date.now()+7*864e5).toISOString().slice(0,10);var overdue=INTL_PIPE.filter(function(d){return d.stage!=='선적/납품'&&d.expectedShip&&d.expectedShip<today;}).length;var todayAct=0;INTL_ACT.forEach(function(a){if(a.nextDate===today)todayAct++;});INTL_PIPE.forEach(function(d){if(d.nextDate===today)todayAct++;});var shipSoon=INTL_PIPE.filter(function(d){return d.stage!=='선적/납품'&&d.expectedShip&&d.expectedShip>=today&&d.expectedShip<=t7;}).length;if(!overdue&&!todayAct&&!shipSoon)return '';var chip=function(ic,txt,n,col){return n?'<span style="display:inline-flex;align-items:center;gap:5px;background:'+col+'18;color:'+col+';border-radius:8px;padding:5px 11px;font-size:12px;font-weight:600"><i class="bi '+ic+'"></i>'+txt+' '+n+'</span>':'';};return '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+chip('bi-exclamation-triangle','기한초과 딜',overdue,'#dc2626')+chip('bi-check2-square','오늘 액션',todayAct,'#16a34a')+chip('bi-truck','선적임박(7일)',shipSoon,'#fd7e14')+'</div>';}
 function renderSales(){
@@ -1327,7 +1329,7 @@ function renderDealers(){
 function openDealer(name){
   _dealerCur=name; var ag=_dealerAgg()[name]||{name:name}, info=INTL_DEALERS[name]||{};
   document.getElementById('dl-modal-title').textContent=name;
-  document.getElementById('dl-modal-kpi').innerHTML=[['진행딜',ag.open+'건'],['진행액',_fmtUSD(ag.openAmt)],['계약누계',_fmtUSD(ag.won)],['활동',ag.acts+'회']].map(function(k){return '<div class="col-3"><div style="background:#f8fafc;border-radius:8px;padding:7px 9px"><div style="color:#94a3b8;font-size:10px">'+k[0]+'</div><div style="font-weight:700;color:#0d9488">'+k[1]+'</div></div></div>';}).join('');
+  var _actR=_dealerActual(name);var _kc=[['진행딜',ag.open+'건','#0d9488',''],['진행액',_fmtUSD(ag.openAmt),'#0d9488',''],['계약누계',_fmtUSD(ag.won),'#0d9488',''],['활동',ag.acts+'회','#0d9488','']];if(_actR.krw>0)_kc.push(['실제 회계매출',fmtW(_actR.krw),'#2563eb',_actR.who]);document.getElementById('dl-modal-kpi').innerHTML=_kc.map(function(k){return '<div class="col-6 col-md-3"><div style="background:#f8fafc;border-radius:8px;padding:7px 9px" title="'+_esc(k[3]||'')+'"><div style="color:#94a3b8;font-size:10px">'+k[0]+'</div><div style="font-weight:700;color:'+k[2]+'">'+k[1]+'</div></div></div>';}).join('')+(_actR.who?'<div class="col-12" style="font-size:10px;color:#94a3b8;margin-top:-2px"><i class="bi bi-link-45deg"></i>회계 매칭: '+_esc(_actR.who)+'</div>':'');
   var g=function(k,v){var e=document.getElementById(k);if(e)e.value=v==null?'':v;};
   g('dm-country',info.country||ag.country);g('dm-contact',info.contact);g('dm-email',info.email);g('dm-tier',info.tier);g('dm-terms',info.terms);g('dm-note',info.note);
   var deals=INTL_PIPE.filter(function(d){return d.dealer===name;});
@@ -1371,6 +1373,7 @@ function closeAct(){ document.getElementById('ac-modal').style.display='none'; }
 function saveAct(){
   var g=function(k){return document.getElementById(k).value;};
   var dealer=g('a-dealer').trim(); if(!dealer){alert('딜러/거래처를 입력하세요');return;}
+  if(_actEdit&&!_canEditIntl(_actEdit.sales)){alert('담당자('+(_actEdit.sales||'')+')의 활동입니다. 본인 기록만 수정할 수 있어요.');return;}
   var a=_actEdit||{id:'ia_'+Date.now()+Math.random().toString(36).slice(2,6)};
   a.date=g('a-date');a.type=g('a-type');a.country=g('a-country').trim();a.dealer=dealer;a.product=g('a-product').trim();a.content=g('a-content').trim();a.nextAction=g('a-next').trim();a.nextDate=g('a-nextdate');a.sales=g('a-sales').trim();
   if(!_actEdit)INTL_ACT.push(a);
