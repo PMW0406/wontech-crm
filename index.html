@@ -307,7 +307,6 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
       <li><a class="nav-link" onclick="showPage('consumables',this)"><i class="bi bi-capsule"></i>소모품 매출</a></li>
       <li><a class="nav-link" onclick="showPage('cons-hospitals',this)"><i class="bi bi-building-check"></i>병원별 분석</a></li>
       <li><a class="nav-link" onclick="showPage('device-sales',this)"><i class="bi bi-box-seam"></i>제품 매출</a></li>
-      <li id="nav-device-reps" style="display:none"><a class="nav-link" onclick="showPage('device-reps',this)"><i class="bi bi-person-badge"></i>담당자별 분석</a></li>
       <li><a class="nav-link" onclick="showPage('region',this)"><i class="bi bi-geo-alt"></i>지역별 분석</a></li>
       <li><a class="nav-link" onclick="showPage('pending',this)"><i class="bi bi-hourglass-split"></i>회계 미반영 매출</a></li>
     </ul>
@@ -326,6 +325,7 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
       <li><a class="nav-link" onclick="showPage('equipments',this)"><i class="bi bi-cpu"></i>장비</a></li>
 
       <li><a class="nav-link" onclick="showPage('products',this)"><i class="bi bi-box-seam"></i>제품</a></li>
+      <li id="nav-device-reps" style="display:none"><a class="nav-link" onclick="showPage('device-reps',this)"><i class="bi bi-person-badge"></i>담당자별 분석 <span style="font-size:9px;background:#334155;color:#cbd5e1;border-radius:4px;padding:1px 5px;margin-left:2px">파트장</span></a></li>
     </ul>
   </div>
   <div class="sidebar-footer">
@@ -760,53 +760,86 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
     <div id="sch-body"></div>
   </div>
 
+  <!-- ROI / Sales Speech 공용 디자인 -->
+  <style>
+  .rs-hero{border-radius:16px;padding:16px 20px;margin-bottom:18px;display:flex;align-items:center;gap:15px}
+  .rs-hero .rs-ic{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;flex-shrink:0}
+  .rs-hero h4{margin:0;font-size:17px;font-weight:800;color:#0f172a}
+  .rs-hero p{margin:2px 0 0;font-size:12px;color:#64748b}
+  .roi-hero{background:linear-gradient(120deg,#fff7ed,#fffdf7);border:1px solid #fed7aa}
+  .roi-hero .rs-ic{background:linear-gradient(135deg,#fb923c,#f97316)}
+  .spd-hero{background:linear-gradient(120deg,#eef2ff,#f5f3ff);border:1px solid #c7d2fe}
+  .spd-hero .rs-ic{background:linear-gradient(135deg,#6366f1,#4f46e5)}
+  .roi-seg{display:inline-flex;background:#eef2f6;border-radius:12px;padding:4px;gap:4px;margin-bottom:16px}
+  .roi-seg button{border:0;background:transparent;font-size:13px;font-weight:700;color:#64748b;padding:8px 22px;border-radius:9px;cursor:pointer;transition:.15s}
+  .roi-seg button.active{background:#fff;color:#0f172a;box-shadow:0 1px 5px rgba(0,0,0,.09)}
+  .roi-form{background:#fff;border:1px solid #eef2f6;border-radius:16px;padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(15,23,42,.04)}
+  .roi-form .rf-lbl{font-size:11.5px;color:#64748b;font-weight:600;margin-bottom:4px;display:block}
+  .roi-form .form-control,.roi-form .form-select{border-radius:9px;border-color:#e2e8f0;font-size:13px;padding:7px 11px}
+  .roi-form .form-control:focus,.roi-form .form-select:focus{border-color:#f9a86a;box-shadow:0 0 0 3px rgba(249,115,22,.12)}
+  .roi-form .form-control[readonly]{background:#f8fafc;color:#475569}
+  .spd-card{cursor:pointer;background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:15px 16px 15px 20px;height:100%;transition:.15s;position:relative;overflow:hidden}
+  .spd-card:hover{box-shadow:0 8px 22px rgba(15,23,42,.10);transform:translateY(-3px)}
+  .spd-card .spd-bar{position:absolute;left:0;top:0;bottom:0;width:5px}
+  .spd-card .spd-badge{width:36px;height:36px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;margin-bottom:9px}
+  .spd-card .spd-name{font-size:14px;font-weight:800;color:#0f172a;letter-spacing:.3px}
+  .spd-card .spd-tag{font-size:12px;color:#64748b;line-height:1.45;margin-top:3px}
+  .spd-card .spd-go{position:absolute;right:14px;top:16px;color:#cbd5e1;font-size:13px;transition:.15s}
+  .spd-card:hover .spd-go{color:#6366f1;transform:translateX(2px)}
+  </style>
+
   <!-- ROI 계산기 (네이티브 재구현: RF/HIFU · Laser) -->
   <div id="page-roi" class="page">
-    <div class="page-header"><h5><i class="bi bi-calculator me-2"></i>ROI 계산기 <span class="text-muted" style="font-size:12px;font-weight:400">· 장비 투자 회수 시뮬레이터</span></h5></div>
-    <ul class="nav nav-pills mb-3" style="gap:6px">
-      <li class="nav-item"><button id="roitab-rf" class="nav-link active" onclick="roiTab('rf')"><i class="bi bi-lightning-charge me-1"></i>RF / HIFU</button></li>
-      <li class="nav-item"><button id="roitab-laser" class="nav-link" onclick="roiTab('laser')"><i class="bi bi-brightness-high me-1"></i>Laser</button></li>
-    </ul>
+    <div class="rs-hero roi-hero">
+      <div class="rs-ic"><i class="bi bi-calculator"></i></div>
+      <div><h4>ROI 계산기</h4><p>장비 투자 회수 시뮬레이터 · RF/HIFU · Laser</p></div>
+    </div>
+    <div class="roi-seg">
+      <button id="roitab-rf" class="active" onclick="roiTab('rf')">RF / HIFU</button>
+      <button id="roitab-laser" onclick="roiTab('laser')">Laser</button>
+    </div>
 
     <div id="roi-rf-panel">
-      <div class="card border-0 shadow-sm mb-3"><div class="card-body">
+      <div class="roi-form">
         <div class="fw-bold mb-1" style="font-size:14px"><i class="bi bi-lightning-charge-fill me-1" style="color:#f97316"></i>RF/HIFU ROI 분석</div>
         <div class="text-muted mb-3" style="font-size:12px">장비·패키지를 선택하면 검증된 기준값이 자동 입력됩니다. 예외는 “직접 입력”으로 조정하세요.</div>
-        <div class="row g-2">
-          <div class="col-md-6"><label class="form-label" style="font-size:12px">장비명</label><select id="rf-equipment" class="form-select form-select-sm"></select></div>
-          <div class="col-md-6" id="rf-package-row"><label class="form-label" style="font-size:12px">패키지명</label><select id="rf-package" class="form-select form-select-sm"></select></div>
-          <div class="col-md-4"><label class="form-label" style="font-size:12px">패키지 가격(원)</label><input id="rf-packagePrice" class="form-control form-control-sm" inputmode="numeric"></div>
-          <div class="col-md-4"><label class="form-label" style="font-size:12px">제공 소모품수(개)</label><input id="rf-consumableCount" class="form-control form-control-sm" type="number" min="0"></div>
-          <div class="col-md-4"><label class="form-label" style="font-size:12px">시술샷수(샷/회)</label><input id="rf-shotsPerTreatment" class="form-control form-control-sm" type="number" min="1"></div>
-          <div class="col-md-4"><label class="form-label" style="font-size:12px">1회 시술단가(원)</label><input id="rf-pricePerTreatment" class="form-control form-control-sm" inputmode="numeric"></div>
-          <div class="col-md-4"><label class="form-label" style="font-size:12px">일 시술 횟수(회/일)</label><input id="rf-treatmentsPerDay" class="form-control form-control-sm" type="number" min="0"></div>
-          <div class="col-md-4"><label class="form-label" style="font-size:12px">팁/카트리지 샷수(총 샷)</label><input id="rf-tipShots" class="form-control form-control-sm" type="number" min="1"></div>
+        <div class="row g-3">
+          <div class="col-md-6"><label class="rf-lbl">장비명</label><select id="rf-equipment" class="form-select"></select></div>
+          <div class="col-md-6" id="rf-package-row"><label class="rf-lbl">패키지명</label><select id="rf-package" class="form-select"></select></div>
+          <div class="col-md-4"><label class="rf-lbl">패키지 가격(원)</label><input id="rf-packagePrice" class="form-control" inputmode="numeric"></div>
+          <div class="col-md-4"><label class="rf-lbl">제공 소모품수(개)</label><input id="rf-consumableCount" class="form-control" type="number" min="0"></div>
+          <div class="col-md-4"><label class="rf-lbl">시술샷수(샷/회)</label><input id="rf-shotsPerTreatment" class="form-control" type="number" min="1"></div>
+          <div class="col-md-4"><label class="rf-lbl">1회 시술단가(원)</label><input id="rf-pricePerTreatment" class="form-control" inputmode="numeric"></div>
+          <div class="col-md-4"><label class="rf-lbl">일 시술 횟수(회/일)</label><input id="rf-treatmentsPerDay" class="form-control" type="number" min="0"></div>
+          <div class="col-md-4"><label class="rf-lbl">팁/카트리지 샷수(총 샷)</label><input id="rf-tipShots" class="form-control" type="number" min="1"></div>
         </div>
-      </div></div>
+      </div>
       <div id="rf-result"></div>
     </div>
 
     <div id="roi-laser-panel" style="display:none">
-      <div class="card border-0 shadow-sm mb-3"><div class="card-body">
+      <div class="roi-form">
         <div class="fw-bold mb-1" style="font-size:14px"><i class="bi bi-brightness-high-fill me-1" style="color:#2563eb"></i>Laser ROI 분석</div>
         <div class="text-muted mb-3" style="font-size:12px">일 고객 유입 기준 패키지 매출로 장비 투자 회수일을 계산합니다.</div>
-        <div class="row g-2">
-          <div class="col-md-6"><label class="form-label" style="font-size:12px">장비 가격(원)</label><input id="laser-equipmentPrice" class="form-control form-control-sm" inputmode="numeric" value="150,000,000"></div>
-          <div class="col-md-6"><label class="form-label" style="font-size:12px">1회 시술단가(원)</label><input id="laser-sessionUnitPrice" class="form-control form-control-sm" inputmode="numeric" value="300,000"></div>
-          <div class="col-md-6"><label class="form-label" style="font-size:12px">티케팅수(회)</label><input id="laser-ticketingCount" class="form-control form-control-sm" type="number" min="0" value="3"></div>
-          <div class="col-md-6"><label class="form-label" style="font-size:12px">고객수(명/일)</label><input id="laser-customerCount" class="form-control form-control-sm" type="number" min="0" value="15"></div>
+        <div class="row g-3">
+          <div class="col-md-6"><label class="rf-lbl">장비 가격(원)</label><input id="laser-equipmentPrice" class="form-control" inputmode="numeric" value="150,000,000"></div>
+          <div class="col-md-6"><label class="rf-lbl">1회 시술단가(원)</label><input id="laser-sessionUnitPrice" class="form-control" inputmode="numeric" value="300,000"></div>
+          <div class="col-md-6"><label class="rf-lbl">티케팅수(회)</label><input id="laser-ticketingCount" class="form-control" type="number" min="0" value="3"></div>
+          <div class="col-md-6"><label class="rf-lbl">고객수(명/일)</label><input id="laser-customerCount" class="form-control" type="number" min="0" value="15"></div>
         </div>
-      </div></div>
+      </div>
       <div id="laser-result"></div>
     </div>
   </div>
 
   <!-- Sales Speech (네이티브 재구현) -->
   <div id="page-speech" class="page">
-    <div class="page-header"><h5><i class="bi bi-chat-quote me-2"></i>Sales Speech <span class="text-muted" style="font-size:12px;font-weight:400">· 장비별 경쟁사 비교 + 세일즈 멘트</span></h5></div>
     <div id="speech-grid-view">
-      <div class="text-muted mb-3" style="font-size:13px">장비를 선택하면 경쟁사 비교표와 세일즈 멘트를 확인할 수 있습니다.</div>
-      <div id="speech-grid" class="row g-2"></div>
+      <div class="rs-hero spd-hero">
+        <div class="rs-ic"><i class="bi bi-chat-quote"></i></div>
+        <div><h4>Sales Speech</h4><p>장비를 선택하면 경쟁사 비교표와 세일즈 멘트를 확인할 수 있습니다.</p></div>
+      </div>
+      <div id="speech-grid" class="row g-3"></div>
     </div>
     <div id="speech-detail-view" style="display:none">
       <button class="btn btn-outline-secondary btn-sm mb-3" onclick="speechBack()"><i class="bi bi-arrow-left me-1"></i>장비 목록</button>
@@ -2206,37 +2239,42 @@ function renderSalesOverview() {
   // 월별 상세 표 (선택 기간)
   const _mt = document.getElementById('ov-month-table');
   if (_mt) {
-    // 작년+증감 셀(소모품·제품 카테고리별 YoY)
-    const _ly=(cur,ly)=>{ const g=ly>0?((cur/ly-1)*100):null; return '<td style="text-align:right;color:#9ca3af;white-space:nowrap">'+(ly?fmtW(ly):'-')+(g!==null?' <span style="font-size:9px;color:'+(g>=0?'#16a34a':'#dc2626')+'">'+(g>=0?'▲':'▼')+Math.abs(g).toFixed(0)+'%</span>':'')+'</td>'; };
-    let rows='', tC=0,tD=0,tP=0,tC25=0,tD25=0;
+    const _bl='border-left:1px solid #e5e7eb';                       // 그룹 구분선
+    const _bdg=(cur,ly)=>{ if(!(ly>0)) return ''; const g=(cur/ly-1)*100, up=g>=0; return ' <span style="font-size:9px;font-weight:700;color:'+(up?'#15803d':'#dc2626')+';background:'+(up?'#dcfce7':'#fee2e2')+';border-radius:5px;padding:1px 4px;white-space:nowrap;vertical-align:middle">'+(up?'▲':'▼')+Math.abs(g).toFixed(0)+'</span>'; };
+    const _ly =v=>'<td style="text-align:right;color:#94a3b8;'+_bl+'">'+(v?fmtW(v):'-')+'</td>';          // 작년(회색, 그룹시작)
+    const _cur=(v,col,ly)=>'<td style="text-align:right;font-weight:600;color:'+col+';white-space:nowrap">'+fmtW(v)+_bdg(v,ly)+'</td>'; // 올해+증감
+    let rows='', tC=0,tD=0,tP=0,tC25=0,tD25=0, ri=0;
     spanMs.forEach(x=>{
       const m=x.m, lbl=(P.cross?(String(x.y).slice(2)+'.'+m+'월'):(m+'월'));
       const c=_mCY(CONS,x.y)[m]||0, dv=_mCY(DEVICE,x.y)[m]||0, pe=(x.y===2026?(_consPendM(m)+_devPendM(m)):0),
             c25=_mCY(CONS,x.y-1)[m]||0, dv25=_mCY(DEVICE,x.y-1)[m]||0;
       tC+=c;tD+=dv;tP+=pe;tC25+=c25;tD25+=dv25; const sum=c+dv+pe, pr=c25+dv25, chg=pr>0?(((c+dv)/pr-1)*100):null;
-      rows+='<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:5px 8px">'+lbl+'</td>'
-        +'<td style="text-align:right;color:#2563eb">'+fmtW(c)+'</td>'+_ly(c,c25)
-        +'<td style="text-align:right;color:#16a34a">'+fmtW(dv)+'</td>'+_ly(dv,dv25)
-        +'<td style="text-align:right;color:#7c3aed">'+(pe?fmtW(pe):'-')+'</td>'
-        +'<td style="text-align:right;font-weight:700">'+fmtW(sum)+'</td><td style="text-align:right;color:#9ca3af">'+(pr?fmtW(pr):'-')+'</td>'
-        +'<td style="text-align:right;padding-right:8px">'+(chg===null?'-':'<span style="color:'+(chg>=0?'#16a34a':'#dc2626')+'">'+(chg>=0?'▲':'▼')+Math.abs(chg).toFixed(0)+'%</span>')+'</td></tr>';
+      const zebra=(ri++%2)?'background:#fcfdfe':'';
+      rows+='<tr style="border-bottom:1px solid #f1f5f9;'+zebra+'"><td style="padding:7px 10px;font-weight:600;color:#334151">'+lbl+'</td>'
+        +_ly(c25)+_cur(c,'#2563eb',c25)
+        +_ly(dv25)+_cur(dv,'#16a34a',dv25)
+        +'<td style="text-align:right;color:'+(pe?'#7c3aed':'#cbd5e1')+';'+_bl+'">'+(pe?fmtW(pe):'-')+'</td>'
+        +_ly(pr)+'<td style="text-align:right;font-weight:800;color:#0f172a">'+fmtW(sum)+'</td>'
+        +'<td style="text-align:right;padding-right:10px;'+_bl+'">'+(chg===null?'<span style="color:#cbd5e1">-</span>':'<span style="font-weight:700;color:'+(chg>=0?'#15803d':'#dc2626')+'">'+(chg>=0?'▲':'▼')+Math.abs(chg).toFixed(0)+'%</span>')+'</td></tr>';
     });
     const sumAll=tC+tD+tP, prAll=tC25+tD25, chgAll=prAll>0?(((tC+tD)/prAll-1)*100):null;
-    rows+='<tr style="border-top:2px solid #e5e7eb;font-weight:700;background:#f8fafc"><td style="padding:6px 8px">합계</td>'
-      +'<td style="text-align:right;color:#2563eb">'+fmtW(tC)+'</td>'+_ly(tC,tC25)
-      +'<td style="text-align:right;color:#16a34a">'+fmtW(tD)+'</td>'+_ly(tD,tD25)
-      +'<td style="text-align:right;color:#7c3aed">'+(tP?fmtW(tP):'-')+'</td>'
-      +'<td style="text-align:right">'+fmtW(sumAll)+'</td><td style="text-align:right;color:#9ca3af">'+(prAll?fmtW(prAll):'-')+'</td>'
-      +'<td style="text-align:right;padding-right:8px">'+(chgAll===null?'-':'<span style="color:'+(chgAll>=0?'#16a34a':'#dc2626')+'">'+(chgAll>=0?'▲':'▼')+Math.abs(chgAll).toFixed(0)+'%</span>')+'</td></tr>';
-    _mt.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:640px"><thead>'
-      +'<tr style="color:#6b7280;font-size:11px"><th rowspan="2" style="text-align:left;padding:5px 8px;vertical-align:bottom">월</th>'
-        +'<th colspan="2" style="text-align:center;color:#2563eb;padding:3px 8px;border-bottom:1px solid #e5e7eb">소모품</th>'
-        +'<th colspan="2" style="text-align:center;color:#16a34a;padding:3px 8px;border-bottom:1px solid #e5e7eb">제품(장비)</th>'
-        +'<th rowspan="2" style="text-align:right;color:#7c3aed;vertical-align:bottom">미반영</th>'
-        +'<th colspan="3" style="text-align:center;padding:3px 8px;border-bottom:1px solid #e5e7eb">합계</th></tr>'
-      +'<tr style="color:#9ca3af;font-size:10px;border-bottom:1px solid #e5e7eb"><th style="text-align:right;padding:2px 8px">올해</th><th style="text-align:right">작년</th>'
-        +'<th style="text-align:right">올해</th><th style="text-align:right">작년</th>'
-        +'<th style="text-align:right">올해</th><th style="text-align:right">작년</th><th style="text-align:right;padding-right:8px">증감</th></tr>'
+    rows+='<tr style="border-top:2px solid #cbd5e1;background:#f1f5f9"><td style="padding:9px 10px;font-weight:800;color:#0f172a">합계</td>'
+      +_ly(tC25)+_cur(tC,'#2563eb',tC25)
+      +_ly(tD25)+_cur(tD,'#16a34a',tD25)
+      +'<td style="text-align:right;font-weight:700;color:'+(tP?'#7c3aed':'#cbd5e1')+';'+_bl+'">'+(tP?fmtW(tP):'-')+'</td>'
+      +_ly(prAll)+'<td style="text-align:right;font-weight:800;color:#0f172a">'+fmtW(sumAll)+'</td>'
+      +'<td style="text-align:right;padding-right:10px;'+_bl+'">'+(chgAll===null?'-':'<span style="font-weight:800;color:'+(chgAll>=0?'#15803d':'#dc2626')+'">'+(chgAll>=0?'▲':'▼')+Math.abs(chgAll).toFixed(0)+'%</span>')+'</td></tr>';
+    const _gh=(txt,col,bg)=>'<th colspan="2" style="text-align:center;color:'+col+';background:'+bg+';padding:6px 8px;font-weight:700;'+_bl+';border-top-left-radius:8px;border-top-right-radius:8px">'+txt+'</th>';
+    _mt.innerHTML='<div style="overflow-x:auto;border:1px solid #e5e7eb;border-radius:12px"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:660px">'
+      +'<thead><tr style="font-size:11px">'
+        +'<th rowspan="2" style="text-align:left;padding:6px 10px;vertical-align:bottom;color:#64748b">월</th>'
+        +_gh('소모품','#2563eb','#eff6ff')+_gh('제품(장비)','#16a34a','#f0fdf4')
+        +'<th rowspan="2" style="text-align:right;color:#7c3aed;vertical-align:bottom;padding:6px 8px;'+_bl+'">미반영<br><span style="font-size:9px;font-weight:400;color:#c4b5fd">(예정)</span></th>'
+        +'<th colspan="3" style="text-align:center;color:#334151;background:#f8fafc;padding:6px 8px;font-weight:700;'+_bl+'">합계</th></tr>'
+      +'<tr style="color:#94a3b8;font-size:10px;border-bottom:2px solid #e5e7eb">'
+        +'<th style="text-align:right;padding:3px 8px;'+_bl+'">작년</th><th style="text-align:right">올해</th>'
+        +'<th style="text-align:right;'+_bl+'">작년</th><th style="text-align:right">올해</th>'
+        +'<th style="text-align:right;'+_bl+'">작년</th><th style="text-align:right">올해</th><th style="text-align:right;padding-right:10px;'+_bl+'">증감</th></tr>'
       +'</thead><tbody>'+rows+'</tbody></table></div>';
   }
 
@@ -7009,16 +7047,23 @@ window.addEventListener('popstate', function(e) {
 
   window.buildSpeechGrid = function(){
     const grid=document.getElementById('speech-grid'); if(!grid) return;
+    const _ini=n=>{const s=String(n).replace(/[^A-Za-z가-힣]/g,'');return s.slice(0,2).toUpperCase();};
     grid.innerHTML = SPEECH_DATA.map(d=>
-      '<div class="col-md-4 col-sm-6"><button type="button" onclick="showSpeechDetail(\''+d.id+'\')" class="w-100 text-start h-100" style="cursor:pointer;background:#fff;border:1px solid #e5e7eb;border-left:4px solid '+d.color+';border-radius:12px;padding:14px 16px;transition:box-shadow .12s,transform .12s" onmouseover="this.style.boxShadow=\'0 4px 14px rgba(0,0,0,.08)\';this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.boxShadow=\'\';this.style.transform=\'\'">'
-        +'<div style="font-size:15px;font-weight:800;color:#111827;letter-spacing:.3px">'+_esc(d.name)+'</div>'
-        +'<div style="font-size:12px;color:#6b7280;margin-top:4px;line-height:1.4">'+_esc(d.tagline)+'</div>'
-      +'</button></div>'
+      '<div class="col-lg-4 col-md-6"><div class="spd-card" onclick="showSpeechDetail(\''+d.id+'\')">'
+        +'<span class="spd-bar" style="background:'+d.color+'"></span>'
+        +'<i class="bi bi-arrow-right spd-go"></i>'
+        +'<span class="spd-badge" style="background:'+d.color+'">'+_ini(d.name)+'</span>'
+        +'<div class="spd-name">'+_esc(d.name)+'</div>'
+        +'<div class="spd-tag">'+_esc(d.tagline)+'</div>'
+      +'</div></div>'
     ).join('') +
-      '<div class="col-md-4 col-sm-6"><button type="button" onclick="showSpeechDetail(\'closing\')" class="w-100 text-start h-100" style="cursor:pointer;background:linear-gradient(135deg,#fff7ed,#fff);border:1px solid #fdba74;border-left:4px solid #ff5a0a;border-radius:12px;padding:14px 16px">'
-        +'<div style="font-size:15px;font-weight:800;color:#c2410c"><i class="bi bi-stars me-1"></i>원장님 클로징</div>'
-        +'<div style="font-size:12px;color:#9a3412;margin-top:4px">마무리 세일즈 멘트</div>'
-      +'</button></div>';
+      '<div class="col-lg-4 col-md-6"><div class="spd-card" onclick="showSpeechDetail(\'closing\')" style="background:linear-gradient(135deg,#fff7ed,#fff)">'
+        +'<span class="spd-bar" style="background:#ff5a0a"></span>'
+        +'<i class="bi bi-arrow-right spd-go"></i>'
+        +'<span class="spd-badge" style="background:linear-gradient(135deg,#fb923c,#ff5a0a)"><i class="bi bi-stars"></i></span>'
+        +'<div class="spd-name" style="color:#c2410c">원장님 클로징</div>'
+        +'<div class="spd-tag" style="color:#9a3412">전 장비 공통 · 마무리 세일즈 멘트</div>'
+      +'</div></div>';
   };
   window.showSpeechDetail = function(id){
     const c=document.getElementById('speech-detail-content');
