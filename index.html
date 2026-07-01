@@ -659,15 +659,6 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
       </div>
     </div>
 
-    <!-- 리더보드 -->
-    <div class="row g-3">
-      <div class="col-12">
-        <div class="card p-0">
-          <div class="p-3 border-bottom d-flex justify-content-between align-items-center"><span class="fw-bold" style="font-size:14px"><i class="bi bi-trophy-fill me-2" style="color:#f59e0b"></i>영업사원 실적 리더보드</span><span id="leaderboard-period" style="font-size:11px;color:#9ca3af"></span></div>
-          <div id="leaderboard" class="p-3"></div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- 파이프라인 -->
@@ -1443,17 +1434,19 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
 </div></div></div>
 
 <!-- 일정 추가 모달 -->
-<div class="modal fade" id="scheduleModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+<div class="modal fade" id="scheduleModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
   <div class="modal-header"><h5 class="modal-title"><i class="bi bi-calendar-plus me-1" style="color:#2563eb"></i>일정</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
   <div class="modal-body"><input type="hidden" id="sch-id">
     <div class="row g-2">
-      <div class="col-7"><label class="form-label" style="font-size:12px">병원 *</label><input type="text" id="sch-cust" class="form-control form-control-sm" list="sch-cust-list" placeholder="병원명"><datalist id="sch-cust-list"></datalist></div>
-      <div class="col-5"><label class="form-label" style="font-size:12px">유형</label><select id="sch-type" class="form-select form-select-sm"><option>방문</option><option>콜</option><option>데모</option><option>A/S</option><option>기타</option></select></div>
-      <div class="col-5"><label class="form-label" style="font-size:12px">날짜 *</label><input type="date" id="sch-date" class="form-control form-control-sm"></div>
-      <div class="col-3"><label class="form-label" style="font-size:12px">시간</label><input type="time" id="sch-time" class="form-control form-control-sm"></div>
-      <div class="col-4"><label class="form-label" style="font-size:12px">담당</label><input type="text" id="sch-sales" class="form-control form-control-sm"></div>
-      <div class="col-12"><label class="form-label" style="font-size:12px">내용/목적</label><input type="text" id="sch-note" class="form-control form-control-sm" placeholder="예: 재구매 상담 / 팁 발주 / 장비 점검"></div>
+      <div class="col-md-8"><label class="form-label" style="font-size:12px">병원 * <span class="text-muted" style="font-weight:400">(입력하면 자동완성)</span></label><input type="text" id="sch-cust" class="form-control form-control-sm" list="sch-cust-list" placeholder="병원명 입력…" oninput="_schHospInfo(this.value)" autocomplete="off"><datalist id="sch-cust-list"></datalist></div>
+      <div class="col-md-4"><label class="form-label" style="font-size:12px">유형</label><select id="sch-type" class="form-select form-select-sm"><option>방문</option><option>콜</option><option>데모</option><option>A/S</option><option>기타</option></select></div>
+      <div class="col-md-4"><label class="form-label" style="font-size:12px">날짜 *</label><input type="date" id="sch-date" class="form-control form-control-sm"></div>
+      <div class="col-md-4"><label class="form-label" style="font-size:12px">시간</label><input type="time" id="sch-time" class="form-control form-control-sm"></div>
+      <div class="col-md-4"><label class="form-label" style="font-size:12px">담당</label><input type="text" id="sch-sales" class="form-control form-control-sm"></div>
+      <div class="col-12"><label class="form-label" style="font-size:12px">제품 / 장비 <span class="text-muted" style="font-weight:400">(자동완성)</span></label><input type="text" id="sch-prod" class="form-control form-control-sm" list="sch-prod-list" placeholder="예: Oligio Kiss / Pico Andy / Tips F4.0" autocomplete="off"><datalist id="sch-prod-list"></datalist></div>
+      <div class="col-12"><label class="form-label" style="font-size:12px">내용 / 목적</label><textarea id="sch-note" class="form-control form-control-sm" rows="2" placeholder="예: 재구매 상담 / 데모 후 견적 협의 / 장비 정기 점검"></textarea></div>
     </div>
+    <div id="sch-hosp-info" style="display:none;margin-top:12px"></div>
   </div>
   <div class="modal-footer">
     <button class="btn btn-danger btn-sm me-auto" id="sch-del-btn" style="display:none" onclick="delSchedule()">삭제</button>
@@ -3008,7 +3001,8 @@ function renderDashboard() {
     </div>`;
   }).join(''):'<div class="text-muted text-center py-3" style="font-size:13px">만료 임박 장비 없음</div>';
 
-  // 리더보드 — 영업사원별 계약/상담/파이프라인
+  // 리더보드 제거됨 — 요소 없으면 여기서 종료(현황판 렌더 끝)
+  if(!document.getElementById('leaderboard')) return;
   const salesSet=new Set([...DB.d.pipeline.map(d=>d.sales||'미배정'),...DB.d.logs.map(l=>l.sales||'미배정')].filter(Boolean));
   const salesList=[...salesSet].map(s=>{
     const won=DB.d.pipeline.filter(d=>d.stage==='계약완료'&&(d.sales||'미배정')===s).reduce((a,d)=>a+Number(d.amount||0),0);
@@ -4510,7 +4504,7 @@ function dealDrawerHtml(d){
         </div></div></div>
     <div style="padding:14px 22px;border-top:1px solid #e5e7eb;display:flex;gap:8px;justify-content:flex-end">
       <button onclick="closeDealDrawer()" style="border:1px solid #e5e7eb;background:#fff;border-radius:9px;padding:8px 14px;font-weight:600;font-size:13px;cursor:pointer">닫기</button>
-      <button onclick="closeDealDrawer();openSchedule({custName:'${esc(d.custName).replace(/'/g,"&#39;")}',sales:'${esc(d.sales||'').replace(/'/g,"&#39;")}',type:'방문',content:'${esc(d.model||'').replace(/'/g,"&#39;")} 관련'})" style="border:1px solid #bfdbfe;background:#eff6ff;color:#2563eb;border-radius:9px;padding:8px 14px;font-weight:600;font-size:13px;cursor:pointer"><i class="bi bi-calendar-plus"></i> 일정 잡기</button>
+      <button onclick="closeDealDrawer();openSchedule({custName:'${esc(d.custName).replace(/'/g,"&#39;")}',sales:'${esc(d.sales||'').replace(/'/g,"&#39;")}',type:'방문',product:'${esc(d.model||'').replace(/'/g,"&#39;")}',content:'딜 관련 방문'})" style="border:1px solid #bfdbfe;background:#eff6ff;color:#2563eb;border-radius:9px;padding:8px 14px;font-weight:600;font-size:13px;cursor:pointer"><i class="bi bi-calendar-plus"></i> 일정 잡기</button>
       <button onclick="closeDealDrawer();editPipeline('${d.id}')" style="border:0;background:#2563eb;color:#fff;border-radius:9px;padding:8px 14px;font-weight:600;font-size:13px;cursor:pointer"><i class="bi bi-pencil"></i> 정보 수정</button></div>`;
 }
 
@@ -5961,8 +5955,8 @@ function setSchView(v,btn){ _schView=v; document.querySelectorAll('#page-schedul
 function _schItems(){
   const out=[];
   (DB.d.logs||[]).forEach(l=>{
-    if(l.kind==='schedule' && l.date) out.push({id:l.id,date:l.date,time:l.time||'',type:l.type||'방문',custName:l.custName||'',sales:l.sales||'',content:l.content||'',done:!!l.done,kind:'sched'});
-    else if(l.nextDate && l.nextAction) out.push({id:l.id,date:l.nextDate,time:'',type:'후속',custName:l.custName||'',sales:l.sales||'',content:(l.nextAction||'')+(l.content?' — '+l.content:''),done:false,kind:'followup'});
+    if(l.kind==='schedule' && l.date) out.push({id:l.id,date:l.date,time:l.time||'',type:l.type||'방문',custName:l.custName||'',sales:l.sales||'',product:l.product||'',content:l.content||'',done:!!l.done,kind:'sched'});
+    else if(l.nextDate && l.nextAction) out.push({id:l.id,date:l.nextDate,time:'',type:'후속',custName:l.custName||'',sales:l.sales||'',product:l.product||'',content:(l.nextAction||'')+(l.content?' — '+l.content:''),done:false,kind:'followup'});
   });
   return out;
 }
@@ -5974,8 +5968,9 @@ function _schItemRow(i){
     +'<span style="min-width:42px;font-size:11px;color:#6b7280;flex-shrink:0">'+(_schEsc(i.time)||'-')+'</span>'
     +_schBadge(i.type)
     +'<span style="font-weight:600;font-size:13px;cursor:pointer;flex-shrink:0" onclick="showHospitalDetail(\''+_schEsc(i.custName).replace(/&#39;/g,"\\x27")+'\')">'+_schEsc(i.custName)+'</span>'
-    +(i.sales?'<span style="font-size:11px;color:#2563eb;flex-shrink:0"><i class="bi bi-person-badge"></i> '+_schEsc(i.sales)+'</span>':'')
+    +(i.product?'<span style="font-size:10.5px;color:#0891b2;font-weight:600;flex-shrink:0"><i class="bi bi-box-seam"></i> '+_schEsc(i.product)+'</span>':'')
     +'<span style="font-size:12px;color:#6b7280;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_schEsc(i.content)+'</span>'
+    +(i.sales?'<span style="font-size:11px;color:#2563eb;flex-shrink:0;margin-left:auto"><i class="bi bi-person-badge"></i> '+_schEsc(i.sales)+'</span>':'')
     +(i.kind==='sched'?'<button class="btn btn-sm btn-link p-0 text-secondary" style="font-size:12px;flex-shrink:0" onclick="editSchedule(\''+i.id+'\')"><i class="bi bi-pencil"></i></button>':'')
     +'</div>';
 }
@@ -5999,10 +5994,13 @@ function _schStatsBar(all){
 function _schMiniCard(i){
   const c=_SCH_COL[i.type]||'#64748b';
   const nm=_schEsc(i.custName).replace(/&#39;/g,"\\x27");
-  return '<div onclick="event.stopPropagation();'+(i.kind==='sched'?"editSchedule('"+i.id+"')":"showHospitalDetail('"+nm+"')")+'" style="background:'+c+'14;border-left:3px solid '+c+';border-radius:5px;padding:4px 6px;margin-bottom:4px;cursor:pointer;'+(i.done?'opacity:.5':'')+'" title="'+_schEsc(i.custName+' · '+i.content)+'">'
-    +'<div style="font-size:9.5px;font-weight:800;color:'+c+'">'+(i.time?_schEsc(i.time)+' ':'')+_schEsc(i.type)+(i.done?' ✓':'')+'</div>'
+  return '<div onclick="event.stopPropagation();'+(i.kind==='sched'?"editSchedule('"+i.id+"')":"showHospitalDetail('"+nm+"')")+'" style="background:'+c+'14;border-left:3px solid '+c+';border-radius:5px;padding:4px 6px;margin-bottom:4px;cursor:pointer;'+(i.done?'opacity:.5':'')+'" title="'+_schEsc(i.custName+(i.product?' · '+i.product:'')+' · '+i.content)+'">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;gap:3px">'
+      +'<span style="font-size:9.5px;font-weight:800;color:'+c+';white-space:nowrap">'+(i.time?_schEsc(i.time)+' ':'')+_schEsc(i.type)+(i.done?' ✓':'')+'</span>'
+      +(i.sales?'<span style="font-size:8.5px;color:#2563eb;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+_schEsc(i.sales)+'</span>':'')
+    +'</div>'
     +'<div style="font-size:10.5px;font-weight:700;color:#334155;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_schEsc(i.custName)+'</div>'
-    +(i.sales?'<div style="font-size:9px;color:#2563eb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><i class="bi bi-person-badge"></i> '+_schEsc(i.sales)+'</div>':'')
+    +(i.product?'<div style="font-size:9px;color:#0891b2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><i class="bi bi-box-seam"></i> '+_schEsc(i.product)+'</div>':'')
   +'</div>';
 }
 // 이번주 7일 그리드 뷰
@@ -6078,23 +6076,65 @@ function renderSchedule(){
   }
 }
 function openSchedule(pre){ pre=pre||{};
+  _schFillProdList();
   document.getElementById('sch-id').value=pre.id||'';
   document.getElementById('sch-cust').value=pre.custName||'';
   document.getElementById('sch-type').value=pre.type||'방문';
   document.getElementById('sch-date').value=pre.date||_schTodayStr();
   document.getElementById('sch-time').value=pre.time||'';
   document.getElementById('sch-sales').value=pre.sales||_schMe();
+  document.getElementById('sch-prod').value=pre.product||'';
   document.getElementById('sch-note').value=pre.content||'';
   document.getElementById('sch-del-btn').style.display=pre.id?'inline-block':'none';
+  _schHospInfo(pre.custName||'');
   bootstrap.Modal.getOrCreateInstance(document.getElementById('scheduleModal')).show();
 }
-function editSchedule(id){ const l=(DB.d.logs||[]).find(x=>x.id===id); if(l) openSchedule({id:l.id,custName:l.custName,type:l.type,date:l.date,time:l.time,sales:l.sales,content:l.content}); }
+function editSchedule(id){ const l=(DB.d.logs||[]).find(x=>x.id===id); if(l) openSchedule({id:l.id,custName:l.custName,type:l.type,date:l.date,time:l.time,sales:l.sales,product:l.product,content:l.content}); }
+// 제품 자동완성 목록
+function _schFillProdList(){ const dl=document.getElementById('sch-prod-list'); if(!dl||dl.dataset.filled)return;
+  const ps=new Set(); Object.keys((typeof DEVICE!=='undefined'&&DEVICE.products2026)||{}).forEach(p=>ps.add(p)); Object.keys((typeof CONS!=='undefined'&&CONS.products2026)||{}).forEach(p=>ps.add(p));
+  ['Oligio','Oligio Kiss','Oligio X','Oligio XM','Tightan','V LASER','Pico Andy','Pico Alex','Picocare Majesty','Pastelle Pro','Avvio','Lavieen','Sandro Dual'].forEach(p=>ps.add(p));
+  dl.innerHTML=[...ps].sort((a,b)=>a.localeCompare(b,'ko')).map(p=>'<option value="'+p.replace(/"/g,'&quot;')+'">').join(''); dl.dataset.filled='1';
+}
+// 병원 선택 시 종합정보 패널
+function _schHospInfo(name){
+  const box=document.getElementById('sch-hosp-info'); if(!box) return;
+  name=(name||'').trim();
+  const hi=(typeof HOSP_INFO!=='undefined'&&HOSP_INFO[name])||null;
+  const ch=(typeof CONS!=='undefined'&&CONS.hospitals&&CONS.hospitals[name])||null;
+  const dh=(typeof DEVICE!=='undefined'&&DEVICE.hospitals&&DEVICE.hospitals[name])||null;
+  if(!hi&&!ch&&!dh){ box.style.display='none'; box.innerHTML=''; return; }
+  const reg=(typeof _hospRegion==='function')?_hospRegion(name):null;
+  const regStr=(reg&&reg[0])?(reg[0]+' '+(reg[1]||'')).trim():'-';
+  const mgr=(hi&&hi.mgr)||'-';
+  const last=(dh&&dh.lastDate)||(ch&&ch.lastDate)||'-';
+  const topProd=(dh&&dh.topProd)||(ch&&ch.topProd)||'';
+  const equipCnt=(DB.d.equipments||[]).filter(e=>e.custName===name).length;
+  const contacts=(hi&&hi.contacts)||[];
+  const tel=(hi&&hi.tel)||(contacts[0]&&contacts[0].tel)||'-';
+  const rlog=(DB.d.logs||[]).filter(l=>l.custName===name&&l.kind!=='schedule').sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')))[0];
+  const y26=(dh&&dh.y2026||0)+(ch&&ch.y2026||0);
+  const nm=_schEsc(name).replace(/&#39;/g,"\\x27");
+  const cell=(l,v)=>'<div><span style="color:#94a3b8">'+l+'</span> <b style="color:#334155">'+v+'</b></div>';
+  box.style.display='block';
+  box.innerHTML='<div style="background:#f8fafc;border:1px solid #eef2f7;border-radius:12px;padding:12px 14px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+      +'<b style="font-size:13px;color:#0f172a"><i class="bi bi-hospital me-1" style="color:#0891b2"></i>'+_schEsc(name)+'</b>'
+      +'<span onclick="showHospitalDetail(\''+nm+'\')" style="font-size:11px;color:#2563eb;cursor:pointer;font-weight:600">병원 상세 ↗</span></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px 14px;font-size:11.5px">'
+      +cell('담당영업',_schEsc(mgr))+cell('지역',_schEsc(regStr))
+      +cell('올해매출',y26?( (y26/1e8).toFixed(1)+'억'):'-')+cell('납품장비',equipCnt+'대')
+      +cell('최근거래',_schEsc(last)+(topProd?' ('+_schEsc(topProd)+')':''))+cell('연락처',_schEsc(tel))
+    +'</div>'
+    +(rlog?'<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #e2e8f0;font-size:11px;color:#64748b"><i class="bi bi-chat-left-text me-1"></i>최근 상담 <b>'+_schEsc(rlog.date||'')+'</b> · '+_schEsc((rlog.content||'').slice(0,40))+(rlog.sales?' <span style="color:#2563eb">('+_schEsc(rlog.sales)+')</span>':'')+'</div>':'')
+  +'</div>';
+}
 async function saveSchedule(){
   const cust=document.getElementById('sch-cust').value.trim(), date=document.getElementById('sch-date').value;
   if(!cust||!date){ alert('병원과 날짜를 입력하세요.'); return; }
   const id=document.getElementById('sch-id').value||uid();
   const idx=(DB.d.logs||[]).findIndex(l=>l.id===id);
-  const rec={id:id,kind:'schedule',custName:cust,date:date,time:document.getElementById('sch-time').value,type:document.getElementById('sch-type').value,content:document.getElementById('sch-note').value.trim(),sales:document.getElementById('sch-sales').value.trim(),done:(idx>=0?!!DB.d.logs[idx].done:false)};
+  const rec={id:id,kind:'schedule',custName:cust,date:date,time:document.getElementById('sch-time').value,type:document.getElementById('sch-type').value,product:document.getElementById('sch-prod').value.trim(),content:document.getElementById('sch-note').value.trim(),sales:document.getElementById('sch-sales').value.trim(),done:(idx>=0?!!DB.d.logs[idx].done:false)};
   if(idx>=0) DB.d.logs[idx]=rec; else DB.d.logs.push(rec);
   try{ bootstrap.Modal.getInstance(document.getElementById('scheduleModal')).hide(); }catch(e){}
   renderSchedule(); showToast('일정 저장, 저장 중...'); await DB.save('logs'); showToast('저장 완료', true);
