@@ -1962,6 +1962,8 @@ function _closeSidebar() {
 
 function showPage(name, el, noPush) {
   _closeSidebar();
+  // 담당자별 분석 = 파트장/관리자 전용 (팀원 접근 차단)
+  if(name==='device-reps' && typeof _isMgr!=='undefined' && !_isMgr){ name='sales-overview'; el=null; }
   sessionStorage.setItem('wt_page', name);
   if(!noPush) history.pushState({page: name}, '', location.href.split('#')[0] + '#' + name);
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
