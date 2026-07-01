@@ -317,6 +317,7 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
       <li><a class="nav-link" onclick="showPage('sales',this)"><i class="bi bi-kanban"></i>수주관리</a></li>
       <li><a class="nav-link" onclick="showPage('quotes',this)"><i class="bi bi-file-earmark-text"></i>견적서</a></li>
       <li><a class="nav-link" onclick="showPage('schedule',this)"><i class="bi bi-calendar-week"></i>일정</a></li>
+      <li><a class="nav-link" onclick="showPage('roi',this)"><i class="bi bi-calculator"></i>ROI 계산기</a></li>
     </ul>
     <div class="nav-label mt-3">관리</div>
     <ul class="nav flex-column gap-0">
@@ -756,6 +757,12 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
       <span id="sch-monthnav" class="ms-auto"></span>
     </div>
     <div id="sch-body"></div>
+  </div>
+
+  <!-- ROI 계산기 (외부 wt-k7r 이식: RF/HIFU·Laser·Sales) -->
+  <div id="page-roi" class="page">
+    <div class="page-header"><h5><i class="bi bi-calculator me-2"></i>ROI 계산기 <span class="text-muted" style="font-size:12px;font-weight:400">· RF/HIFU · Laser · Sales</span></h5></div>
+    <iframe id="roi-frame" title="ROI 계산기" style="width:100%;height:calc(100vh - 150px);border:0;border-radius:12px;background:#080c15"></iframe>
   </div>
 
   <!-- 견적서 -->
@@ -1877,13 +1884,14 @@ function showPage(name, el, noPush) {
   if(el) el.classList.add('active');
   else { const links = document.querySelectorAll('.nav-link');
     links.forEach(l=>{ if(l.textContent.trim().includes(
-      {'sales-overview':'종합',dashboard:'현황판',sales:'수주관리',quotes:'견적서',schedule:'일정',customers:'고객사',equipments:'장비',logs:'상담일지',products:'제품',consumables:'소모품 매출','cons-hospitals':'병원별','device-sales':'제품 매출','device-reps':'담당자별',region:'지역별 분석',pending:'회계 미반영 매출','cons-accounts':'거래처'}[name]||''
+      {'sales-overview':'종합',dashboard:'현황판',sales:'수주관리',quotes:'견적서',schedule:'일정',roi:'ROI 계산기',customers:'고객사',equipments:'장비',logs:'상담일지',products:'제품',consumables:'소모품 매출','cons-hospitals':'병원별','device-sales':'제품 매출','device-reps':'담당자별',region:'지역별 분석',pending:'회계 미반영 매출','cons-accounts':'거래처'}[name]||''
     )) l.classList.add('active'); }); }
   if(name==='sales-overview') renderSalesOverview();
   else if(name==='dashboard') renderDashboard();
   else if(name==='sales'||name==='pipeline'||name==='performance') renderSalesPage(name);
   else if(name==='quotes') renderQuotes();
   else if(name==='schedule') renderSchedule();
+  else if(name==='roi'){ const f=document.getElementById('roi-frame'); if(f && !f.getAttribute('src')) f.setAttribute('src','roi.html'); }
   else if(name==='customers') renderCustomers();
   else if(name==='equipments') initEquip();
   else if(name==='logs') { showPage('sales'); const tb=document.getElementById('sales-tab-logs-btn'); salesTab('logs',tb); return; }
