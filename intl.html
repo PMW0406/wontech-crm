@@ -94,6 +94,7 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;background:#f0f4f8;color
       <li><a class="nav-link" onclick="showPage('dealers',this)"><i class="bi bi-buildings"></i>딜러 관리</a></li>
       <li><a class="nav-link" onclick="showPage('activities',this)"><i class="bi bi-journal-text"></i>활동일지</a></li>
       <li><a class="nav-link" onclick="showPage('schedule',this)"><i class="bi bi-calendar-week"></i>일정</a></li>
+      <li><a class="nav-link" onclick="showPage('quotes',this)"><i class="bi bi-file-earmark-text"></i>견적서</a></li>
     </ul>
   </div>
   <!-- 계정 정보 (사이트 이동 위에) -->
@@ -276,6 +277,41 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;background:#f0f4f8;color
   <div class="card p-3"><div class="fw-bold mb-2" style="font-size:13px">담당자별 순위 <span style="font-size:11px;font-weight:400;color:#9ca3af">클릭 시 상세</span></div><div id="rp-rank"></div></div>
 </div>
 
+<div id="page-quotes" class="page">
+  <div class="page-header"><h5><i class="bi bi-file-earmark-text" style="color:#0891b2"></i>견적서 <span style="font-size:12px;font-weight:400;color:#9ca3af">USD 견적 · 인쇄/공유</span></h5>
+    <button class="btn btn-sm" style="background:#0d9488;color:#fff" onclick="openQuote()"><i class="bi bi-plus-lg me-1"></i>새 견적</button></div>
+  <div class="card p-2 mb-2" style="display:flex;gap:10px;align-items:center"><input id="q-kw" class="form-control form-control-sm" style="width:220px" placeholder="딜러·국가 검색" oninput="renderQuotes()"></div>
+  <div id="q-body"></div>
+</div>
+<div id="q-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:500;align-items:center;justify-content:center" onclick="if(event.target===this)closeQuote()">
+  <div style="background:#fff;border-radius:14px;padding:20px 22px;width:640px;max-width:96vw;max-height:92vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span id="q-modal-title" style="font-weight:700">새 견적</span><span style="cursor:pointer;font-size:20px;color:#94a3b8" onclick="closeQuote()">&times;</span></div>
+    <div class="row g-2" style="font-size:13px">
+      <div class="col-4"><label>국가</label><input id="q-country" class="form-control form-control-sm" list="d-country-list" autocomplete="off"></div>
+      <div class="col-4"><label>딜러/거래처</label><input id="q-dealer" class="form-control form-control-sm" autocomplete="off"></div>
+      <div class="col-4"><label>담당</label><input id="q-sales" class="form-control form-control-sm" autocomplete="off"></div>
+      <div class="col-4"><label>견적일</label><input id="q-date" type="date" class="form-control form-control-sm"></div>
+      <div class="col-4"><label>유효기간</label><input id="q-valid" type="date" class="form-control form-control-sm"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:12px 0 4px"><span style="font-size:12px;font-weight:700;color:#0891b2">품목 (USD)</span><button class="btn btn-sm btn-outline-secondary" style="font-size:11px;padding:2px 8px" onclick="_qAddRow()"><i class="bi bi-plus"></i> 행 추가</button></div>
+    <div class="row g-1" style="font-size:10px;color:#94a3b8;padding:0 2px"><div class="col-5">제품</div><div class="col-2">수량</div><div class="col-3">단가(USD)</div><div class="col-1">소계</div><div class="col-1"></div></div>
+    <div id="q-items"></div>
+    <div class="row g-2" style="font-size:13px;margin-top:6px;align-items:center">
+      <div class="col-4"><label>할인 (USD)</label><input id="q-disc" type="number" class="form-control form-control-sm" oninput="_qCalc()"></div>
+      <div class="col-8" style="text-align:right;font-size:12px" id="q-totals"></div>
+    </div>
+    <div class="row g-2" style="font-size:13px;margin-top:2px">
+      <div class="col-12"><label>거래조건 (결제/인도/독점 등)</label><textarea id="q-terms" class="form-control form-control-sm" rows="2"></textarea></div>
+      <div class="col-12"><label>메모(내부)</label><input id="q-note" class="form-control form-control-sm" autocomplete="off"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:14px;gap:8px">
+      <button class="btn btn-sm btn-outline-danger" id="q-del" onclick="delQuote()" style="display:none">삭제</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-sm btn-outline-secondary" onclick="var d=_qCollect();d.id='_tmp';INTL_QUOTES.push(Object.assign({id:'_tmp'},d));printQuote('_tmp');INTL_QUOTES=INTL_QUOTES.filter(function(x){return x.id!=='_tmp';});"><i class="bi bi-printer me-1"></i>미리보기 인쇄</button>
+      <button class="btn btn-sm" style="background:#0d9488;color:#fff" onclick="saveQuote()">저장</button>
+    </div>
+  </div>
+</div>
 <div id="page-crm-dash" class="page">
   <div class="page-header"><h5><i class="bi bi-speedometer2" style="color:#0891b2"></i>영업 현황판 <span style="font-size:12px;font-weight:400;color:#9ca3af">파이프라인 · 딜러 · 액션</span></h5></div>
   <div id="cd-body"></div>
@@ -372,6 +408,7 @@ body{font-family:'Pretendard','Noto Sans KR',sans-serif;background:#f0f4f8;color
     <div style="display:flex;justify-content:space-between;margin-top:16px">
       <button class="btn btn-sm btn-outline-danger" id="d-del" onclick="delDeal()" style="display:none">삭제</button>
       <button class="btn btn-sm btn-outline-secondary" onclick="_actFromDeal()"><i class="bi bi-journal-plus me-1"></i>활동</button>
+      <button class="btn btn-sm btn-outline-secondary" onclick="_quoteFromDeal()"><i class="bi bi-file-earmark-text me-1"></i>견적</button>
       <div style="flex:1"></div>
       <button class="btn btn-sm" style="background:#0d9488;color:#fff" onclick="saveDeal()">저장</button>
     </div>
@@ -480,7 +517,7 @@ function showPage(n,el){
   sessionStorage.setItem('intl_page', n);
   var _mt=document.getElementById('m-title'); if(_mt&&el) _mt.textContent=el.textContent.trim();
   if(window.innerWidth<=820) toggleNav(false);
-  ({overview:renderOverview,'by-country':renderByCountry,'by-product':renderByProduct,'by-cons':renderByCons,'by-rep':renderByRep,pending:renderPending,sales:renderSales,'crm-dash':renderCrmDash,dealers:renderDealers,activities:renderActivities,schedule:renderSchedule})[n]?.();
+  ({overview:renderOverview,'by-country':renderByCountry,'by-product':renderByProduct,'by-cons':renderByCons,'by-rep':renderByRep,pending:renderPending,sales:renderSales,'crm-dash':renderCrmDash,dealers:renderDealers,activities:renderActivities,schedule:renderSchedule,quotes:renderQuotes})[n]?.();
 }
 
 function _ovPC(){ const f=+document.getElementById('ov-from').value,t=document.getElementById('ov-to'); if(+t.value<f)t.value=f; renderOverview(); }
@@ -914,6 +951,7 @@ async function _afterLogin(user) {
   await _loadIlboPending();
   await _loadIntlPipe();
   await _loadIntlCrm();
+  _loadQuotes();
   var _sameDoc=false; try{ _sameDoc = !!document.referrer && new URL(document.referrer).pathname===location.pathname; }catch(e){ _sameDoc=false; }
   // 다른 사이트/페이지에서 진입(또는 토큰 해시)하면 종합현황, intl 자체 새로고침이면 마지막 페이지 유지
   var _nav=(performance.getEntriesByType('navigation')[0]||{}).type;   // reload=새로고침 / navigate=신규진입
@@ -1396,6 +1434,69 @@ function renderSchedule(){
     groups[dt].map(function(it){return '<div style="display:flex;gap:8px;align-items:center;font-size:12px;padding:2px 0"><span style="font-size:10px;color:#fff;background:'+it.color+';border-radius:4px;padding:1px 6px;min-width:34px;text-align:center">'+it.cat+'</span><span style="font-weight:600">'+_esc(it.who||'')+'</span><span style="color:#94a3b8;font-size:11px">'+_esc(it.country||'')+'</span><span style="flex:1;color:#475569">'+_esc(it.what)+'</span></div>';}).join('')+
   '</div>';}).join('');
 }
+// ── 해외 견적서 (Quote) — cons_cache 'intl_quotes' ──
+let INTL_QUOTES=[], _qEdit=null;
+async function _loadQuotes(){ try{ const {data}=await _sb.from('cons_cache').select('data').eq('key','intl_quotes').maybeSingle(); INTL_QUOTES=(data&&data.data&&data.data.quotes)||[]; }catch(e){ INTL_QUOTES=[]; } var p=document.getElementById('page-quotes'); if(p&&p.classList.contains('active'))renderQuotes(); }
+async function _saveQuotes(){ try{ const {error}=await _sb.from('cons_cache').upsert({key:'intl_quotes',data:{quotes:INTL_QUOTES,updatedAt:new Date().toISOString()}},{onConflict:'key'}); if(error)throw error; }catch(e){ alert('저장 실패: '+e.message); } }
+function _qTot(q){ var sub=(q.items||[]).reduce(function(s,it){return s+(Number(it.qty)||0)*(Number(it.price)||0);},0); var disc=Number(q.discount)||0; return {sub:sub,disc:disc,total:sub-disc}; }
+function renderQuotes(){
+  var el=document.getElementById('q-body'); if(!el)return;
+  var kw=(document.getElementById('q-kw')&&document.getElementById('q-kw').value||'').trim().toLowerCase();
+  var arr=INTL_QUOTES.filter(function(q){return !kw||((q.dealer||'')+(q.country||'')).toLowerCase().indexOf(kw)>=0;}).sort(function(a,b){return (b.date||'')<(a.date||'')?-1:1;});
+  el.innerHTML='<div class="card p-0" style="overflow:hidden"><table class="table table-sm mb-0" style="font-size:12px"><thead style="background:#f8fafc"><tr><th style="padding:8px 12px">견적일</th><th>딜러/국가</th><th style="text-align:right">금액(USD)</th><th>유효기간</th><th>담당</th><th style="text-align:center">관리</th></tr></thead><tbody>'+
+    (arr.map(function(q){var t=_qTot(q);return '<tr><td style="padding:7px 12px;cursor:pointer" onclick="openQuote(\''+q.id+'\')">'+(q.date||'')+'</td><td style="cursor:pointer" onclick="openQuote(\''+q.id+'\')">'+_esc(q.dealer||'')+' <span style="color:#94a3b8">'+_esc(q.country||'')+'</span></td><td style="text-align:right;font-weight:700;color:#0d9488">'+_fmtUSD(t.total)+'</td><td>'+(q.validUntil||'')+'</td><td>'+_esc(q.sales||'')+'</td><td style="text-align:center"><button class="btn btn-sm btn-link p-0" style="font-size:12px;text-decoration:none" onclick="printQuote(\''+q.id+'\')"><i class="bi bi-printer"></i> 인쇄</button></td></tr>';}).join('')||'<tr><td colspan="6" class="text-center text-muted py-4">견적서가 없습니다</td></tr>')+
+    '</tbody></table></div>';
+}
+function _qRow(it){ it=it||{};
+  return '<div class="qrow row g-1 mb-1" style="align-items:center"><div class="col-5"><input class="form-control form-control-sm qi-name" placeholder="제품" value="'+_esc(it.name||'')+'" oninput="_qCalc()"></div><div class="col-2"><input type="number" class="form-control form-control-sm qi-qty" placeholder="수량" value="'+(it.qty!=null?it.qty:'')+'" oninput="_qCalc()"></div><div class="col-3"><input type="number" class="form-control form-control-sm qi-price" placeholder="단가$" value="'+(it.price!=null?it.price:'')+'" oninput="_qCalc()"></div><div class="col-1 qi-sub" style="font-size:11px;text-align:right;font-weight:600;color:#0d9488"></div><div class="col-1" style="text-align:center"><span style="cursor:pointer;color:#dc2626" onclick="this.closest(\'.qrow\').remove();_qCalc()">&times;</span></div></div>';
+}
+function _qAddRow(it){ document.getElementById('q-items').insertAdjacentHTML('beforeend',_qRow(it)); _qCalc(); }
+function _qCalc(){
+  var rows=document.querySelectorAll('#q-items .qrow'), sub=0;
+  rows.forEach(function(r){ var q=Number(r.querySelector('.qi-qty').value)||0, p=Number(r.querySelector('.qi-price').value)||0; var line=q*p; sub+=line; r.querySelector('.qi-sub').textContent=line?_fmtUSD(line):''; });
+  var disc=Number(document.getElementById('q-disc').value)||0;
+  document.getElementById('q-totals').innerHTML='소계 '+_fmtUSD(sub)+' · 할인 -'+_fmtUSD(disc)+' · <b style="color:#0d9488">합계 '+_fmtUSD(sub-disc)+'</b> <span style="color:#94a3b8">('+_krw(sub-disc)+')</span>';
+}
+function openQuote(id,fromDeal){
+  _qEdit=id?INTL_QUOTES.find(function(q){return q.id===id;}):null;
+  var q=_qEdit||(fromDeal?{country:fromDeal.country,dealer:fromDeal.dealer,items:[{name:fromDeal.product,qty:1,price:fromDeal.amount}],sales:fromDeal.sales}:{});
+  document.getElementById('q-modal-title').textContent=id?'견적 수정':'새 견적';
+  var g=function(k,v){var e=document.getElementById(k);if(e)e.value=v==null?'':v;};
+  g('q-country',q.country);g('q-dealer',q.dealer);g('q-date',q.date||_today());g('q-valid',q.validUntil);g('q-sales',q.sales!=null?q.sales:_meName);g('q-disc',q.discount);g('q-terms',q.terms);g('q-note',q.note);
+  var box=document.getElementById('q-items'); box.innerHTML='';
+  var items=(q.items&&q.items.length)?q.items:[{}]; items.forEach(function(it){ box.insertAdjacentHTML('beforeend',_qRow(it)); });
+  _qCalc();
+  document.getElementById('q-del').style.display=id?'inline-block':'none';
+  document.getElementById('q-modal').style.display='flex';
+}
+function closeQuote(){ document.getElementById('q-modal').style.display='none'; }
+function _qCollect(){
+  var g=function(k){return document.getElementById(k).value;};
+  var items=[]; document.querySelectorAll('#q-items .qrow').forEach(function(r){ var nm=r.querySelector('.qi-name').value.trim(); var qty=Number(r.querySelector('.qi-qty').value)||0; var pr=Number(r.querySelector('.qi-price').value)||0; if(nm||qty||pr)items.push({name:nm,qty:qty,price:pr}); });
+  return {country:g('q-country').trim(),dealer:g('q-dealer').trim(),date:g('q-date'),validUntil:g('q-valid'),sales:g('q-sales').trim(),discount:Number(g('q-disc'))||0,terms:g('q-terms').trim(),note:g('q-note').trim(),items:items};
+}
+function saveQuote(){
+  var data=_qCollect(); if(!data.dealer){alert('딜러/거래처를 입력하세요');return;}
+  if(_qEdit&&!_canEditIntl(_qEdit.sales)){alert('담당자('+(_qEdit.sales||'')+')의 견적입니다. 본인 것만 수정할 수 있어요.');return;}
+  var q=_qEdit||{id:'iq_'+Date.now()+Math.random().toString(36).slice(2,6),createdAt:new Date().toISOString()};
+  Object.assign(q,data);
+  if(!_qEdit)INTL_QUOTES.push(q);
+  closeQuote(); renderQuotes(); _saveQuotes();
+}
+function delQuote(){ if(!_qEdit||!confirm('이 견적을 삭제할까요?'))return; var id=_qEdit.id; INTL_QUOTES=INTL_QUOTES.filter(function(q){return q.id!==id;}); closeQuote(); renderQuotes(); _saveQuotes(); }
+function printQuote(id){
+  var q=INTL_QUOTES.find(function(x){return x.id===id;}); if(!q)return; var t=_qTot(q);
+  var rows=(q.items||[]).map(function(it,i){var line=(Number(it.qty)||0)*(Number(it.price)||0);return '<tr><td>'+(i+1)+'</td><td>'+_esc(it.name||'')+'</td><td style="text-align:right">'+(it.qty||0)+'</td><td style="text-align:right">'+_fmtUSD(it.price)+'</td><td style="text-align:right">'+_fmtUSD(line)+'</td></tr>';}).join('');
+  var html='<html><head><meta charset="utf-8"><title>Quotation - '+_esc(q.dealer||'')+'</title><style>body{font-family:Arial,sans-serif;padding:36px;color:#111;font-size:13px}h1{font-size:22px;color:#0d9488;margin:0 0 4px}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{border:1px solid #ddd;padding:7px 9px}th{background:#f1f5f9;text-align:left}.r{text-align:right}.tot{font-size:15px;font-weight:700;color:#0d9488}.meta{color:#555;font-size:12px;line-height:1.7;margin-top:8px}</style></head><body>'+
+    '<h1>QUOTATION</h1><div style="color:#888;font-size:12px">wontech · Overseas Sales</div>'+
+    '<div class="meta"><b>To:</b> '+_esc(q.dealer||'')+' ('+_esc(q.country||'')+')<br><b>Date:</b> '+(q.date||'')+' &nbsp; <b>Valid until:</b> '+(q.validUntil||'-')+'<br><b>Rep:</b> '+_esc(q.sales||'')+'</div>'+
+    '<table><thead><tr><th>#</th><th>Item</th><th class="r">Qty</th><th class="r">Unit(USD)</th><th class="r">Amount</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+    '<div style="text-align:right;margin-top:12px">Subtotal: '+_fmtUSD(t.sub)+'<br>Discount: -'+_fmtUSD(t.disc)+'<br><span class="tot">TOTAL (USD): '+_fmtUSD(t.total)+'</span></div>'+
+    (q.terms?'<div class="meta" style="margin-top:16px"><b>Terms:</b><br>'+_esc(q.terms).replace(/\n/g,'<br>')+'</div>':'')+
+    '<script>window.onload=function(){window.print();}<\/script></body></html>';
+  var w=window.open('','_blank'); if(w){ w.document.write(html); w.document.close(); } else { alert('팝업이 차단되었습니다. 팝업 허용 후 다시 시도하세요.'); }
+}
+function _quoteFromDeal(){ var d=_dealEdit||{}; closeDeal(); openQuote(null,{country:d.country,dealer:d.dealer,product:d.product,amount:d.amount,sales:d.sales}); }
 async function _loadIlboPending(){
   try{
     const {data}=await _sb.from('cons_cache').select('data').eq('key','ilbo_pending').maybeSingle();
