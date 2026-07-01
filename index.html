@@ -1412,10 +1412,10 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
       <input type="hidden" id="hi-name">
       <div class="row g-2" style="max-width:760px">
         <div class="col-6"><label class="form-label" style="font-size:12px"><i class="bi bi-person-badge me-1" style="color:#2563eb"></i>담당 영업 <span class="text-muted">(콜스케줄)</span></label><input type="text" id="hi-mgr" class="form-control form-control-sm" placeholder="예: 조만식 / 공동"></div>
-        <div class="col-6"><label class="form-label" style="font-size:12px">지역 (시도 구군)</label><input type="text" id="hi-region" class="form-control form-control-sm" placeholder="예: 서울 강남구"></div>
+        <div class="col-6"><label class="form-label" style="font-size:12px">지역 (시도 구군)</label><input type="text" id="hi-region" class="form-control form-control-sm" placeholder="예: 서울 강남구" list="_region-list" onfocus="_ensureRegionList()" autocomplete="off"></div>
         <div class="col-6"><label class="form-label" style="font-size:12px">원장명</label><input type="text" id="hi-doctor" class="form-control form-control-sm"></div>
         <div class="col-6"><label class="form-label" style="font-size:12px">전화</label><input type="text" id="hi-tel" class="form-control form-control-sm"></div>
-        <div class="col-8"><label class="form-label" style="font-size:12px">주소</label><div class="input-group input-group-sm"><input type="text" id="hi-address" class="form-control form-control-sm" placeholder="검색으로 입력하세요"><button type="button" class="btn btn-outline-secondary" style="font-size:12px" onclick="_addrSearch('hi-address')"><i class="bi bi-search"></i> 검색</button></div></div>
+        <div class="col-8"><label class="form-label" style="font-size:12px">주소</label><div class="input-group input-group-sm"><input type="text" id="hi-address" class="form-control form-control-sm" placeholder="검색으로 입력하세요"><button type="button" class="btn btn-outline-secondary" style="font-size:12px" onclick="_addrSearch('hi-address','hi-region')"><i class="bi bi-search"></i> 검색</button></div></div>
         <div class="col-4"><label class="form-label" style="font-size:12px">대표 담당자 <span class="text-muted">(요약)</span></label><input type="text" id="hi-contact" class="form-control form-control-sm" placeholder="예: 김실장"></div>
         <div class="col-12">
           <div class="d-flex align-items-center mb-1"><i class="bi bi-people me-1" style="color:#2563eb"></i><label class="form-label mb-0" style="font-size:12px"><b>연락처 (원장·실장·구매 등 여러 명)</b></label><button type="button" class="btn btn-outline-primary btn-sm ms-auto py-0 px-2" style="font-size:11px" onclick="addHospContactRow()"><i class="bi bi-plus-lg"></i> 연락처 추가</button></div>
@@ -1548,7 +1548,7 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
   <div class="modal-body"><input type="hidden" id="c-id"><div class="row g-2">
     <div class="col-6"><label class="form-label">병원명 *</label><div class="ac-wrap"><input type="text" id="c-name" class="form-control form-control-sm" oninput="acInput(this,'c-name')" onkeydown="acKey(event,'c-name')" autocomplete="off"><div class="ac-dropdown" id="ac-c-name"></div></div></div>
     <div class="col-6"><label class="form-label">원장명</label><input type="text" id="c-doctor" class="form-control form-control-sm"></div>
-    <div class="col-4"><label class="form-label">지역</label><input type="text" id="c-region" class="form-control form-control-sm"></div>
+    <div class="col-4"><label class="form-label">지역</label><input type="text" id="c-region" class="form-control form-control-sm" placeholder="예: 서울 강남구" list="_region-list" onfocus="_ensureRegionList()" autocomplete="off"></div>
     <div class="col-8"><label class="form-label">주소</label><div class="input-group input-group-sm"><input type="text" id="c-address" class="form-control form-control-sm" placeholder="검색으로 입력하세요"><button type="button" class="btn btn-outline-secondary" style="font-size:13px" onclick="_addrSearch('c-address','c-region')"><i class="bi bi-search"></i> 검색</button></div></div>
     <div class="col-6"><label class="form-label">전화</label><input type="text" id="c-tel" class="form-control form-control-sm"></div>
     <div class="col-6"><label class="form-label">담당자</label><input type="text" id="c-contact" class="form-control form-control-sm"></div>
@@ -1584,8 +1584,8 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
       <div class="col-6"><label class="form-label" style="font-size:12px">거래 담당·대리점 <span class="text-muted">(거래내역 기준)</span></label><input type="text" id="cd-txnsales" class="form-control form-control-sm" disabled style="background:#f8fafc"></div>
       <div class="col-6"><label class="form-label" style="font-size:12px">원장명</label><input type="text" id="cd-doctor" class="form-control form-control-sm"></div>
       <div class="col-6"><label class="form-label" style="font-size:12px">전화</label><input type="text" id="cd-tel" class="form-control form-control-sm"></div>
-      <div class="col-8"><label class="form-label" style="font-size:12px">주소</label><div class="input-group input-group-sm"><input type="text" id="cd-address" class="form-control form-control-sm" placeholder="검색으로 입력하세요"><button type="button" class="btn btn-outline-secondary" style="font-size:12px" onclick="_addrSearch('cd-address')"><i class="bi bi-search"></i> 검색</button></div></div>
-      <div class="col-4"><label class="form-label" style="font-size:12px">지역(시도 구군)</label><input type="text" id="cd-region" class="form-control form-control-sm" placeholder="예: 서울 강남구"></div>
+      <div class="col-8"><label class="form-label" style="font-size:12px">주소</label><div class="input-group input-group-sm"><input type="text" id="cd-address" class="form-control form-control-sm" placeholder="검색으로 입력하세요"><button type="button" class="btn btn-outline-secondary" style="font-size:12px" onclick="_addrSearch('cd-address','cd-region')"><i class="bi bi-search"></i> 검색</button></div></div>
+      <div class="col-4"><label class="form-label" style="font-size:12px">지역(시도 구군)</label><input type="text" id="cd-region" class="form-control form-control-sm" placeholder="예: 서울 강남구" list="_region-list" onfocus="_ensureRegionList()" autocomplete="off"></div>
       <div class="col-6"><label class="form-label" style="font-size:12px">병원 담당자</label><input type="text" id="cd-contact" class="form-control form-control-sm"></div>
       <div class="col-6"><label class="form-label" style="font-size:12px">태그</label><input type="text" id="cd-tags" class="form-control form-control-sm" placeholder="쉼표 구분 — VIP, 재구매예정"></div>
       <div class="col-12"><label class="form-label" style="font-size:12px">메모</label><textarea id="cd-note" class="form-control form-control-sm" rows="2"></textarea></div>
@@ -1740,9 +1740,9 @@ function _addrSearch(inputId, regionId){
   function _open(){
     new daum.Postcode({oncomplete:function(data){
       const addr=data.roadAddress||data.jibunAddress||'';
-      const el=document.getElementById(inputId); if(el){ el.value=addr; el.focus(); }
-      // 지역(시도) 필드가 있으면 함께 채움
-      if(regionId){ const rel=document.getElementById(regionId); if(rel && !rel.value.trim()) rel.value=(data.sido||'')+(data.sigungu?' '+data.sigungu:''); }
+      const el=document.getElementById(inputId); if(el){ el.value=addr; }
+      // 지역(시도 구군) 필드가 있으면 항상 함께 갱신
+      if(regionId){ const rel=document.getElementById(regionId); if(rel){ rel.value=(data.sido||'')+(data.sigungu?' '+data.sigungu:''); } }
     }}).open();
   }
   if(window.daum && window.daum.Postcode){ _open(); return; }
@@ -1751,6 +1751,15 @@ function _addrSearch(inputId, regionId){
   s.onload=_open;
   s.onerror=function(){ alert('주소 검색 서비스를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.'); };
   document.head.appendChild(s);
+}
+// 지역(시도 구군) 자동완성 목록 — 기존 병원 지역 + 17개 시도. 입력칸 focus 시 채움.
+function _ensureRegionList(){
+  let dl=document.getElementById('_region-list');
+  if(!dl){ dl=document.createElement('datalist'); dl.id='_region-list'; document.body.appendChild(dl); }
+  const set=new Set();
+  try{ Object.values(HOSP_INFO||{}).forEach(v=>{ if(v&&v.region){ const r=Array.isArray(v.region)?v.region.filter(Boolean).join(' '):String(v.region); if(r.trim())set.add(r.trim()); } }); }catch(e){}
+  ['서울','부산','대구','인천','광주','대전','울산','세종','경기','강원','충북','충남','전북','전남','경북','경남','제주'].forEach(s=>set.add(s));
+  dl.innerHTML=[...set].sort((a,b)=>a.localeCompare(b,'ko')).map(r=>'<option value="'+r.replace(/"/g,'&quot;')+'">').join('');
 }
 // 담당자 필터 드롭다운을 명단(한국영업1/2파트 9명)으로 채움. 첫 '전체' 옵션·현재선택 유지. extra=추가 옵션 HTML.
 function _fillSalesFilter(sel, extra){
