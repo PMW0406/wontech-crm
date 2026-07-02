@@ -1487,7 +1487,8 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
 <!-- 일정 추가 모달 -->
 <div class="modal fade" id="scheduleModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
   <div class="modal-header"><h5 class="modal-title"><i class="bi bi-calendar-plus me-1" style="color:#2563eb"></i>일정</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-  <div class="modal-body"><input type="hidden" id="sch-id">
+  <div class="modal-body"><input type="hidden" id="sch-id"><input type="hidden" id="sch-deal-id">
+    <div id="sch-deal-badge" style="display:none;margin-bottom:8px;font-size:11.5px;background:#f5f3ff;border:1px solid #ddd6fe;color:#6d28d9;border-radius:8px;padding:6px 10px"><i class="bi bi-kanban me-1"></i>수주관리 딜과 연결된 일정입니다 — 완료 처리하면 딜에 자동으로 기록됩니다.</div>
     <div class="row g-2">
       <div class="col-md-8"><label class="form-label" style="font-size:12px">병원 * <span class="text-muted" style="font-weight:400">(입력하면 자동완성)</span></label><input type="text" id="sch-cust" class="form-control form-control-sm" list="sch-cust-list" placeholder="병원명 입력…" oninput="_schHospInfo(this.value)" autocomplete="off"><datalist id="sch-cust-list"></datalist></div>
       <div class="col-md-4"><label class="form-label" style="font-size:12px">유형</label><select id="sch-type" class="form-select form-select-sm"><option>방문</option><option>콜</option><option>데모</option><option>A/S</option><option>기타</option></select></div>
@@ -3191,25 +3192,28 @@ function renderDashboard() {
     </div>`;
 
 
-  // 다음 액션
+  // 다음 액션 — 상담일지 후속조치 + 수주관리 딜의 다음액션을 함께 모음(유기적 연동)
   const todayStr=now.toISOString().split('T')[0];
-  const actionItems=DB.d.logs.filter(l=>l.nextDate&&l.nextAction).sort((a,b)=>a.nextDate.localeCompare(b.nextDate));
-  const overdueItems=actionItems.filter(l=>l.nextDate<todayStr);
-  const todayItems=actionItems.filter(l=>l.nextDate===todayStr);
-  const weekItems=actionItems.filter(l=>l.nextDate>todayStr&&l.nextDate<=new Date(now.getTime()+7*864e5).toISOString().split('T')[0]);
+  const fromLogs=DB.d.logs.filter(l=>l.nextDate&&l.nextAction).map(l=>({date:l.nextDate,action:l.nextAction,custName:l.custName,sales:l.sales,kind:'log',dealId:''}));
+  const fromDeals=DB.d.pipeline.filter(d=>d.stage!=='계약완료'&&d.nextDate&&d.nextAction).map(d=>({date:d.nextDate,action:'[딜] '+d.nextAction,custName:d.custName,sales:d.sales,kind:'deal',dealId:d.id}));
+  const actionItems=[...fromLogs,...fromDeals].sort((a,b)=>a.date.localeCompare(b.date));
+  const overdueItems=actionItems.filter(l=>l.date<todayStr);
+  const todayItems=actionItems.filter(l=>l.date===todayStr);
+  const weekItems=actionItems.filter(l=>l.date>todayStr&&l.date<=new Date(now.getTime()+7*864e5).toISOString().split('T')[0]);
   document.getElementById('action-overdue-cnt').textContent=overdueItems.length?`지연 ${overdueItems.length}건`:'';
   document.getElementById('action-today-cnt').textContent=todayItems.length?`오늘 ${todayItems.length}건`:'';
   document.getElementById('action-week-cnt').textContent=weekItems.length?`이번주 ${weekItems.length}건`:'';
   const allActions=[...overdueItems,...todayItems,...weekItems].slice(0,20);
   document.getElementById('action-board').innerHTML=allActions.length?allActions.map(l=>{
-    const isOverdue=l.nextDate<todayStr,isToday=l.nextDate===todayStr;
+    const isOverdue=l.date<todayStr,isToday=l.date===todayStr;
     const dotC=isOverdue?'#dc2626':isToday?'#ea580c':'#2563eb';
-    return`<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 16px;border-bottom:1px solid #f3f4f6">
+    const click=l.kind==='deal'?`openDealDrawer('${l.dealId}')`:`showHospitalDetail('${String(l.custName||'').replace(/'/g,"\\x27")}')`;
+    return`<div onclick="${click}" style="display:flex;align-items:flex-start;gap:10px;padding:10px 16px;border-bottom:1px solid #f3f4f6;cursor:pointer" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
       <div style="width:8px;height:8px;border-radius:50%;background:${dotC};margin-top:5px;flex-shrink:0"></div>
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:600">${l.custName||''} <span style="font-weight:400;color:#6b7280">${l.sales||''}</span></div>
-        <div style="font-size:12px;color:#374151;margin-top:2px">${l.nextAction}</div>
-        <div style="font-size:11px;color:${dotC};margin-top:2px;font-weight:600">${l.nextDate}${isOverdue?' (지연)':isToday?' (오늘)':''}</div>
+        <div style="font-size:12px;color:#374151;margin-top:2px">${l.action}</div>
+        <div style="font-size:11px;color:${dotC};margin-top:2px;font-weight:600">${l.date}${isOverdue?' (지연)':isToday?' (오늘)':''}</div>
       </div>
     </div>`;
   }).join(''):'<div class="text-muted text-center py-4" style="font-size:13px">예정된 액션 없음</div>';
@@ -4748,7 +4752,7 @@ function dealDrawerHtml(d){
         </div></div></div>
     <div style="padding:14px 22px;border-top:1px solid #e5e7eb;display:flex;gap:8px;justify-content:flex-end">
       <button onclick="closeDealDrawer()" style="border:1px solid #e5e7eb;background:#fff;border-radius:9px;padding:8px 14px;font-weight:600;font-size:13px;cursor:pointer">닫기</button>
-      <button onclick="closeDealDrawer();openSchedule({custName:'${esc(d.custName).replace(/'/g,"&#39;")}',sales:'${esc(d.sales||'').replace(/'/g,"&#39;")}',type:'방문',product:'${esc(d.model||'').replace(/'/g,"&#39;")}',content:'딜 관련 방문'})" style="border:1px solid #bfdbfe;background:#eff6ff;color:#2563eb;border-radius:9px;padding:8px 14px;font-weight:600;font-size:13px;cursor:pointer"><i class="bi bi-calendar-plus"></i> 일정 잡기</button>
+      <button onclick="closeDealDrawer();openSchedule({custName:'${esc(d.custName).replace(/'/g,"&#39;")}',sales:'${esc(d.sales||'').replace(/'/g,"&#39;")}',type:'방문',product:'${esc(d.model||'').replace(/'/g,"&#39;")}',content:'딜 관련 방문',dealId:'${d.id}'})" style="border:1px solid #bfdbfe;background:#eff6ff;color:#2563eb;border-radius:9px;padding:8px 14px;font-weight:600;font-size:13px;cursor:pointer"><i class="bi bi-calendar-plus"></i> 일정 잡기</button>
       <button onclick="closeDealDrawer();editPipeline('${d.id}')" style="border:0;background:#2563eb;color:#fff;border-radius:9px;padding:8px 14px;font-weight:600;font-size:13px;cursor:pointer"><i class="bi bi-pencil"></i> 정보 수정</button></div>`;
 }
 
@@ -6193,7 +6197,7 @@ function statusBadge(s){if(s==='점검중')return'<span class="badge bg-warning 
 
 // ── 일정 (방문·콜 스케줄) — logs 재사용(kind:'schedule') + 후속조치(nextDate) 병합 ──
 let _schView=(function(){try{return sessionStorage.getItem('sch_view')||'week';}catch(e){return 'week';}})(), _schMonth=null;
-const _SCH_COL={'방문':'#2563eb','콜':'#0891b2','데모':'#7c3aed','A/S':'#ea580c','기타':'#64748b','후속':'#9ca3af'};
+const _SCH_COL={'방문':'#2563eb','콜':'#0891b2','데모':'#7c3aed','A/S':'#ea580c','기타':'#64748b','후속':'#9ca3af','견적발송':'#7c3aed','계약검토':'#7c3aed','전화':'#7c3aed'};
 function _schEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function _schTodayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function _schMe(){ return ((typeof _meName!=='undefined'&&_meName)||(typeof currentUserName==='function'?currentUserName():'')||'').trim(); }
@@ -6211,20 +6215,29 @@ async function _loadDemoSched(){
 function _schItems(){
   const out=[];
   (DB.d.logs||[]).forEach(l=>{
-    if(l.kind==='schedule' && l.date) out.push({id:l.id,date:l.date,time:l.time||'',type:l.type||'방문',custName:l.custName||'',sales:l.sales||'',product:l.product||'',content:l.content||'',done:!!l.done,kind:'sched'});
+    if(l.kind==='schedule' && l.date) out.push({id:l.id,date:l.date,time:l.time||'',type:l.type||'방문',custName:l.custName||'',sales:l.sales||'',product:l.product||'',content:l.content||'',done:!!l.done,kind:'sched',dealId:l.dealId||''});
     else if(l.nextDate && l.nextAction) out.push({id:l.id,date:l.nextDate,time:'',type:'후속',custName:l.custName||'',sales:l.sales||'',product:l.product||'',content:(l.nextAction||'')+(l.content?' — '+l.content:''),done:false,kind:'followup'});
   });
+<<<<<<< Updated upstream
   _demoSched.forEach(function(e){ out.push(e); });   // 데모사이트 입력분 병합(읽기전용)
+=======
+  // 수주관리 딜의 다음 액션도 일정에 함께 표시(딜 저장 시 nextDate 입력분)
+  (DB.d.pipeline||[]).forEach(p=>{
+    if(p.stage!=='계약완료' && p.nextDate && p.nextAction) out.push({id:p.id,date:p.nextDate,time:'',type:p.nextType||'후속',custName:p.custName||'',sales:p.sales||'',product:p.model||'',content:'[딜] '+(p.nextAction||'')+(p.note?' — '+p.note:''),done:false,kind:'deal',dealId:p.id});
+  });
+>>>>>>> Stashed changes
   return out;
 }
 function _schWeekRange(){ const d=new Date(); const day=(d.getDay()+6)%7; const mon=new Date(d); mon.setDate(d.getDate()-day); const sun=new Date(mon); sun.setDate(mon.getDate()+6); const f=x=>x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); return {start:f(mon),end:f(sun)}; }
 function _schBadge(t){ const c=_SCH_COL[t]||'#64748b'; return '<span style="font-size:10px;font-weight:800;color:'+c+';background:'+c+'1a;border-radius:4px;padding:1px 6px;flex-shrink:0">'+t+'</span>'; }
 function _schItemRow(i){
+  const openDeal='openDealDrawer(\''+_schEsc(i.dealId)+'\')';
+  const nameClick=i.kind==='deal' ? openDeal : ('showHospitalDetail(\''+_schEsc(i.custName).replace(/&#39;/g,"\\x27")+'\')');
   return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid #f1f3f7;'+(i.done?'opacity:.5':'')+'">'
-    +(i.kind==='sched'?'<input type="checkbox" '+(i.done?'checked':'')+' onclick="toggleSchedDone(\''+i.id+'\')" title="완료" style="flex-shrink:0">':'<i class="bi bi-arrow-return-right" style="color:#cbd5e1;flex-shrink:0"></i>')
+    +(i.kind==='sched'?'<input type="checkbox" '+(i.done?'checked':'')+' onclick="toggleSchedDone(\''+i.id+'\')" title="완료" style="flex-shrink:0">':i.kind==='deal'?'<i class="bi bi-kanban" style="color:#7c3aed;flex-shrink:0" title="수주관리 딜"></i>':'<i class="bi bi-arrow-return-right" style="color:#cbd5e1;flex-shrink:0"></i>')
     +'<span style="min-width:42px;font-size:11px;color:#6b7280;flex-shrink:0">'+(_schEsc(i.time)||'-')+'</span>'
     +_schBadge(i.type)
-    +'<span style="font-weight:600;font-size:13px;cursor:pointer;flex-shrink:0" onclick="showHospitalDetail(\''+_schEsc(i.custName).replace(/&#39;/g,"\\x27")+'\')">'+_schEsc(i.custName)+'</span>'
+    +'<span style="font-weight:600;font-size:13px;cursor:pointer;flex-shrink:0" onclick="'+nameClick+'">'+_schEsc(i.custName)+(i.kind==='deal'?' <i class="bi bi-box-arrow-up-right" style="font-size:9px;color:#c4b5fd"></i>':'')+'</span>'
     +(i.product?'<span style="font-size:10.5px;color:#0891b2;font-weight:600;flex-shrink:0"><i class="bi bi-box-seam"></i> '+_schEsc(i.product)+'</span>':'')
     +'<span style="font-size:12px;color:#6b7280;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_schEsc(i.content)+'</span>'
     +(i.sales?'<span style="font-size:11px;color:#2563eb;flex-shrink:0;margin-left:auto"><i class="bi bi-person-badge"></i> '+_schEsc(i.sales)+'</span>':'')
@@ -6249,11 +6262,12 @@ function _schStatsBar(all){
 }
 // 이번주 7일 그리드용 미니 카드
 function _schMiniCard(i){
-  const c=_SCH_COL[i.type]||'#64748b';
+  const c=i.kind==='deal'?'#7c3aed':(_SCH_COL[i.type]||'#64748b');
   const nm=_schEsc(i.custName).replace(/&#39;/g,"\\x27");
-  return '<div onclick="event.stopPropagation();'+(i.kind==='sched'?"editSchedule('"+i.id+"')":"showHospitalDetail('"+nm+"')")+'" style="background:'+c+'14;border-left:3px solid '+c+';border-radius:5px;padding:4px 6px;margin-bottom:4px;cursor:pointer;'+(i.done?'opacity:.5':'')+'" title="'+_schEsc(i.custName+(i.product?' · '+i.product:'')+' · '+i.content)+'">'
+  const click=i.kind==='sched'?"editSchedule('"+i.id+"')":i.kind==='deal'?"openDealDrawer('"+_schEsc(i.dealId)+"')":"showHospitalDetail('"+nm+"')";
+  return '<div onclick="event.stopPropagation();'+click+'" style="background:'+c+'14;border-left:3px solid '+c+';border-radius:5px;padding:4px 6px;margin-bottom:4px;cursor:pointer;'+(i.done?'opacity:.5':'')+'" title="'+_schEsc(i.custName+(i.product?' · '+i.product:'')+' · '+i.content)+'">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;gap:3px">'
-      +'<span style="font-size:9.5px;font-weight:800;color:'+c+';white-space:nowrap">'+(i.time?_schEsc(i.time)+' ':'')+_schEsc(i.type)+(i.done?' ✓':'')+'</span>'
+      +'<span style="font-size:9.5px;font-weight:800;color:'+c+';white-space:nowrap">'+(i.kind==='deal'?'<i class="bi bi-kanban"></i> ':'')+(i.time?_schEsc(i.time)+' ':'')+_schEsc(i.type)+(i.done?' ✓':'')+'</span>'
       +(i.sales?'<span style="font-size:8.5px;color:#2563eb;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+_schEsc(i.sales)+'</span>':'')
     +'</div>'
     +'<div style="font-size:10.5px;font-weight:700;color:#334155;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_schEsc(i.custName)+'</div>'
@@ -6300,7 +6314,7 @@ function _schMonthView(items){
     const bg=(ds===todayS?'#eff6ff':''), hov=(ds===todayS?'#e0efff':'#f8fbff');
     cells+='<div onclick="openSchedule({date:\''+ds+'\'})" title="이 날짜에 일정 추가" style="position:relative;min-height:84px;border:1px solid #f1f3f7;padding:3px 4px;overflow:hidden;cursor:pointer;background:'+bg+'" onmouseover="this.style.background=\''+hov+'\';this.querySelector(\'.d-add\').style.opacity=1" onmouseout="this.style.background=\''+bg+'\';this.querySelector(\'.d-add\').style.opacity=0">'
       +'<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;color:'+(ds===todayS?'#2563eb':'#9ca3af')+';font-weight:'+(ds===todayS?'800':'400')+'">'+d+'</span><span class="d-add" style="opacity:0;font-size:11px;color:#2563eb;transition:.1s"><i class="bi bi-plus-circle-fill"></i></span></div>'
-      +its.slice(0,3).map(i=>'<div onclick="event.stopPropagation();'+(i.kind==='sched'?'editSchedule(\''+i.id+'\')':'')+'" style="font-size:10px;margin-top:1px;padding:1px 4px;border-radius:3px;background:'+((_SCH_COL[i.type]||'#64748b')+'22')+';color:'+(_SCH_COL[i.type]||'#64748b')+';cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+_schEsc(i.custName+' '+(i.sales?'('+i.sales+') ':'')+i.content)+'">'+(i.time?_schEsc(i.time)+' ':'')+_schEsc(i.custName)+(i.sales?' <span style="color:#94a3b8">('+_schEsc(i.sales)+')</span>':'')+'</div>').join('')
+      +its.slice(0,3).map(i=>{ const c2=i.kind==='deal'?'#7c3aed':(_SCH_COL[i.type]||'#64748b'); const click2=i.kind==='sched'?'editSchedule(\''+i.id+'\')':i.kind==='deal'?'openDealDrawer(\''+_schEsc(i.dealId)+'\')':''; return '<div onclick="event.stopPropagation();'+click2+'" style="font-size:10px;margin-top:1px;padding:1px 4px;border-radius:3px;background:'+(c2+'22')+';color:'+c2+';cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+_schEsc(i.custName+' '+(i.sales?'('+i.sales+') ':'')+i.content)+'">'+(i.kind==='deal'?'<i class="bi bi-kanban" style="font-size:8px"></i> ':'')+(i.time?_schEsc(i.time)+' ':'')+_schEsc(i.custName)+(i.sales?' <span style="color:#94a3b8">('+_schEsc(i.sales)+')</span>':'')+'</div>'; }).join('')
       +(its.length>3?'<div style="font-size:9px;color:#9ca3af;margin-top:1px">+'+(its.length-3)+' 더</div>':'')
       +'</div>';
   }
@@ -6336,6 +6350,8 @@ function renderSchedule(){
 function openSchedule(pre){ pre=pre||{};
   _schFillProdList();
   document.getElementById('sch-id').value=pre.id||'';
+  document.getElementById('sch-deal-id').value=pre.dealId||'';
+  document.getElementById('sch-deal-badge').style.display=pre.dealId?'block':'none';
   document.getElementById('sch-cust').value=pre.custName||'';
   document.getElementById('sch-type').value=pre.type||'방문';
   document.getElementById('sch-date').value=pre.date||_schTodayStr();
@@ -6347,7 +6363,7 @@ function openSchedule(pre){ pre=pre||{};
   _schHospInfo(pre.custName||'');
   bootstrap.Modal.getOrCreateInstance(document.getElementById('scheduleModal')).show();
 }
-function editSchedule(id){ const l=(DB.d.logs||[]).find(x=>x.id===id); if(l) openSchedule({id:l.id,custName:l.custName,type:l.type,date:l.date,time:l.time,sales:l.sales,product:l.product,content:l.content}); }
+function editSchedule(id){ const l=(DB.d.logs||[]).find(x=>x.id===id); if(l) openSchedule({id:l.id,custName:l.custName,type:l.type,date:l.date,time:l.time,sales:l.sales,product:l.product,content:l.content,dealId:l.dealId||''}); }
 // 제품 자동완성 목록
 function _schFillProdList(){ const dl=document.getElementById('sch-prod-list'); if(!dl||dl.dataset.filled)return;
   const ps=new Set(); Object.keys((typeof DEVICE!=='undefined'&&DEVICE.products2026)||{}).forEach(p=>ps.add(p)); Object.keys((typeof CONS!=='undefined'&&CONS.products2026)||{}).forEach(p=>ps.add(p));
@@ -6399,20 +6415,48 @@ function _schHospInfo(name){
       +cell('최근거래',_schEsc(last)+(topProd?' ('+_schEsc(topProd)+')':''))+cell('연락처',_schEsc(tel))
     +'</div>'
     +(rlog?'<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #e2e8f0;font-size:11px;color:#64748b"><i class="bi bi-chat-left-text me-1"></i>최근 상담 <b>'+_schEsc(rlog.date||'')+'</b> · '+_schEsc((rlog.content||'').slice(0,40))+(rlog.sales?' <span style="color:#2563eb">('+_schEsc(rlog.sales)+')</span>':'')+'</div>':'')
+    +_schDealsBox(name)
   +'</div>';
 }
+// 병원 선택 시 진행중인 수주관리 딜을 함께 표시 — 클릭하면 딜 상세로(유기적 연동)
+function _schDealsBox(name){
+  const deals=(DB.d.pipeline||[]).filter(d=>d.custName===name && d.stage!=='계약완료');
+  if(!deals.length) return '';
+  const rows=deals.map(d=>'<div onclick="closeSchModalThen(\''+d.id+'\')" style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;cursor:pointer">'
+    +'<span style="font-size:11.5px;color:#334155">'+_schEsc(d.model||'')+' <span style="color:#7c3aed;font-weight:700">['+_schEsc(d.stage)+']</span></span>'
+    +'<span style="font-size:11px;color:#2563eb;font-weight:600">딜 보기 ↗</span></div>').join('');
+  return '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #e2e8f0"><div style="font-size:11px;color:#7c3aed;font-weight:700;margin-bottom:3px"><i class="bi bi-kanban me-1"></i>진행중 딜 '+deals.length+'건</div>'+rows+'</div>';
+}
+function closeSchModalThen(dealId){ try{ bootstrap.Modal.getInstance(document.getElementById('scheduleModal')).hide(); }catch(e){} setTimeout(function(){ openDealDrawer(dealId); }, 230); }
 async function saveSchedule(){
   const cust=document.getElementById('sch-cust').value.trim(), date=document.getElementById('sch-date').value;
   if(!cust||!date){ alert('병원과 날짜를 입력하세요.'); return; }
   const id=document.getElementById('sch-id').value||uid();
   const idx=(DB.d.logs||[]).findIndex(l=>l.id===id);
-  const rec={id:id,kind:'schedule',custName:cust,date:date,time:document.getElementById('sch-time').value,type:document.getElementById('sch-type').value,product:document.getElementById('sch-prod').value.trim(),content:document.getElementById('sch-note').value.trim(),sales:document.getElementById('sch-sales').value.trim(),done:(idx>=0?!!DB.d.logs[idx].done:false)};
+  const rec={id:id,kind:'schedule',custName:cust,date:date,time:document.getElementById('sch-time').value,type:document.getElementById('sch-type').value,product:document.getElementById('sch-prod').value.trim(),content:document.getElementById('sch-note').value.trim(),sales:document.getElementById('sch-sales').value.trim(),done:(idx>=0?!!DB.d.logs[idx].done:false),dealId:document.getElementById('sch-deal-id').value||(idx>=0?DB.d.logs[idx].dealId||'':'')};
   if(idx>=0) DB.d.logs[idx]=rec; else DB.d.logs.push(rec);
   try{ bootstrap.Modal.getInstance(document.getElementById('scheduleModal')).hide(); }catch(e){}
   renderSchedule(); showToast('일정 저장, 저장 중...'); await DB.save('logs'); showToast('저장 완료', true);
 }
 function delSchedule(){ const id=document.getElementById('sch-id').value; if(!id)return; if(!confirm('일정을 삭제할까요?'))return; DB.d.logs=(DB.d.logs||[]).filter(l=>l.id!==id); try{ bootstrap.Modal.getInstance(document.getElementById('scheduleModal')).hide(); }catch(e){} renderSchedule(); DB.save('logs'); }
-async function toggleSchedDone(id){ const l=(DB.d.logs||[]).find(x=>x.id===id); if(!l)return; l.done=!l.done; renderSchedule(); await DB.save('logs'); }
+async function toggleSchedDone(id){
+  const l=(DB.d.logs||[]).find(x=>x.id===id); if(!l)return;
+  l.done=!l.done; renderSchedule();
+  const saves=[DB.save('logs')];
+  // 딜과 연결된 일정을 완료 처리하면, 그 딜에 자동으로 상담 기록을 남김(유기적 연동)
+  if(l.done && l.dealId){
+    const d=DB.d.pipeline.find(x=>x.id===l.dealId);
+    if(d){
+      const by=((typeof _meName!=='undefined'&&_meName)||(typeof currentUserName==='function'?currentUserName():'')||l.sales||'').trim();
+      DB.d.logs.push({id:uid(),date:_schTodayStr(),custName:l.custName,type:l.type||'방문',content:'[일정 완료] '+(l.content||l.type||'')+(l.product?' · '+l.product:''),product:l.product||'',nextAction:'',nextDate:'',sales:by,by:by});
+      // 이 일정이 딜의 다음액션이었다면 정리(더 이상 캘린더에 중복 표시 안 되게)
+      if(d.nextDate===l.date) { d.nextAction=''; d.nextDate=''; }
+      saves.push(DB.save('logs'), DB.save('pipeline'));
+      showToast('완료 처리 + 관련 딜에 자동 기록됨', true);
+    }
+  }
+  await Promise.all(saves);
+}
 function _schMine(){ const sel=document.getElementById('sch-sales-filter'); if(!sel)return; const me=_schMe(); if(!me){alert('로그인 정보가 없습니다.');return;} let hit=''; for(const o of sel.options){ if(o.value&&(o.value.includes(me)||me.includes(o.value))){hit=o.value;break;} } if(!hit){alert('"'+me+'" 담당 일정을 찾지 못했어요.');return;} sel.value=hit; renderSchedule(); }
 
 // ── 상담일지 ──────────────────────────────────────────────────────
