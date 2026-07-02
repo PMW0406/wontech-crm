@@ -2049,7 +2049,7 @@ async function _showLauncherOrApp(user) {
             <div style="margin-top:16px;display:flex;align-items:center;gap:4px;font-size:11px;color:#86a7c4;font-weight:600">입장하기 <i class="bi bi-arrow-right" style="font-size:10px"></i></div>
           </div>
         </div>` : '',
-      (access.includes('equip') || _isAdmin) ? `
+      (access.includes('equip')) ? `
         <div onclick="location.href='https://wt-management.github.io/demo-schedule/'"
           style="${cardStyle}" onmouseover="${cardHover}" onmouseout="${cardOut}">
           <div style="height:5px;background:linear-gradient(90deg,#2563eb,#0891b2)"></div>
@@ -2092,7 +2092,7 @@ async function _bootApp(access) {
   _showSw('switcher-japan-item', _acc.has('japan'));
   _showSw('switcher-total-item', _acc.has('total'));
   _showSw('switcher-cons-item',  _acc.has('daily'));
-  _showSw('switcher-equip-item', _acc.has('equip')||_isAdmin);
+  _showSw('switcher-equip-item', _acc.has('equip'));
   _showSw('switcher-admin-item', _isAdmin);
   // 전환 가능한 '다른' 사이트가 하나도 없으면(=한국 전용) 스위처 자체 숨김
   const _hasOther = _acc.has('intl')||_acc.has('japan')||_acc.has('total')||_acc.has('daily')||_acc.has('equip')||_isAdmin;
@@ -6601,7 +6601,7 @@ function _renderLauncherCards(access) {
             <div style="margin-top:16px;display:flex;align-items:center;gap:4px;font-size:11px;color:#86a7c4;font-weight:600">입장하기 <i class="bi bi-arrow-right" style="font-size:10px"></i></div>
           </div>
         </div>` : '',
-      (access.includes('equip') || _isAdmin) ? `
+      (access.includes('equip')) ? `
         <div onclick="location.href='https://wt-management.github.io/demo-schedule/'"
           style="${cardStyle}" onmouseover="${cardHover}" onmouseout="${cardOut}">
           <div style="height:5px;background:linear-gradient(90deg,#2563eb,#0891b2)"></div>
