@@ -180,6 +180,21 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
 </div>
 
 <!-- 런처 화면 -->
+<style id="launcher-opt">
+#launcher-screen{padding:44px 24px}
+#launcher-cards{max-width:812px!important;gap:16px!important}
+#launcher-cards>div{width:186px!important}
+#launcher-cards>div>div:nth-child(2){padding:20px 18px!important}
+@media(max-width:860px){#launcher-cards{max-width:600px!important}}
+@media(max-width:640px){
+  #launcher-screen{padding:22px 12px!important;justify-content:flex-start!important}
+  #launcher-main{padding:0 6px;width:100%}
+  #launcher-cards{max-width:100%!important;gap:10px!important}
+  #launcher-cards>div{width:calc(50% - 5px)!important}
+  #launcher-cards>div>div:nth-child(2){padding:15px 13px!important}
+}
+@media(max-width:340px){#launcher-cards>div{width:100%!important}}
+</style>
 <div id="launcher-screen" style="display:none;position:fixed;inset:0;background:linear-gradient(135deg,#0f172a 0%,#1e2140 100%);z-index:9998;align-items:center;justify-content:center;flex-direction:column;overflow-y:auto">
   <!-- 런처 메인 -->
   <div id="launcher-main" style="display:flex;flex-direction:column;align-items:center;width:100%">
