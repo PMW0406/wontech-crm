@@ -3196,7 +3196,8 @@ function renderDashboard() {
   const todayStr=now.toISOString().split('T')[0];
   const fromLogs=DB.d.logs.filter(l=>l.nextDate&&l.nextAction).map(l=>({date:l.nextDate,action:l.nextAction,custName:l.custName,sales:l.sales,kind:'log',dealId:''}));
   const fromDeals=DB.d.pipeline.filter(d=>d.stage!=='계약완료'&&d.nextDate&&d.nextAction).map(d=>({date:d.nextDate,action:'[딜] '+d.nextAction,custName:d.custName,sales:d.sales,kind:'deal',dealId:d.id}));
-  const actionItems=[...fromLogs,...fromDeals].sort((a,b)=>a.date.localeCompare(b.date));
+  const fromMissedVisits=DB.d.logs.filter(l=>l.kind==='schedule'&&!l.done&&l.date&&l.date<todayStr).map(l=>({date:l.date,action:'['+(l.type||'방문')+'] 완료 처리가 안 된 놓친 일정',custName:l.custName,sales:l.sales,kind:'sched',dealId:l.dealId||''}));
+  const actionItems=[...fromLogs,...fromDeals,...fromMissedVisits].sort((a,b)=>a.date.localeCompare(b.date));
   const overdueItems=actionItems.filter(l=>l.date<todayStr);
   const todayItems=actionItems.filter(l=>l.date===todayStr);
   const weekItems=actionItems.filter(l=>l.date>todayStr&&l.date<=new Date(now.getTime()+7*864e5).toISOString().split('T')[0]);
@@ -3207,7 +3208,7 @@ function renderDashboard() {
   document.getElementById('action-board').innerHTML=allActions.length?allActions.map(l=>{
     const isOverdue=l.date<todayStr,isToday=l.date===todayStr;
     const dotC=isOverdue?'#dc2626':isToday?'#ea580c':'#2563eb';
-    const click=l.kind==='deal'?`openDealDrawer('${l.dealId}')`:`showHospitalDetail('${String(l.custName||'').replace(/'/g,"\\x27")}')`;
+    const click=l.kind==='deal'?`openDealDrawer('${l.dealId}')`:l.kind==='sched'?`showPage('schedule');_schShowOverdueOnly()`:`showHospitalDetail('${String(l.custName||'').replace(/'/g,"\\x27")}')`;
     return`<div onclick="${click}" style="display:flex;align-items:flex-start;gap:10px;padding:10px 16px;border-bottom:1px solid #f3f4f6;cursor:pointer" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
       <div style="width:8px;height:8px;border-radius:50%;background:${dotC};margin-top:5px;flex-shrink:0"></div>
       <div style="flex:1;min-width:0">
@@ -6196,12 +6197,13 @@ function confirmEquipExcel() {
 function statusBadge(s){if(s==='점검중')return'<span class="badge bg-warning text-dark">점검중</span>';if(s==='폐기')return'<span class="badge bg-danger">폐기</span>';return'<span class="badge bg-success">정상</span>';}
 
 // ── 일정 (방문·콜 스케줄) — logs 재사용(kind:'schedule') + 후속조치(nextDate) 병합 ──
-let _schView=(function(){try{return sessionStorage.getItem('sch_view')||'week';}catch(e){return 'week';}})(), _schMonth=null;
+let _schView=(function(){try{return sessionStorage.getItem('sch_view')||'week';}catch(e){return 'week';}})(), _schMonth=null, _schOverdueOnly=false;
+function _schShowOverdueOnly(){ _schOverdueOnly=true; renderSchedule(); }
 const _SCH_COL={'방문':'#2563eb','콜':'#0891b2','데모':'#7c3aed','A/S':'#ea580c','기타':'#64748b','후속':'#9ca3af','견적발송':'#7c3aed','계약검토':'#7c3aed','전화':'#7c3aed'};
 function _schEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function _schTodayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function _schMe(){ return ((typeof _meName!=='undefined'&&_meName)||(typeof currentUserName==='function'?currentUserName():'')||'').trim(); }
-function setSchView(v,btn){ _schView=v; try{sessionStorage.setItem('sch_view',v);}catch(e){} document.querySelectorAll('#page-schedule .btn-group .btn').forEach(b=>b.classList.remove('active')); if(btn)btn.classList.add('active'); renderSchedule(); }
+function setSchView(v,btn){ _schView=v; _schOverdueOnly=false; try{sessionStorage.setItem('sch_view',v);}catch(e){} document.querySelectorAll('#page-schedule .btn-group .btn').forEach(b=>b.classList.remove('active')); if(btn)btn.classList.add('active'); renderSchedule(); }
 function _schSyncViewBtn(){ const m={today:'sch-v-today',week:'sch-v-week',month:'sch-v-month'}; document.querySelectorAll('#page-schedule .btn-group .btn').forEach(b=>b.classList.remove('active')); const b=document.getElementById(m[_schView]); if(b)b.classList.add('active'); }
 // 데모 일정 사이트(demo_schedules) 병합읽기 — 양방향 연동(읽기전용, 데모사이트가 쓰는 테이블). 테이블 없으면 조용히 빈배열.
 let _demoSched=[];
@@ -6218,14 +6220,11 @@ function _schItems(){
     if(l.kind==='schedule' && l.date) out.push({id:l.id,date:l.date,time:l.time||'',type:l.type||'방문',custName:l.custName||'',sales:l.sales||'',product:l.product||'',content:l.content||'',done:!!l.done,kind:'sched',dealId:l.dealId||''});
     else if(l.nextDate && l.nextAction) out.push({id:l.id,date:l.nextDate,time:'',type:'후속',custName:l.custName||'',sales:l.sales||'',product:l.product||'',content:(l.nextAction||'')+(l.content?' — '+l.content:''),done:false,kind:'followup'});
   });
-<<<<<<< Updated upstream
   _demoSched.forEach(function(e){ out.push(e); });   // 데모사이트 입력분 병합(읽기전용)
-=======
   // 수주관리 딜의 다음 액션도 일정에 함께 표시(딜 저장 시 nextDate 입력분)
   (DB.d.pipeline||[]).forEach(p=>{
     if(p.stage!=='계약완료' && p.nextDate && p.nextAction) out.push({id:p.id,date:p.nextDate,time:'',type:p.nextType||'후속',custName:p.custName||'',sales:p.sales||'',product:p.model||'',content:'[딜] '+(p.nextAction||'')+(p.note?' — '+p.note:''),done:false,kind:'deal',dealId:p.id});
   });
->>>>>>> Stashed changes
   return out;
 }
 function _schWeekRange(){ const d=new Date(); const day=(d.getDay()+6)%7; const mon=new Date(d); mon.setDate(d.getDate()-day); const sun=new Date(mon); sun.setDate(mon.getDate()+6); const f=x=>x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); return {start:f(mon),end:f(sun)}; }
@@ -6250,12 +6249,14 @@ function _schStatsBar(all){
   const t=all.filter(i=>i.date===today).length;
   const w=all.filter(i=>i.date>=wk.start&&i.date<=wk.end).length;
   const pend=all.filter(i=>i.kind==='sched'&&!i.done&&i.date>=today).length;
+  const overdue=all.filter(i=>i.kind==='sched'&&!i.done&&i.date<today).length;
   const done=all.filter(i=>i.kind==='sched'&&i.done).length;
   const byType={}; all.forEach(i=>byType[i.type]=(byType[i.type]||0)+1);
   const stat=(lbl,n,col)=>'<div style="flex:1;min-width:78px;background:#fff;border:1px solid #eef2f7;border-radius:11px;padding:9px 13px;box-shadow:0 1px 2px rgba(15,23,42,.03)"><div style="font-size:11px;color:#64748b">'+lbl+'</div><div style="font-size:21px;font-weight:800;color:'+col+';line-height:1.15">'+n+'</div></div>';
   const legend=Object.keys(_SCH_COL).filter(x=>x!=='후속').map(x=>'<span style="font-size:10.5px;color:'+_SCH_COL[x]+';font-weight:600"><span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:'+_SCH_COL[x]+';margin-right:4px;vertical-align:middle"></span>'+x+(byType[x]?' <span style="color:#94a3b8">'+byType[x]+'</span>':'')+'</span>').join('&nbsp;&nbsp;&nbsp;');
-  return '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">'
-      +stat('오늘',t,'#2563eb')+stat('이번주',w,'#0891b2')+stat('예정·미완료',pend,'#ea580c')+stat('완료',done,'#16a34a')
+  return (overdue?'<div style="margin-bottom:8px;padding:8px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:9px;font-size:12.5px;color:#b91c1c;cursor:pointer" onclick="_schShowOverdueOnly()"><i class="bi bi-exclamation-triangle-fill me-1"></i><b>놓친 일정 '+overdue+'건</b> — 지난 일정인데 아직 완료 처리가 안 됐어요. 눌러서 확인하세요.</div>':'')
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">'
+      +stat('오늘',t,'#2563eb')+stat('이번주',w,'#0891b2')+stat('지연',overdue,'#dc2626')+stat('예정',pend,'#ea580c')+stat('완료',done,'#16a34a')
     +'</div>'
     +'<div style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-bottom:14px;padding:8px 12px;background:#f8fafc;border-radius:9px">'
       +'<span style="font-size:10.5px;color:#94a3b8;font-weight:700">유형</span>'+legend+'</div>';
@@ -6334,6 +6335,13 @@ function renderSchedule(){
   const st=document.getElementById('sch-stats'); if(st) st.innerHTML=_schStatsBar(items);
   const body=document.getElementById('sch-body'), title=document.getElementById('sch-title'), nav=document.getElementById('sch-monthnav');
   nav.innerHTML=''; title.textContent='';
+  if(_schOverdueOnly){
+    const today=_schTodayStr();
+    const list=items.filter(i=>i.kind==='sched'&&!i.done&&i.date<today);
+    title.innerHTML='<span style="color:#dc2626">놓친 일정</span> '+list.length+'건'+(sfv?' · '+_schEsc(sfv):'')+' <button class="btn btn-sm btn-link p-0 ms-2" style="font-size:12px" onclick="_schOverdueOnly=false;renderSchedule()">전체 보기로 돌아가기</button>';
+    body.innerHTML=_schListView(list);
+    return;
+  }
   if(_schView==='month'){ body.innerHTML=_schMonthView(items); }
   else if(_schView==='week'){
     const wk=_schWeekRange();
