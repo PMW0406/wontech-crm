@@ -2185,7 +2185,7 @@ function showPage(name, el, noPush) {
   else if(name==='dashboard') renderDashboard();
   else if(name==='sales'||name==='pipeline'||name==='performance') renderSalesPage(name);
   else if(name==='quotes') renderQuotes();
-  else if(name==='schedule') renderSchedule();
+  else if(name==='schedule'){ renderSchedule(); _loadDemoSched().then(renderSchedule); }
   else if(name==='roi'){ if(!window._roiInit){ roiInit(); window._roiInit=1; } }
   else if(name==='speech'){ if(!window._speechInit){ buildSpeechGrid(); window._speechInit=1; } var _sd=document.getElementById('speech-detail-view'),_sg=document.getElementById('speech-grid-view'); if(_sd&&_sg){_sd.style.display='none';_sg.style.display='';} }
   else if(name==='customers') renderCustomers();
@@ -6198,12 +6198,22 @@ function _schTodayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d
 function _schMe(){ return ((typeof _meName!=='undefined'&&_meName)||(typeof currentUserName==='function'?currentUserName():'')||'').trim(); }
 function setSchView(v,btn){ _schView=v; try{sessionStorage.setItem('sch_view',v);}catch(e){} document.querySelectorAll('#page-schedule .btn-group .btn').forEach(b=>b.classList.remove('active')); if(btn)btn.classList.add('active'); renderSchedule(); }
 function _schSyncViewBtn(){ const m={today:'sch-v-today',week:'sch-v-week',month:'sch-v-month'}; document.querySelectorAll('#page-schedule .btn-group .btn').forEach(b=>b.classList.remove('active')); const b=document.getElementById(m[_schView]); if(b)b.classList.add('active'); }
+// 데모 일정 사이트(demo_schedules) 병합읽기 — 양방향 연동(읽기전용, 데모사이트가 쓰는 테이블). 테이블 없으면 조용히 빈배열.
+let _demoSched=[];
+async function _loadDemoSched(){
+  try{
+    const {data,error}=await _sb.from('demo_schedules').select('*');
+    if(error||!data){ _demoSched=[]; return; }
+    _demoSched=data.filter(r=>r&&r.date).map(r=>({id:'demo_'+r.id,date:r.date,time:r.time||'',type:'데모',custName:r.cust||'',sales:r.sales||'',product:r.product||'',content:r.content||r.outcome||'',done:(r.status==='done'),kind:'demo'}));
+  }catch(e){ _demoSched=[]; }
+}
 function _schItems(){
   const out=[];
   (DB.d.logs||[]).forEach(l=>{
     if(l.kind==='schedule' && l.date) out.push({id:l.id,date:l.date,time:l.time||'',type:l.type||'방문',custName:l.custName||'',sales:l.sales||'',product:l.product||'',content:l.content||'',done:!!l.done,kind:'sched'});
     else if(l.nextDate && l.nextAction) out.push({id:l.id,date:l.nextDate,time:'',type:'후속',custName:l.custName||'',sales:l.sales||'',product:l.product||'',content:(l.nextAction||'')+(l.content?' — '+l.content:''),done:false,kind:'followup'});
   });
+  _demoSched.forEach(function(e){ out.push(e); });   // 데모사이트 입력분 병합(읽기전용)
   return out;
 }
 function _schWeekRange(){ const d=new Date(); const day=(d.getDay()+6)%7; const mon=new Date(d); mon.setDate(d.getDate()-day); const sun=new Date(mon); sun.setDate(mon.getDate()+6); const f=x=>x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); return {start:f(mon),end:f(sun)}; }
