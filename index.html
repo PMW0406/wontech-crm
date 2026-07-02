@@ -394,9 +394,9 @@ body{display:flex;min-height:100vh;background:var(--bg);font-family:'Noto Sans K
             style="margin-top:2px;border-radius:6px;padding:8px 12px;display:flex;align-items:center;gap:8px;color:#94a3b8;font-size:12px;cursor:pointer;transition:background .15s"
             onmouseover="this.style.background='rgba(255,255,255,.08)'" onmouseout="this.style.background=''"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:18px;background:#3f5e7a;color:#fff;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.03em;padding:0 5px;flex-shrink:0">PF</span><span style="flex:1">Sales Portfolio</span><i class="bi bi-arrow-right" style="font-size:11px;opacity:.5"></i>
           </div>
-          <div onclick="location.href='https://wt-management.github.io/demo-schedule/'"
-            style="margin-top:2px;border-radius:6px;padding:8px 12px;display:flex;align-items:center;gap:8px;color:#94a3b8;font-size:12px;cursor:pointer;transition:background .15s"
-            onmouseover="this.style.background='rgba(255,255,255,.08)'" onmouseout="this.style.background=''"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:18px;background:#2563eb;color:#fff;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.03em;padding:0 5px;flex-shrink:0">데모</span><span style="flex:1">데모 일정</span><i class="bi bi-arrow-right" style="font-size:11px;opacity:.5"></i>
+          <div id="switcher-equip-item" onclick="location.href='https://wt-management.github.io/demo-schedule/'"
+            style="margin-top:2px;border-radius:6px;padding:8px 12px;display:none;align-items:center;gap:8px;color:#94a3b8;font-size:12px;cursor:pointer;transition:background .15s"
+            onmouseover="this.style.background='rgba(255,255,255,.08)'" onmouseout="this.style.background=''"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:18px;background:#2563eb;color:#fff;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.03em;padding:0 5px;flex-shrink:0">장비</span><span style="flex:1">장비 통합관리</span><i class="bi bi-arrow-right" style="font-size:11px;opacity:.5"></i>
           </div>
           <div id="switcher-admin-item" onclick="document.getElementById('site-dropdown').style.display='none';sessionStorage.setItem('wt_app','admin');document.getElementById('main-content').style.display='none';showAdminPanel();document.getElementById('launcher-screen').style.display='flex';"
             style="display:none;margin-top:2px;border-radius:6px;padding:8px 12px;align-items:center;gap:8px;color:#94a3b8;font-size:12px;cursor:pointer;transition:background .15s"
@@ -2049,16 +2049,16 @@ async function _showLauncherOrApp(user) {
             <div style="margin-top:16px;display:flex;align-items:center;gap:4px;font-size:11px;color:#86a7c4;font-weight:600">입장하기 <i class="bi bi-arrow-right" style="font-size:10px"></i></div>
           </div>
         </div>` : '',
-      (access.includes('korea') || _isAdmin) ? `
+      (access.includes('equip') || _isAdmin) ? `
         <div onclick="location.href='https://wt-management.github.io/demo-schedule/'"
           style="${cardStyle}" onmouseover="${cardHover}" onmouseout="${cardOut}">
           <div style="height:5px;background:linear-gradient(90deg,#2563eb,#0891b2)"></div>
           <div style="padding:28px 24px">
             <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#2563eb,#0891b2);display:flex;align-items:center;justify-content:center;margin-bottom:16px;box-shadow:0 8px 20px rgba(37,99,235,.35)">
-              <i class="bi bi-calendar-check-fill" style="font-size:22px;color:#fff"></i>
+              <i class="bi bi-hdd-stack-fill" style="font-size:22px;color:#fff"></i>
             </div>
-            <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:6px;letter-spacing:-.3px">데모 일정</div>
-            <div style="font-size:11px;color:#64748b;line-height:1.6">데모 스케줄<br>연동·관리</div>
+            <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:6px;letter-spacing:-.3px">장비 통합관리</div>
+            <div style="font-size:11px;color:#64748b;line-height:1.6">데모·출하·보상<br>재고·실사</div>
             <div style="margin-top:16px;display:flex;align-items:center;gap:4px;font-size:11px;color:#7dd3fc;font-weight:600">입장하기 <i class="bi bi-arrow-right" style="font-size:10px"></i></div>
           </div>
         </div>` : '',
@@ -2092,9 +2092,10 @@ async function _bootApp(access) {
   _showSw('switcher-japan-item', _acc.has('japan'));
   _showSw('switcher-total-item', _acc.has('total'));
   _showSw('switcher-cons-item',  _acc.has('daily'));
+  _showSw('switcher-equip-item', _acc.has('equip')||_isAdmin);
   _showSw('switcher-admin-item', _isAdmin);
   // 전환 가능한 '다른' 사이트가 하나도 없으면(=한국 전용) 스위처 자체 숨김
-  const _hasOther = _acc.has('intl')||_acc.has('japan')||_acc.has('total')||_acc.has('daily')||_isAdmin;
+  const _hasOther = _acc.has('intl')||_acc.has('japan')||_acc.has('total')||_acc.has('daily')||_acc.has('equip')||_isAdmin;
   document.getElementById('site-switcher').style.display = _hasOther ? 'block' : 'none';
   // 표시 순서만 정렬(display는 위에서 결정 — 강제 표시 금지)
   (function(){
@@ -6600,16 +6601,16 @@ function _renderLauncherCards(access) {
             <div style="margin-top:16px;display:flex;align-items:center;gap:4px;font-size:11px;color:#86a7c4;font-weight:600">입장하기 <i class="bi bi-arrow-right" style="font-size:10px"></i></div>
           </div>
         </div>` : '',
-      (access.includes('korea') || _isAdmin) ? `
+      (access.includes('equip') || _isAdmin) ? `
         <div onclick="location.href='https://wt-management.github.io/demo-schedule/'"
           style="${cardStyle}" onmouseover="${cardHover}" onmouseout="${cardOut}">
           <div style="height:5px;background:linear-gradient(90deg,#2563eb,#0891b2)"></div>
           <div style="padding:28px 24px">
             <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#2563eb,#0891b2);display:flex;align-items:center;justify-content:center;margin-bottom:16px;box-shadow:0 8px 20px rgba(37,99,235,.35)">
-              <i class="bi bi-calendar-check-fill" style="font-size:22px;color:#fff"></i>
+              <i class="bi bi-hdd-stack-fill" style="font-size:22px;color:#fff"></i>
             </div>
-            <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:6px;letter-spacing:-.3px">데모 일정</div>
-            <div style="font-size:11px;color:#64748b;line-height:1.6">데모 스케줄<br>연동·관리</div>
+            <div style="font-size:15px;font-weight:800;color:#f1f5f9;margin-bottom:6px;letter-spacing:-.3px">장비 통합관리</div>
+            <div style="font-size:11px;color:#64748b;line-height:1.6">데모·출하·보상<br>재고·실사</div>
             <div style="margin-top:16px;display:flex;align-items:center;gap:4px;font-size:11px;color:#7dd3fc;font-weight:600">입장하기 <i class="bi bi-arrow-right" style="font-size:10px"></i></div>
           </div>
         </div>` : '',
@@ -6637,8 +6638,8 @@ const PERM_PRESETS = [
   {name:'일본법인',              access:'japan',                       upload:''},
   {name:'소모품담당(일보)',      access:'daily',                       upload:'daily'},
   {name:'국내(영업+소모품+종합)', access:'korea,daily,total',           upload:''},
-  {name:'임원(전체 보기)',       access:'korea,intl,japan,total,daily,pm,portfolio', upload:''},
-  {name:'전체관리자',            access:'korea,intl,japan,total,daily,pm,portfolio', upload:'korea,intl,japan,total,daily,pm,portfolio'}
+  {name:'임원(전체 보기)',       access:'korea,intl,japan,total,daily,pm,portfolio,equip', upload:''},
+  {name:'전체관리자',            access:'korea,intl,japan,total,daily,pm,portfolio,equip', upload:'korea,intl,japan,total,daily,pm,portfolio,equip'}
 ];
 function _normPerm(s){ return (s||'').split(',').map(x=>x.trim()).filter(Boolean).sort().join(','); }
 function _matchPreset(p){
@@ -6710,7 +6711,7 @@ async function applyDeptToAll(dept){
   _paintUsers();
 }
 
-const WT_SITES = [['korea','한국','#0891b2'],['intl','해외','#0d9488'],['japan','일본','#f59e0b'],['total','종합','#4f46e5'],['daily','일보','#16a34a'],['pm','상품PM','#a855f7'],['portfolio','SalesPF','#ec4899']];
+const WT_SITES = [['korea','한국','#0891b2'],['intl','해외','#0d9488'],['japan','일본','#f59e0b'],['total','종합','#4f46e5'],['daily','일보','#16a34a'],['pm','상품PM','#a855f7'],['portfolio','SalesPF','#ec4899'],['equip','장비관리','#2563eb']];
 function _permDetail(p){
   const cell=(field,fn)=>WT_SITES.map(([k,lbl,col])=>{const cur=(p[field]||'').split(',').map(s=>s.trim());return `<label style="display:inline-flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;color:#94a3b8"><span>${lbl}</span><input type="checkbox" ${cur.includes(k)?'checked':''} onchange="${fn}('${p.id}','${k}',this.checked)" style="accent-color:${col};cursor:pointer;margin:0"></label>`;}).join('');
   return `<div style="display:flex;gap:24px;flex-wrap:wrap;padding:8px 4px"><div><div style="font-size:10px;color:#64748b;margin-bottom:5px;font-weight:700">접근</div><div style="display:flex;gap:12px">${cell('access','toggleAccess')}</div></div><div style="border-left:1px solid rgba(255,255,255,.08);padding-left:24px"><div style="font-size:10px;color:#64748b;margin-bottom:5px;font-weight:700">업로드</div><div style="display:flex;gap:12px">${cell('upload','toggleUpload')}</div></div></div>`;
@@ -7506,6 +7507,14 @@ window.addEventListener('popstate', function(e) {
           </div>
           <div style="font-size:11px;font-weight:800;color:#1e293b;letter-spacing:-.2px">일일매출보고</div>
           <div style="font-size:10px;color:#94a3b8;margin-top:2px">Daily</div>
+        </div>
+        <div class="access-card" data-val="equip" onclick="toggleAccessCard(this)"
+          style="flex:1;min-width:90px;border:2px solid #e5e7eb;border-radius:14px;padding:14px 10px 12px;cursor:pointer;text-align:center;transition:all .18s;background:#fff">
+          <div style="width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,#2563eb,#0891b2);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;box-shadow:0 4px 12px rgba(37,99,235,.25)">
+            <i class="bi bi-hdd-stack-fill" style="font-size:18px;color:#fff"></i>
+          </div>
+          <div style="font-size:11px;font-weight:800;color:#1e293b;letter-spacing:-.2px">장비 통합관리</div>
+          <div style="font-size:10px;color:#94a3b8;margin-top:2px">Equipment</div>
         </div>
       </div>
       <div id="access-card-error" style="font-size:11px;color:#dc2626;margin-top:4px;display:none">최소 1개 선택하세요</div>
